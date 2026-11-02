@@ -244,10 +244,18 @@ function generateTintedTextures(repoRoot) {
   const files = new Map();
   const textureSets = new Map();
 
-  const addTinted = (shortName, baseTextureName, hexColor) => {
+  const addTinted = (shortName, baseTextureName, hexColor, alphaScale = 1.0) => {
     const tinted = tintPng(baseTextureName, hexColor, { repoRoot });
+    let pngBytes = tinted.png;
+    if (alphaScale < 0.999) {
+      const scaled = Buffer.from(tinted.data);
+      for (let i = 3; i < scaled.length; i += 4) {
+        scaled[i] = Math.max(0, Math.min(255, Math.round(scaled[i] * alphaScale)));
+      }
+      pngBytes = encodePng(tinted.width, tinted.height, scaled);
+    }
     const relDir = 'textures/blocks/betterend/tinted';
-    files.set(`${relDir}/${shortName}.png`, tinted.png);
+    files.set(`${relDir}/${shortName}.png`, pngBytes);
     textureSets.set(
       `${relDir}/${shortName}.texture_set.json`,
       buildTextureSetJson(shortName, { isItem: false }),
@@ -255,7 +263,7 @@ function generateTintedTextures(repoRoot) {
   };
 
   for (let i = 0; i < AURORA_PALETTE.length; i += 1) {
-    addTinted(`aurora_crystal_${i}`, 'aurora_crystal.png', AURORA_PALETTE[i]);
+    addTinted(`aurora_crystal_${i}`, 'aurora_crystal.png', AURORA_PALETTE[i], 0.48);
   }
 
   for (let i = 0; i < TENANEA_PALETTE.length; i += 1) {
@@ -264,7 +272,7 @@ function generateTintedTextures(repoRoot) {
 
   for (let i = 0; i < HELIX_LEAVES_GRADIENT.length; i += 1) {
     addTinted(`helix_tree_leaves_${i}`, 'helix_tree_leaves.png', HELIX_LEAVES_GRADIENT[i]);
-    addTinted(`jellyshroom_cap_${i}`, 'jellyshroom_cap_top.png', JELLYSHROOM_CAP_GRADIENT[i]);
+    addTinted(`jellyshroom_cap_${i}`, 'jellyshroom_cap_top.png', JELLYSHROOM_CAP_GRADIENT[i], 0.68);
   }
 
   for (const [colorName, hexColor] of Object.entries(HYDRALUX_PETAL_COLORS)) {

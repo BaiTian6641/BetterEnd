@@ -457,7 +457,7 @@ export function convertModelToBedrockGeometry(flattenedModel, {
       const pivot = [8 - ox, oy, oz - 8];
       const angle = el.rotation.angle;
       const rot = [
-        el.rotation.axis === 'x' ? angle : 0,
+        el.rotation.axis === 'x' ? -angle : 0,
         el.rotation.axis === 'y' ? -angle : 0,
         el.rotation.axis === 'z' ? -angle : 0,
       ];
@@ -1017,6 +1017,66 @@ export async function compileAllModelsAndAssets({ repoRoot = defaultRepoRoot } =
       }
     }
   }
+
+  // Synthesize multi-face + inner-core translucent crystal geometry for betterend:aurora_crystal
+  const makeCrystalFaceUv = () => ({
+    down: { uv: [0, 0], uv_size: [16, 16], material_instance: 'down' },
+    up: { uv: [0, 0], uv_size: [16, 16], material_instance: 'up' },
+    north: { uv: [0, 0], uv_size: [16, 16], material_instance: 'north' },
+    south: { uv: [0, 0], uv_size: [16, 16], material_instance: 'south' },
+    west: { uv: [0, 0], uv_size: [16, 16], material_instance: 'west' },
+    east: { uv: [0, 0], uv_size: [16, 16], material_instance: 'east' },
+  });
+  const makeCoreFaceUv = () => ({
+    down: { uv: [2, 2], uv_size: [12, 12], material_instance: 'up' },
+    up: { uv: [2, 2], uv_size: [12, 12], material_instance: 'down' },
+    north: { uv: [2, 2], uv_size: [12, 12], material_instance: 'east' },
+    south: { uv: [2, 2], uv_size: [12, 12], material_instance: 'west' },
+    west: { uv: [2, 2], uv_size: [12, 12], material_instance: 'north' },
+    east: { uv: [2, 2], uv_size: [12, 12], material_instance: 'south' },
+  });
+  geometries.set('geometry.betterend.aurora_crystal', {
+    format_version: '1.12.0',
+    'minecraft:geometry': [
+      {
+        description: {
+          identifier: 'geometry.betterend.aurora_crystal',
+          texture_width: 16,
+          texture_height: 16,
+          visible_bounds_width: 2,
+          visible_bounds_height: 2,
+          visible_bounds_offset: [0, 0.5, 0],
+        },
+        bones: [
+          {
+            name: 'block',
+            pivot: [0, 8, 0],
+            rotation: [0, 0, 0],
+            cubes: [
+              {
+                origin: [-8, 0, -8],
+                size: [16, 16, 16],
+                uv: makeCrystalFaceUv(),
+              },
+            ],
+          },
+          {
+            name: 'core',
+            parent: 'block',
+            pivot: [0, 8, 0],
+            rotation: [22.5, 45, 0],
+            cubes: [
+              {
+                origin: [-4.5, 3.5, -4.5],
+                size: [9, 9, 9],
+                uv: makeCoreFaceUv(),
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  });
 
   // Build terrain_texture.json and item_texture.json
   const terrainTextureData = Object.create(null);

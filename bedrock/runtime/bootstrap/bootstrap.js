@@ -617,7 +617,13 @@ export class BetterEndRuntime {
                   "flavolite_layer",
                   "violecite_layer",
                   "silk_moth_nest",
-                  "hydralux"
+                  "hydralux",
+                  "eternal_portal",
+                  "end_village",
+                  "painted_mountain",
+                  "end_lake",
+                  "end_lake_rare",
+                  "megalake"
                 ].includes(f)
             );
             if (customFeatures.length > 0) {
@@ -631,6 +637,7 @@ export class BetterEndRuntime {
                 this.regionService.effectiveSeed
               );
               for (const p of placements) {
+                if (p.role === "structure_base") continue;
                 const target = dimension.getBlock({ x: p.x, y: p.y, z: p.z });
                 if (target && target.typeId === "minecraft:air") {
                   target.setType(p.blockId);
@@ -646,9 +653,69 @@ export class BetterEndRuntime {
   }
 
   /**
+   * Carves a natural enclosed water pond with End Lotus / Flamaea on top when a flat
+   * island basin is present in lake biomes (`megalake`, `megalake_grove`, `foggy_mushroomland`,
+   * `sulphur_springs`, `neon_oasis`, `waterfall_ponds`).
+   */
+  _carveBiomeWaterPond(dimension, cx, cz, region, rng) {
+    const pondRadius = region.id === "megalake" || region.id === "megalake_grove" ? 5 : 4;
+    try {
+      const centerTop = dimension.getTopmostBlock({ x: cx, z: cz }, 120);
+      if (!centerTop || centerTop.location.y < 52) return;
+      const waterY = centerTop.location.y;
+
+      // Verify all 4 cardinal rim points are at >= waterY so the pond is completely enclosed
+      const checks = [
+        [pondRadius + 1, 0],
+        [-pondRadius - 1, 0],
+        [0, pondRadius + 1],
+        [0, -pondRadius - 1]
+      ];
+      for (const [ox, oz] of checks) {
+        const rimTop = dimension.getTopmostBlock({ x: cx + ox, z: cz + oz }, 120);
+        if (!rimTop || rimTop.location.y < waterY - 1) return;
+      }
+
+      const shoreBlock = region.surface?.altTopBlock ?? region.surface?.topBlock ?? "betterend:endstone_dust";
+      for (let dx = -pondRadius; dx <= pondRadius; dx++) {
+        for (let dz = -pondRadius; dz <= pondRadius; dz++) {
+          const d2 = dx * dx + dz * dz;
+          if (d2 > (pondRadius + 1) * (pondRadius + 1)) continue;
+          const x = cx + dx;
+          const z = cz + dz;
+          if (d2 <= (pondRadius - 1) * (pondRadius - 1)) {
+            const bedBlk = dimension.getBlock({ x, y: waterY - 1, z });
+            if (bedBlk) bedBlk.setType("betterend:endstone_dust");
+            const wBlk = dimension.getBlock({ x, y: waterY, z });
+            if (wBlk) wBlk.setType("minecraft:water");
+            const aboveBlk = dimension.getBlock({ x, y: waterY + 1, z });
+            if (aboveBlk) {
+              if (rng.nextInt(9) === 0) {
+                aboveBlk.setType("betterend:end_lotus_flower");
+              } else {
+                aboveBlk.setType("minecraft:air");
+              }
+            }
+          } else {
+            const rimFloor = dimension.getBlock({ x, y: waterY - 1, z });
+            if (rimFloor && rimFloor.typeId === "minecraft:air") {
+              rimFloor.setType("minecraft:end_stone");
+            }
+            const rimBlk = dimension.getBlock({ x, y: waterY, z });
+            if (rimBlk && rimBlk.typeId !== "minecraft:water") {
+              rimBlk.setType(shoreBlock);
+            }
+          }
+        }
+      }
+    } catch {}
+  }
+
+  /**
    * Lightweight landmark-only decorator for natural End chunks:
    * - Never touches ground surface blocks (C++ surface_pass handles 100% of ground 3 layers deep).
    * - Clears stray vanilla Chorus stems in non-chorus biomes.
+   * - Carves natural water ponds in Megalake & Lake biomes.
    * - Places 1 authentic multi-block BetterEnd landmark/structure per chunk (`structures`, `trees`, `bushes`, `terrain_features`).
    */
   _decorateChunkLandmarks(dimension, chunkX, chunkZ) {
@@ -681,7 +748,26 @@ export class BetterEndRuntime {
       }
     }
 
-    // 2. Place 1 multi-block BetterEnd landmark / structure in the chunk if solid ground exists
+    const seed = MHelper.getSeed3D(this.regionService.effectiveSeed, chunkX, chunkZ, 77);
+    const rng = new JavaRandom(seed);
+
+    // 2. Carve natural water lakes/ponds in Megalake & Lake biomes
+    if (
+      [
+        "megalake",
+        "megalake_grove",
+        "foggy_mushroomland",
+        "sulphur_springs",
+        "neon_oasis",
+        "waterfall_ponds"
+      ].includes(region.id)
+    ) {
+      if (region.id === "megalake" || region.id === "megalake_grove" || rng.nextInt(2) === 0) {
+        this._carveBiomeWaterPond(dimension, centerX, centerZ, region, rng);
+      }
+    }
+
+    // 3. Place 1 multi-block BetterEnd landmark / structure in the chunk if solid ground exists
     const landmarkPool = [...(region.structures ?? []), ...(region.features ?? [])].filter((fId) => {
       if (
         [
@@ -695,6 +781,9 @@ export class BetterEndRuntime {
           "violecite_layer",
           "silk_moth_nest",
           "hydralux",
+          "eternal_portal",
+          "end_village",
+          "painted_mountain",
           "end_lake",
           "end_lake_rare",
           "megalake"
@@ -713,8 +802,6 @@ export class BetterEndRuntime {
     });
     if (landmarkPool.length === 0) return;
 
-    const seed = MHelper.getSeed3D(this.regionService.effectiveSeed, chunkX, chunkZ, 77);
-    const rng = new JavaRandom(seed);
     if (rng.nextInt(2) !== 0) return;
 
     const ax = baseX + 4 + rng.nextInt(8);

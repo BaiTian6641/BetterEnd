@@ -703,8 +703,8 @@ export const MATERIAL_PBR_PRESETS = Object.freeze({
   leaves_membrane: { category: 'leaves_membrane', mer: [0, 0, 200], mers: [0, 0, 200, 56] },
   metal: { category: 'metal', mer: [240, 0, 72] },
   emissive_plant: { category: 'emissive_plant', mer: [0, 210, 176] },
-  emissive_crystal: { category: 'emissive_crystal', mer: [0, 230, 44] },
-  transparent_crystal: { category: 'transparent_crystal', mer: [0, 0, 32] },
+  emissive_crystal: { category: 'emissive_crystal', mer: [0, 28, 16] },
+  transparent_crystal: { category: 'transparent_crystal', mer: [0, 12, 16] },
 });
 
 export function classifyMaterialPbr(textureIdOrName, { hasEmissiveMask = false, useSubsurface = false } = {}) {

@@ -131,8 +131,78 @@ export function synthesizeAnchorPlacements(anchor, worldSeedBigInt, clipBounds =
   };
 
   const category = descriptor.category;
-  if (category === "structure" || category === "structures") {
-    // Multi-block landmark / spire / giant mushroom / ice star / eternal portal motif
+  const fId = anchor.featureId;
+  if (fId === "giant_ice_star" || fId === "ice_star" || fId === "ice_star_small") {
+    // 3D multi-layered spiky Emerald Ice Star (ancient core + dense shell + 6 axial spikes + 8 diagonal rays)
+    const armLen = fId === "giant_ice_star" ? 6 : fId === "ice_star" ? 5 : 4;
+    const cy = ay + armLen + 2;
+    for (let dx = -2; dx <= 2; dx++) {
+      for (let dy = -2; dy <= 2; dy++) {
+        for (let dz = -2; dz <= 2; dz++) {
+          const manhattan = Math.abs(dx) + Math.abs(dy) + Math.abs(dz);
+          if (manhattan <= 2) {
+            pushPlacement(ax + dx, cy + dy, az + dz, "betterend:ancient_emerald_ice", "structure_core");
+          } else if (manhattan === 3) {
+            pushPlacement(ax + dx, cy + dy, az + dz, "betterend:dense_emerald_ice", "structure_canopy");
+          }
+        }
+      }
+    }
+    for (let s = -armLen; s <= armLen; s++) {
+      if (Math.abs(s) <= 1) continue;
+      const blk = Math.abs(s) === armLen ? "betterend:dense_snow" : "betterend:emerald_ice";
+      pushPlacement(ax + s, cy, az, blk, "structure_apex");
+      pushPlacement(ax, cy + s, az, blk, "structure_apex");
+      pushPlacement(ax, cy, az + s, blk, "structure_apex");
+    }
+    const diagLen = Math.max(2, armLen - 2);
+    for (const sx of [-1, 1]) {
+      for (const sy of [-1, 1]) {
+        for (const sz of [-1, 1]) {
+          for (let d = 2; d <= diagLen; d++) {
+            pushPlacement(
+              ax + sx * d,
+              cy + sy * d,
+              az + sz * d,
+              "betterend:emerald_ice",
+              "structure_apex"
+            );
+          }
+        }
+      }
+    }
+  } else if (fId === "big_aurora_crystal" || fId === "smaragdant_crystal") {
+    // Tall 3D hexagonal crystal cluster (central crystal spire + 4 staggered side crystal columns)
+    const crystalBlk =
+      fId === "big_aurora_crystal" ? "betterend:aurora_crystal" : "betterend:smaragdant_crystal";
+    const mainHeight = 6 + rng.nextInt(4);
+    for (let dy = 0; dy < mainHeight; dy++) {
+      pushPlacement(ax, ay + dy, az, crystalBlk, "formation_body");
+      if (dy < mainHeight - 2) {
+        pushPlacement(ax + 1, ay + dy, az, crystalBlk, "formation_buttress");
+        pushPlacement(ax - 1, ay + dy, az, crystalBlk, "formation_buttress");
+        pushPlacement(ax, ay + dy, az + 1, crystalBlk, "formation_buttress");
+        pushPlacement(ax, ay + dy, az - 1, crystalBlk, "formation_buttress");
+      }
+    }
+    pushPlacement(ax, ay + mainHeight, az, crystalBlk, "formation_cap");
+  } else if (fId === "umbralith_arch" || fId === "thin_umbralith_arch") {
+    // Parabolic stone arch spanning across the terrain
+    const span = fId === "umbralith_arch" ? 4 : 3;
+    const archHeight = fId === "umbralith_arch" ? 6 : 5;
+    for (let d = -span; d <= span; d++) {
+      const yOff = Math.max(0, Math.round(archHeight - (d * d * archHeight) / (span * span + 1)));
+      for (let t = 0; t <= (fId === "umbralith_arch" ? 1 : 0); t++) {
+        pushPlacement(ax + d, ay + yOff + t, az, "betterend:umbralith", "formation_body");
+      }
+      if (Math.abs(d) === span) {
+        for (let py = 0; py < yOff; py++) {
+          pushPlacement(ax + d, ay + py, az, "betterend:umbralith", "formation_buttress");
+        }
+      }
+    }
+  } else if (category === "structure" || category === "structures") {
+    // Multi-block landmark / spire / giant mushroom motif
     const r = Math.min(5, Math.max(2, Math.floor((descriptor.radius ?? 12) / 4)));
     for (let dx = -r; dx <= r; dx++) {
       for (let dz = -r; dz <= r; dz++) {
