@@ -628,20 +628,11 @@ export class BetterEndRuntime {
             );
             if (customFeatures.length > 0) {
               const featId = customFeatures[rng.nextInt(customFeatures.length)];
-              const placements = synthesizeAnchorPlacements(
-                {
-                  anchorId: `island:${x},${cy + 1},${z}`,
-                  featureId: featId,
-                  position: { x, y: cy + 1, z }
-                },
-                this.regionService.effectiveSeed
-              );
-              for (const p of placements) {
-                const target = dimension.getBlock({ x: p.x, y: p.y, z: p.z });
-                if (target && (target.typeId === "minecraft:air" || p.y <= cy + 1)) {
-                  this._applyBlockPlacement(target, p.blockId, p.props);
-                }
-              }
+              try {
+                dimension.runCommand?.(
+                  `structure load betterend:proc_${featId}_v0 ${x - 4} ${cy + 1} ${z - 4}`
+                );
+              } catch {}
             }
           }
         } catch {
@@ -775,90 +766,6 @@ export class BetterEndRuntime {
         }
       }
     }
-
-    const seed = MHelper.getSeed3D(this.regionService.effectiveSeed, chunkX, chunkZ, 77);
-    const rng = new JavaRandom(seed);
-
-    // 2. Carve natural water lakes/ponds in Megalake & Lake biomes
-    if (
-      [
-        "megalake",
-        "megalake_grove",
-        "foggy_mushroomland",
-        "sulphur_springs",
-        "neon_oasis",
-        "waterfall_ponds"
-      ].includes(region.id)
-    ) {
-      if (region.id === "megalake" || region.id === "megalake_grove" || rng.nextInt(2) === 0) {
-        this._carveBiomeWaterPond(dimension, centerX, centerZ, region, rng);
-      }
-    }
-
-    // 3. Place 1 multi-block BetterEnd landmark / structure in the chunk if solid ground exists
-    const landmarkPool = [...(region.structures ?? []), ...(region.features ?? [])].filter((fId) => {
-      if (
-        [
-          "crashed_ship",
-          "tunel_cave",
-          "cave_surface_coat",
-          "ender_ore",
-          "amber_ore",
-          "thallasium_ore",
-          "flavolite_layer",
-          "violecite_layer",
-          "silk_moth_nest",
-          "hydralux",
-          "eternal_portal",
-          "end_village",
-          "painted_mountain",
-          "end_lake",
-          "end_lake_rare",
-          "megalake"
-        ].includes(fId)
-      ) {
-        return false;
-      }
-      const desc = FEATURES_BY_ID.get(fId);
-      return (
-        desc &&
-        (desc.category === "structures" ||
-          desc.category === "trees" ||
-          desc.category === "bushes" ||
-          desc.category === "terrain_features")
-      );
-    });
-    if (landmarkPool.length === 0) return;
-
-    if (rng.nextInt(6) !== 0) return;
-
-    const ax = baseX + 4 + rng.nextInt(8);
-    const az = baseZ + 4 + rng.nextInt(8);
-    try {
-      const topBlk = dimension.getTopmostBlock({ x: ax, z: az }, 120);
-      if (!topBlk || topBlk.location.y < 48) return;
-      const topY = topBlk.location.y;
-      const featId = landmarkPool[rng.nextInt(landmarkPool.length)];
-      const placements = synthesizeAnchorPlacements(
-        {
-          anchorId: `chunk:${chunkX},${chunkZ}:${featId}`,
-          featureId: featId,
-          position: { x: ax, y: topY + 1, z: az }
-        },
-        this.regionService.effectiveSeed
-      );
-      for (const p of placements) {
-        const target = dimension.getBlock({ x: p.x, y: p.y, z: p.z });
-        if (
-          target &&
-          (target.typeId === "minecraft:air" ||
-            target.typeId === "minecraft:chorus_plant" ||
-            target.typeId === "minecraft:chorus_flower")
-        ) {
-          this._applyBlockPlacement(target, p.blockId, p.props);
-        }
-      }
-    } catch {}
   }
 
   // ============================================================================

@@ -681,7 +681,7 @@ export async function buildPacks({
       for (const track of musicDist.tracks ?? []) {
         const entryBytes = unzipped[track.member];
         if (entryBytes) {
-          const destRel = track.member.replace(/^assets\/betterend\//u, '');
+          const destRel = track.member.replace(/^assets\/betterend\/sounds\//u, 'sounds/betterend/');
           binaryAssets.set(destRel, Buffer.from(entryBytes));
         }
       }

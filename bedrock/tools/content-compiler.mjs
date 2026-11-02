@@ -725,7 +725,7 @@ function deriveBlockCustomComponents(blockEntry, partitions = [], partition = nu
   ) {
     components.add('betterend:ecology_tick');
   }
-  const propNames = (blockEntry.stateModel?.properties ?? []).map(p => p.name);
+  const propNames = Object.keys(blockEntry.runtime?.propertyDomains ?? {});
   if (propNames.includes('half') || propNames.includes('shape') || propNames.includes('part')) {
     components.add('betterend:multiblock_guard');
   }
@@ -739,6 +739,26 @@ function evaluateVariantMatch(clause, stateProps) {
     const [k, v] = part.split('=');
     if (!k) continue;
     if (String(stateProps[k.trim()]) !== String(v?.trim())) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function evaluateMultipartWhen(whenClause, stateProps) {
+  if (!whenClause || typeof whenClause !== 'object') return true;
+  if (Array.isArray(whenClause.OR)) {
+    return whenClause.OR.some(sub => evaluateMultipartWhen(sub, stateProps));
+  }
+  if (Array.isArray(whenClause.AND)) {
+    return whenClause.AND.every(sub => evaluateMultipartWhen(sub, stateProps));
+  }
+  for (const [k, v] of Object.entries(whenClause)) {
+    const actual = String(stateProps[k]);
+    const allowed = String(v)
+      .split('|')
+      .map(s => s.trim());
+    if (!allowed.includes(actual)) {
       return false;
     }
   }
@@ -792,6 +812,18 @@ function resolveStateModelAndRotation(blockstateDef, stateProps, flattenedModels
     };
   }
   if (Array.isArray(blockstateDef.multipartRules) && blockstateDef.multipartRules.length > 0) {
+    for (const r of blockstateDef.multipartRules) {
+      if (r.when && Object.keys(r.when).length > 0 && evaluateMultipartWhen(r.when, stateProps)) {
+        const flatModel = r.flattened ?? flattenedModels.get(r.modelId) ?? null;
+        if (isNonEmptyModel(flatModel)) {
+          return {
+            flatModel,
+            x: Number(r.x ?? 0),
+            y: Number(r.y ?? 0),
+          };
+        }
+      }
+    }
     const first =
       blockstateDef.multipartRules.find(r =>
         isNonEmptyModel(r.flattened ?? flattenedModels.get(r.modelId)),
@@ -816,6 +848,14 @@ function buildBoneVisibilityForMultipart(blockEntry, partition) {
       return `q.block_state('betterend:${propName}') == ${formatMolangValue(coerced)}`;
     }
     if (propName in fixed) {
+      const firstKept = partition.keptPropNames[0];
+      if (firstKept) {
+        const propDef = props.find(p => p.name === firstKept);
+        const firstVal = formatMolangValue(coerceTraitValue(propDef?.values?.[0] ?? 'true', propDef));
+        return String(fixed[propName]) === String(expectedVal)
+          ? `q.block_state('betterend:${firstKept}') == ${firstVal} || q.block_state('betterend:${firstKept}') != ${firstVal}`
+          : `q.block_state('betterend:${firstKept}') == ${firstVal} && q.block_state('betterend:${firstKept}') != ${firstVal}`;
+      }
       return String(fixed[propName]) === String(expectedVal);
     }
     return true;
@@ -838,7 +878,7 @@ function buildBoneVisibilityForMultipart(blockEntry, partition) {
     return vis;
   }
   // Walls (up, north, south, east, west)
-  if (propNames.has('up') && propNames.has('north') && propNames.has('east')) {
+  if (blockEntry.id.endsWith('_wall') && propNames.has('up') && propNames.has('north') && propNames.has('east')) {
     const wallSideExpr = side => {
       if (kept.has(side)) {
         return `q.block_state('betterend:${side}') != 'none'`;
@@ -2196,7 +2236,7 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
     if (!features.has(placeRel)) {
       const [ox, oy, oz] = meta.originOffset ?? [0, 0, 0];
       const groundIterations = groundCheck
-        ? 'query.heightmap(variable.worldx, variable.worldz) >= 48 && query.heightmap(variable.worldx + 2, variable.worldz) >= 48 && query.heightmap(variable.worldx - 2, variable.worldz) >= 48 && query.heightmap(variable.worldx, variable.worldz + 2) >= 48 && query.heightmap(variable.worldx, variable.worldz - 2) >= 48 && math.abs(query.heightmap(variable.worldx + 2, variable.worldz) - query.heightmap(variable.worldx - 2, variable.worldz)) <= 5 ? 1 : 0'
+        ? 'query.heightmap(variable.worldx, variable.worldz) >= 50 && query.heightmap(variable.worldx, variable.worldz) <= 76 && query.heightmap(variable.worldx + 3, variable.worldz) >= 50 && query.heightmap(variable.worldx - 3, variable.worldz) >= 50 && query.heightmap(variable.worldx, variable.worldz + 3) >= 50 && query.heightmap(variable.worldx, variable.worldz - 3) >= 50 && math.abs(query.heightmap(variable.worldx + 3, variable.worldz) - query.heightmap(variable.worldx - 3, variable.worldz)) <= 4 && math.abs(query.heightmap(variable.worldx, variable.worldz + 3) - query.heightmap(variable.worldx, variable.worldz - 3)) <= 4 ? 1 : 0'
         : 1;
       features.set(placeRel, {
         format_version: BEDROCK_FEATURE_FORMAT_VERSION,
@@ -2321,6 +2361,7 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
   };
 
   const BIOME_LANDMARK_PROCEDURAL = {
+    foggy_mushroomland: ['giant_mossy_glowshroom'],
     blossoming_spires: ['spire', 'floating_spire'],
     umbra_valley: ['umbralith_arch', 'thin_umbralith_arch'],
     dragon_graveyards: ['obsidian_pillar_basement', 'fallen_pillar', 'obsidian_boulder'],
@@ -2495,20 +2536,7 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
     // 4. Native 1:1 BetterEnd SDF/Spline Tree / Giant Mushroom Scatter in after_surface_pass
     if (regionTrees.length > 0) {
       let targetTreeFeat = regionTrees[0];
-      if (region.id === 'foggy_mushroomland') {
-        const mixId = 'betterend:biome_foggy_mushroomland_tree_mix_feature';
-        features.set('features/biome_foggy_mushroomland_tree_mix_feature.json', {
-          format_version: BEDROCK_FEATURE_FORMAT_VERSION,
-          'minecraft:weighted_random_feature': {
-            description: { identifier: mixId },
-            features: [
-              [regionTrees[0], 80],
-              [giantGlowshroomFeat, 20],
-            ],
-          },
-        });
-        targetTreeFeat = mixId;
-      } else if (regionTrees.length > 1) {
+      if (regionTrees.length > 1) {
         const mixId = `betterend:biome_${region.id}_tree_mix_feature`;
         features.set(`features/biome_${region.id}_tree_mix_feature.json`, {
           format_version: BEDROCK_FEATURE_FORMAT_VERSION,
@@ -2534,10 +2562,10 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
             ],
           },
           distribution: {
-            iterations: `${cellCond} && query.heightmap(variable.originx + 8, variable.originz + 8) >= 48 ? 1 : 0`,
-            x: { distribution: 'uniform', extent: [3, 13] },
+            iterations: `${cellCond} && query.heightmap(variable.originx + 8, variable.originz + 8) >= 50 && math.mod(math.abs(math.floor(variable.originx / 16) * 37 + math.floor(variable.originz / 16) * 73), 3) == 0 ? 1 : 0`,
+            x: { distribution: 'uniform', extent: [5, 11] },
             y: 'query.heightmap(variable.worldx, variable.worldz)',
-            z: { distribution: 'uniform', extent: [3, 13] },
+            z: { distribution: 'uniform', extent: [5, 11] },
           },
         },
       });
@@ -2573,10 +2601,10 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
             ],
           },
           distribution: {
-            iterations: `${cellCond} && query.heightmap(variable.originx + 8, variable.originz + 8) >= 48 ? 2 : 0`,
-            x: { distribution: 'uniform', extent: [2, 14] },
+            iterations: `${cellCond} && query.heightmap(variable.originx + 8, variable.originz + 8) >= 50 && math.mod(math.abs(math.floor(variable.originx / 16) * 29 + math.floor(variable.originz / 16) * 61), 2) == 0 ? 1 : 0`,
+            x: { distribution: 'uniform', extent: [4, 12] },
             y: 'query.heightmap(variable.worldx, variable.worldz)',
-            z: { distribution: 'uniform', extent: [2, 14] },
+            z: { distribution: 'uniform', extent: [4, 12] },
           },
         },
       });
@@ -2601,6 +2629,7 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
             : region.id === 'waterfall_ponds'
               ? 'betterend:pond_with_waterfall_feature'
               : 'betterend:water_pond_patch_feature';
+      const lakeStride = region.id === 'megalake' || region.id === 'megalake_grove' ? 4 : 6;
       featureRules.set(`feature_rules/biome_${region.id}_pond_rule.json`, {
         format_version: BEDROCK_FEATURE_FORMAT_VERSION,
         'minecraft:feature_rules': {
@@ -2615,9 +2644,9 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
             ],
           },
           distribution: {
-            iterations: `${cellCond} && query.heightmap(variable.originx + 8, variable.originz + 8) >= 48 ? 1 : 0`,
+            iterations: `${cellCond} && query.heightmap(variable.originx + 8, variable.originz + 8) >= 50 && math.mod(math.abs(math.floor(variable.originx / 16) * 53 + math.floor(variable.originz / 16) * 97), ${lakeStride}) == 0 ? 1 : 0`,
             x: 8,
-            y: 'query.heightmap(variable.worldx, variable.worldz)',
+            y: 'query.heightmap(variable.worldx, variable.worldz) - 1',
             z: 8,
           },
         },
@@ -2640,7 +2669,7 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
             ],
           },
           distribution: {
-            iterations: `${cellCond} && math.mod(math.abs(math.floor(variable.originx / 16) * 31 + math.floor(variable.originz / 16) * 17), 2) == 0 ? 1 : 0`,
+            iterations: `${cellCond} && math.mod(math.abs(math.floor(variable.originx / 16) * 31 + math.floor(variable.originz / 16) * 17), 5) == 0 ? 1 : 0`,
             x: { distribution: 'uniform', extent: [4, 12] },
             y: { distribution: 'uniform', extent: [58, 94] },
             z: { distribution: 'uniform', extent: [4, 12] },
@@ -2665,10 +2694,10 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
             ],
           },
           distribution: {
-            iterations: `${cellCond} && query.heightmap(variable.originx + 8, variable.originz + 8) >= 48 ? 1 : 0`,
-            x: { distribution: 'uniform', extent: [4, 12] },
+            iterations: `${cellCond} && query.heightmap(variable.originx + 8, variable.originz + 8) >= 50 && math.mod(math.abs(math.floor(variable.originx / 16) * 41 + math.floor(variable.originz / 16) * 79), 5) == 0 ? 1 : 0`,
+            x: { distribution: 'uniform', extent: [5, 11] },
             y: 'query.heightmap(variable.worldx, variable.worldz)',
-            z: { distribution: 'uniform', extent: [4, 12] },
+            z: { distribution: 'uniform', extent: [5, 11] },
           },
         },
       });
@@ -2703,7 +2732,7 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
             ],
           },
           distribution: {
-            iterations: `${cellCond} && query.heightmap(variable.originx + 8, variable.originz + 8) >= 48 && math.mod(math.abs(math.floor(variable.originx / 16) * 43 + math.floor(variable.originz / 16) * 89), 6) == 0 ? 1 : 0`,
+            iterations: `${cellCond} && query.heightmap(variable.originx + 8, variable.originz + 8) >= 50 && math.mod(math.abs(math.floor(variable.originx / 16) * 43 + math.floor(variable.originz / 16) * 89), 12) == 0 ? 1 : 0`,
             x: 8,
             y: 'query.heightmap(variable.worldx, variable.worldz)',
             z: 8,
@@ -2712,7 +2741,7 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
       });
     }
 
-    // 10. Massive Terrain Landmarks (Spires, Floating Spires, Arches, Obsidian Pillars, Floating Islands)
+    // 10. Massive Terrain Landmarks (Giant Glowshroom, Spires, Floating Spires, Arches, Obsidian Pillars, Floating Islands)
     const landmarks = BIOME_LANDMARK_PROCEDURAL[region.id] ?? [];
     if (landmarks.length > 0) {
       const landmarkChoices = landmarks.map(procId => {
@@ -2742,7 +2771,7 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
             ],
           },
           distribution: {
-            iterations: `${cellCond} && math.mod(math.abs(math.floor(variable.originx / 16) * 59 + math.floor(variable.originz / 16) * 97), 4) == 0 ? 1 : 0`,
+            iterations: `${cellCond} && math.mod(math.abs(math.floor(variable.originx / 16) * 59 + math.floor(variable.originz / 16) * 97), 9) == 0 ? 1 : 0`,
             x: 8,
             y: isAerialBiome
               ? { distribution: 'uniform', extent: [58, 86] }

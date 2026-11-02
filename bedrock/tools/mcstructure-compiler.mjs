@@ -13,6 +13,7 @@ const BEDROCK_BLOCK_PALETTE_VERSION = 18168865;
 
 const VANILLA_JAVA_TO_BEDROCK_BLOCK_MAP = Object.freeze({
   'minecraft:end_stone_bricks': 'minecraft:end_bricks',
+  'minecraft:end_stone_brick_stairs': 'minecraft:end_brick_stairs',
   'minecraft:shulker_box': 'minecraft:undyed_shulker_box',
   'minecraft:water_cauldron': 'minecraft:cauldron',
   'minecraft:potted_blue_orchid': 'minecraft:flower_pot',
@@ -434,7 +435,7 @@ export function convertVoxelsToMcStructure(voxels, blocksCompiler, { maxExtent =
     const y = Math.round(v.y);
     const z = Math.round(v.z);
     if (Math.abs(x) > halfMax || Math.abs(z) > halfMax || Math.abs(y) > maxExtent) continue;
-    filtered.push({ x, y, z, blockId: v.blockId, props: v.props ?? {} });
+    filtered.push({ x, y, z, blockId: v.blockId, props: v.states ?? v.props ?? {} });
     if (x < minX) minX = x;
     if (y < minY) minY = y;
     if (z < minZ) minZ = z;

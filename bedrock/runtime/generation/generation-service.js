@@ -38,7 +38,6 @@ import {
 } from "../regions/region-catalogue.js";
 import { JavaRandom, MHelper } from "../regions/voronoi-hex.js";
 import { normalizeDimensionId } from "../persistence/store.js";
-import { generateBetterEndFeatureVoxels } from "./betterend-sdf.js";
 
 export const TICKING_AREA_PREFIX = "betterend:prep_";
 
@@ -128,11 +127,26 @@ export function synthesizeAnchorPlacements(anchor, worldSeedBigInt, clipBounds =
     });
   };
 
-  const fId = anchor.featureId;
-  const voxels = generateBetterEndFeatureVoxels(fId, seed, 0, 0, 0, descriptor);
-  for (let i = 0; i < voxels.length; i++) {
-    const v = voxels[i];
-    pushPlacement(ax + v.x, ay + v.y, az + v.z, v.blockId, "sdf_voxel", v.props ?? {});
+  const palette =
+    Array.isArray(descriptor.palette) && descriptor.palette.length > 0
+      ? descriptor.palette
+      : ["betterend:end_moss"];
+  const primaryBlock = palette[0];
+  const secondaryBlock = palette[1] ?? primaryBlock;
+  const rng = new JavaRandom(seed);
+
+  pushPlacement(ax, ay, az, primaryBlock, "anchor_core");
+  const count = 2 + rng.nextInt(4);
+  for (let i = 1; i <= count; i++) {
+    const dx = rng.nextInt(3) - 1;
+    const dz = rng.nextInt(3) - 1;
+    pushPlacement(
+      ax + dx,
+      ay + i,
+      az + dz,
+      i === count ? secondaryBlock : primaryBlock,
+      "anchor_column"
+    );
   }
 
   return placements;

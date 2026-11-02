@@ -490,8 +490,12 @@ export function convertModelToBedrockGeometry(flattenedModel, {
       { name: 'east', pivot: [0, 8, 0], cubes: [{ origin: [4, 0, -3], size: [4, 14, 6], uv: makeArmUv() }] },
       { name: 'west', pivot: [0, 8, 0], cubes: [{ origin: [-8, 0, -3], size: [4, 14, 6], uv: makeArmUv() }] },
     );
-  } else if (cleanSuffix.endsWith('_fence_post') || cleanSuffix.endsWith('_bars_post')) {
-    const matInst = cleanSuffix.endsWith('_bars_post') ? 'bars' : 'texture';
+  } else if (
+    cleanSuffix.endsWith('_fence_post') ||
+    cleanSuffix.endsWith('_bars_post') ||
+    cleanSuffix.endsWith('_bars_post_ends')
+  ) {
+    const matInst = cleanSuffix.includes('_bars_post') ? 'bars' : 'texture';
     const makeRailUv = () => ({
       down: { uv: [7, 0], uv_size: [2, 6], material_instance: matInst },
       up: { uv: [7, 0], uv_size: [2, 6], material_instance: matInst },
@@ -505,6 +509,24 @@ export function convertModelToBedrockGeometry(flattenedModel, {
       { name: 'south', pivot: [0, 8, 0], cubes: [{ origin: [-1, 6, 2], size: [2, 9, 6], uv: makeRailUv() }] },
       { name: 'east', pivot: [0, 8, 0], cubes: [{ origin: [2, 6, -1], size: [6, 9, 2], uv: makeRailUv() }] },
       { name: 'west', pivot: [0, 8, 0], cubes: [{ origin: [-8, 6, -1], size: [6, 9, 2], uv: makeRailUv() }] },
+    );
+  } else if (cleanSuffix === 'crystal_moss_cover') {
+    const matInst = 'texture';
+    const makePlaneUv = () => ({
+      down: { uv: [0, 0], uv_size: [16, 16], material_instance: matInst },
+      up: { uv: [0, 0], uv_size: [16, 16], material_instance: matInst },
+      north: { uv: [0, 0], uv_size: [16, 16], material_instance: matInst },
+      south: { uv: [0, 0], uv_size: [16, 16], material_instance: matInst },
+      west: { uv: [0, 0], uv_size: [16, 16], material_instance: matInst },
+      east: { uv: [0, 0], uv_size: [16, 16], material_instance: matInst },
+    });
+    childBones.push(
+      { name: 'north', pivot: [0, 8, 0], cubes: [{ origin: [-8, 0, -7.9], size: [16, 16, 0.2], uv: makePlaneUv() }] },
+      { name: 'south', pivot: [0, 8, 0], cubes: [{ origin: [-8, 0, 7.7], size: [16, 16, 0.2], uv: makePlaneUv() }] },
+      { name: 'east', pivot: [0, 8, 0], cubes: [{ origin: [7.7, 0, -8], size: [0.2, 16, 16], uv: makePlaneUv() }] },
+      { name: 'west', pivot: [0, 8, 0], cubes: [{ origin: [-7.9, 0, -8], size: [0.2, 16, 16], uv: makePlaneUv() }] },
+      { name: 'up', pivot: [0, 8, 0], cubes: [{ origin: [-8, 15.7, -8], size: [16, 0.2, 16], uv: makePlaneUv() }] },
+      { name: 'down', pivot: [0, 8, 0], cubes: [{ origin: [-8, 0.1, -8], size: [16, 0.2, 16], uv: makePlaneUv() }] },
     );
   }
 

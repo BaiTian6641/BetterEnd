@@ -647,12 +647,14 @@ export class VoxelGrid {
     const bx = Math.trunc(x);
     const by = Math.trunc(y);
     const bz = Math.trunc(z);
+    const clonedStates = { ...states };
     this.voxels.set(`${bx},${by},${bz}`, {
       x: bx,
       y: by,
       z: bz,
       blockId,
-      states: { ...states },
+      states: clonedStates,
+      props: clonedStates,
       role
     });
   }
@@ -716,7 +718,7 @@ export function generateMossyGlowshroom(grid, ox, oy, oz, rng, isGiant = false) 
     states: { axis: "y" }
   });
   const lastPos = spline[spline.length - 1];
-  const scale = isGiant ? MHelper.randRange(1.4, 1.8, rng) : MHelper.randRange(0.65, 0.88, rng);
+  const scale = isGiant ? MHelper.randRange(1.25, 1.45, rng) : MHelper.randRange(0.65, 0.85, rng);
 
   // Cap & Roots SDF Graph (exact MossyGlowshroomFeature.java)
   const cone1 = new SDFCappedCone(1.5, 2.5, 2.5, "betterend:mossy_glowshroom_cap", {
@@ -2482,9 +2484,12 @@ export function generateWaterLakeBasin(grid, ox, oy, oz, rng, radiusMin = 6, rad
         for (let wy = -depth + 1; wy <= 0; wy++) {
           grid.set(ox + dx, oy + wy, oz + dz, "minecraft:water", {}, "structure_core");
         }
-        if (d <= r - 2.5 && rng.nextInt(14) === 0) {
+        grid.set(ox + dx, oy + 1, oz + dz, "minecraft:air", {}, "structure_apex");
+        grid.set(ox + dx, oy + 2, oz + dz, "minecraft:air", {}, "structure_apex");
+        grid.set(ox + dx, oy + 3, oz + dz, "minecraft:air", {}, "structure_apex");
+        if (d <= r - 2.5 && rng.nextInt(16) === 0) {
           grid.set(ox + dx, oy + 1, oz + dz, "betterend:end_lotus_flower", {}, "structure_apex");
-        } else if (d <= r - 2.0 && rng.nextInt(18) === 0) {
+        } else if (d <= r - 2.0 && rng.nextInt(20) === 0) {
           grid.set(ox + dx, oy + 1, oz + dz, "betterend:end_lily", { shape: "top" }, "structure_apex");
         }
       } else if (d <= r) {
@@ -2493,10 +2498,12 @@ export function generateWaterLakeBasin(grid, ox, oy, oz, rng, radiusMin = 6, rad
           ox + dx,
           oy,
           oz + dz,
-          rng.nextBoolean() ? "betterend:end_moss" : "betterend:endstone_dust",
+          rng.nextFloat() < 0.08 ? "betterend:endstone_dust" : "betterend:end_moss",
           {},
           "structure_canopy"
         );
+        grid.set(ox + dx, oy + 1, oz + dz, "minecraft:air", {}, "structure_apex");
+        grid.set(ox + dx, oy + 2, oz + dz, "minecraft:air", {}, "structure_apex");
       }
     }
   }
@@ -2629,10 +2636,10 @@ export function generateEndBridgeSegment(grid, ox, oy, oz, rng) {
       const roll = rng.nextFloat();
       const brick =
         roll < 0.75
-          ? "betterend:end_stone_bricks"
+          ? "minecraft:end_bricks"
           : roll < 0.9
-            ? "betterend:cracked_end_stone_bricks"
-            : "betterend:weathered_end_stone_bricks";
+            ? "betterend:end_stone_brick_cracked"
+            : "betterend:end_stone_brick_weathered";
       grid.set(ox + s, oy + rise, oz + w, brick, {}, "structure_core");
       if (Math.abs(w) === halfW && rng.nextFloat() < 0.8) {
         grid.set(ox + s, oy + rise + 1, oz + w, "betterend:end_stone_brick_wall", {}, "structure_canopy");
