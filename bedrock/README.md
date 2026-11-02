@@ -61,7 +61,7 @@ The [native inventory probe](probes/inventory/README.md) additionally exercises 
 
 - New implementation, tooling, dependencies, documentation and retained evidence stay under this directory. The upstream Java tree and existing root changes are left untouched.
 - `.work/` contains ignored downloaded engines, reference distributions, disposable worlds and temporary fixtures. `dist/` contains reproducible build output. Neither is committed.
-- `.gitattributes` keeps generated text reproducible and retained evidence byte-exact across checkouts.
+- `.gitattributes` keeps generated text and Java/Gradle reference sources LF-stable, while retained evidence remains byte-exact across checkouts. The [actual Git filter smoke](evidence/source/reference-eol-smoke.json) checks both Windows-style and LF configurations.
 - [Source review](docs/source-review.md) records independently reviewed defects and corrections.
 - [Initial specification](docs/reference/BetterEnd_Bedrock_26.40_Implementation_Plan.md) preserves the full required content/platform scope.
 - The two missing music files have been located, hash-verified and decoded from the official distribution; `upstream/music-distribution.json` distinguishes that evidence from pending Bedrock playback/integration and rights review.

@@ -1,0 +1,101 @@
+{
+  "scope": "Actual Git working-tree filter output for committed reference sources, under Windows-style and LF configuration",
+  "results": [
+    {
+      "command": [
+        "git",
+        "-c",
+        "core.autocrlf=true",
+        "-c",
+        "core.eol=crlf",
+        "cat-file",
+        "--filters",
+        "HEAD:bedrock/java-exporter/src/main/java/dev/baitian/betterend/reference/ReferenceExporter.java"
+      ],
+      "exitCode": 0,
+      "sha256": "34d517061e7356868e3d405e3c441ddf4801f1de01ff5c55bbb9fb0e80f03db1",
+      "matchesWorkingSourceBytes": true,
+      "crlfLineCount": 0
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "core.autocrlf=false",
+        "-c",
+        "core.eol=lf",
+        "cat-file",
+        "--filters",
+        "HEAD:bedrock/java-exporter/src/main/java/dev/baitian/betterend/reference/ReferenceExporter.java"
+      ],
+      "exitCode": 0,
+      "sha256": "34d517061e7356868e3d405e3c441ddf4801f1de01ff5c55bbb9fb0e80f03db1",
+      "matchesWorkingSourceBytes": true,
+      "crlfLineCount": 0
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "core.autocrlf=true",
+        "-c",
+        "core.eol=crlf",
+        "cat-file",
+        "--filters",
+        "HEAD:bedrock/java-exporter/src/main/java/dev/baitian/betterend/reference/ServerPropertiesGuard.java"
+      ],
+      "exitCode": 0,
+      "sha256": "f785681fae4253f7cd8266406d489e09d0e5b3294f0c7212b02c93d2019978cb",
+      "matchesWorkingSourceBytes": true,
+      "crlfLineCount": 0
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "core.autocrlf=false",
+        "-c",
+        "core.eol=lf",
+        "cat-file",
+        "--filters",
+        "HEAD:bedrock/java-exporter/src/main/java/dev/baitian/betterend/reference/ServerPropertiesGuard.java"
+      ],
+      "exitCode": 0,
+      "sha256": "f785681fae4253f7cd8266406d489e09d0e5b3294f0c7212b02c93d2019978cb",
+      "matchesWorkingSourceBytes": true,
+      "crlfLineCount": 0
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "core.autocrlf=true",
+        "-c",
+        "core.eol=crlf",
+        "cat-file",
+        "--filters",
+        "HEAD:bedrock/tools/java-reference.init.gradle"
+      ],
+      "exitCode": 0,
+      "sha256": "c471be026a2d331b78d494c1ff5b21352e8aea0971b9c71f60a2ea2cb56d8ca8",
+      "matchesWorkingSourceBytes": true,
+      "crlfLineCount": 0
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "core.autocrlf=false",
+        "-c",
+        "core.eol=lf",
+        "cat-file",
+        "--filters",
+        "HEAD:bedrock/tools/java-reference.init.gradle"
+      ],
+      "exitCode": 0,
+      "sha256": "c471be026a2d331b78d494c1ff5b21352e8aea0971b9c71f60a2ea2cb56d8ca8",
+      "matchesWorkingSourceBytes": true,
+      "crlfLineCount": 0
+    }
+  ]
+}
