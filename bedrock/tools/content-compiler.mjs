@@ -425,8 +425,6 @@ function buildMaterialInstances(blockEntry, flatModel, stateProps = {}) {
   const shortName = blockEntry.id.split(':')[1];
   const renderMethod = classifyRenderMethod(blockEntry, flatModel);
   const tintOverride = resolveTintTextureOverride(shortName, stateProps);
-  const ambientOcclusion = flatModel?.ambientocclusion !== false && renderMethod === 'opaque';
-  const faceDimming = (blockEntry.stateSnapshot?.luminance ?? 0) < 15;
 
   const textures = flatModel?.textures ?? {};
   const primaryTex =
@@ -447,51 +445,52 @@ function buildMaterialInstances(blockEntry, flatModel, stateProps = {}) {
     '*': {
       texture: primaryTex,
       render_method: renderMethod,
-      face_dimming: faceDimming,
-      ambient_occlusion: ambientOcclusion,
     },
   };
 
-  if (!tintOverride && flatModel?.geometryKind === 'unit_cube') {
-    const topTex = textures.top ?? textures.end ?? textures.up;
-    const bottomTex = textures.bottom ?? textures.end ?? textures.down;
-    const sideTex = textures.side;
-    const frontTex = textures.front ?? textures.north;
-    if (topTex) {
-      instances.up = {
-        texture: extractTextureShortName(topTex, shortName),
-        render_method: renderMethod,
-        face_dimming: faceDimming,
-        ambient_occlusion: ambientOcclusion,
-      };
+  if (!tintOverride) {
+    for (const [slotName, rawTex] of Object.entries(textures)) {
+      if (typeof rawTex === 'string' && !rawTex.startsWith('#')) {
+        instances[slotName] = {
+          texture: extractTextureShortName(rawTex, shortName),
+          render_method: renderMethod,
+        };
+      }
     }
-    if (bottomTex) {
-      instances.down = {
-        texture: extractTextureShortName(bottomTex, shortName),
-        render_method: renderMethod,
-        face_dimming: faceDimming,
-        ambient_occlusion: ambientOcclusion,
-      };
-    }
-    if (sideTex) {
-      const sideInstance = {
-        texture: extractTextureShortName(sideTex, shortName),
-        render_method: renderMethod,
-        face_dimming: faceDimming,
-        ambient_occlusion: ambientOcclusion,
-      };
-      instances.north = sideInstance;
-      instances.south = sideInstance;
-      instances.east = sideInstance;
-      instances.west = sideInstance;
-    }
-    if (frontTex) {
-      instances.north = {
-        texture: extractTextureShortName(frontTex, shortName),
-        render_method: renderMethod,
-        face_dimming: faceDimming,
-        ambient_occlusion: ambientOcclusion,
-      };
+
+    if (flatModel?.geometryKind === 'unit_cube') {
+      const topTex = textures.top ?? textures.end ?? textures.up;
+      const bottomTex = textures.bottom ?? textures.end ?? textures.down;
+      const sideTex = textures.side;
+      const frontTex = textures.front ?? textures.north;
+      if (topTex) {
+        instances.up = {
+          texture: extractTextureShortName(topTex, shortName),
+          render_method: renderMethod,
+        };
+      }
+      if (bottomTex) {
+        instances.down = {
+          texture: extractTextureShortName(bottomTex, shortName),
+          render_method: renderMethod,
+        };
+      }
+      if (sideTex) {
+        const sideInstance = {
+          texture: extractTextureShortName(sideTex, shortName),
+          render_method: renderMethod,
+        };
+        instances.north = sideInstance;
+        instances.south = sideInstance;
+        instances.east = sideInstance;
+        instances.west = sideInstance;
+      }
+      if (frontTex) {
+        instances.north = {
+          texture: extractTextureShortName(frontTex, shortName),
+          render_method: renderMethod,
+        };
+      }
     }
   }
 
@@ -616,6 +615,13 @@ function buildBoneVisibilityForMultipart(blockEntry, partition) {
     }
     return true;
   };
+  const orExpr = (a, b) => {
+    if (a === true || b === true) return true;
+    if (a === false && b === false) return false;
+    if (a === false) return b;
+    if (b === false) return a;
+    return `${a} || ${b}`;
+  };
 
   const propNames = new Set(props.map(p => p.name));
   // Chiseled bookshelf 6 slots
@@ -628,20 +634,21 @@ function buildBoneVisibilityForMultipart(blockEntry, partition) {
   }
   // Walls (up, north, south, east, west)
   if (propNames.has('up') && propNames.has('north') && propNames.has('east')) {
+    const wallSideExpr = side => {
+      if (kept.has(side)) {
+        return `q.block_state('betterend:${side}') != 'none'`;
+      }
+      const val = String(fixed[side] ?? 'none');
+      return val !== 'none'
+        ? "q.block_state('betterend:up') == true || q.block_state('betterend:up') == false"
+        : "q.block_state('betterend:up') == true && q.block_state('betterend:up') == false";
+    };
     return {
       post: exprFor('up', 'true'),
-      north: exprFor('north', 'low') === true || exprFor('north', 'tall') === true
-        ? true
-        : `${exprFor('north', 'low')} || ${exprFor('north', 'tall')}`,
-      south: exprFor('south', 'low') === true || exprFor('south', 'tall') === true
-        ? true
-        : `${exprFor('south', 'low')} || ${exprFor('south', 'tall')}`,
-      east: exprFor('east', 'low') === true || exprFor('east', 'tall') === true
-        ? true
-        : `${exprFor('east', 'low')} || ${exprFor('east', 'tall')}`,
-      west: exprFor('west', 'low') === true || exprFor('west', 'tall') === true
-        ? true
-        : `${exprFor('west', 'low')} || ${exprFor('west', 'tall')}`,
+      north: wallSideExpr('north'),
+      south: wallSideExpr('south'),
+      east: wallSideExpr('east'),
+      west: wallSideExpr('west'),
     };
   }
   // Fences / bars / panes / chorus plant (north, south, east, west)
@@ -795,11 +802,6 @@ export function compileBlocks(registrations, modelAssets) {
         baseComponents['minecraft:friction'] = clamp(1.0 - friction + 0.4, 0.0, 0.9);
       }
 
-      const customComponents = deriveBlockCustomComponents(blockEntry);
-      if (customComponents.length > 0) {
-        baseComponents['minecraft:custom_components'] = customComponents;
-      }
-
       const permutations = [];
       for (const st of partition.states) {
         const bedrockStates = Object.create(null);
@@ -869,6 +871,10 @@ export function compileBlocks(registrations, modelAssets) {
 
       const description = {
         identifier: partition.bedrockBlockId,
+        menu_category:
+          partition.partitionIndex === 0
+            ? { category: 'construction' }
+            : { category: 'none', is_hidden_in_commands: true },
       };
       if (Object.keys(partition.traitDefs).length > 0) {
         description.states = partition.traitDefs;
@@ -937,6 +943,7 @@ function inferEnchantSlot(itemEntry) {
 
 export function compileItems(registrations) {
   const itemJsonMap = new Map();
+  const standaloneItemJsonMap = new Map();
   const blockIds = new Set((registrations.blocks ?? []).map(b => b.id));
 
   for (const itemEntry of registrations.items ?? []) {
@@ -963,9 +970,13 @@ export function compileItems(registrations) {
       },
     };
 
+    if (shortName === 'enchanted_membrane' || shortName === 'enchanted_petal') {
+      components['minecraft:glint'] = true;
+    }
+
     if (maxDamage && maxDamage > 0) {
       components['minecraft:durability'] = {
-        max_damage: maxDamage,
+        max_durability: maxDamage,
       };
     }
 
@@ -983,6 +994,8 @@ export function compileItems(registrations) {
       components['minecraft:hand_equipped'] = true;
     }
 
+    const itemTags = new Set();
+
     // Wearable / Armor / Elytra
     const equip = rc['minecraft:equippable'];
     if (equip && EQUIP_SLOT_MAP[equip.slot]) {
@@ -990,16 +1003,15 @@ export function compileItems(registrations) {
         slot: EQUIP_SLOT_MAP[equip.slot],
         protection: armorMod ? Math.max(0, Math.round(Number(armorMod.amount))) : 0,
       };
-    }
-
-    if (rc['minecraft:glider'] !== undefined) {
-      components['minecraft:glider'] = {};
+      itemTags.add('minecraft:is_armor');
+      itemTags.add('minecraft:trimmable_armors');
     }
 
     // Digger / Tool
     const tool = rc['minecraft:tool'];
     if (tool && Array.isArray(tool.rules)) {
       components['minecraft:hand_equipped'] = true;
+      itemTags.add('minecraft:is_tool');
       const destroySpeeds = [];
       for (const rule of tool.rules) {
         if (!rule.speed) continue;
@@ -1029,6 +1041,29 @@ export function compileItems(registrations) {
       components['minecraft:digger'] = {
         use_efficiency: true,
         destroy_speeds: destroySpeeds,
+      };
+    }
+
+    if (
+      shortName.endsWith('_sword') ||
+      shortName.endsWith('_axe') ||
+      shortName.endsWith('_pickaxe') ||
+      shortName.endsWith('_shovel') ||
+      shortName.endsWith('_hoe') ||
+      shortName.endsWith('_hammer') ||
+      shortName.endsWith('_spear')
+    ) {
+      itemTags.add('minecraft:is_tool');
+    }
+    if (shortName.endsWith('_ingot') || shortName.endsWith('_forged_plate')) {
+      itemTags.add('minecraft:transform_materials');
+    }
+    if (shortName.includes('upgrade_smithing_template') || shortName.endsWith('_handle')) {
+      itemTags.add('minecraft:transform_templates');
+    }
+    if (itemTags.size > 0) {
+      components['minecraft:tags'] = {
+        tags: [...itemTags],
       };
     }
 
@@ -1099,22 +1134,12 @@ export function compileItems(registrations) {
         entity: `betterend:${entityName}`,
       };
     } else if (shortName.endsWith('_boat') || shortName.endsWith('_raft')) {
+      components['minecraft:liquid_clipped'] = true;
       components['minecraft:entity_placer'] = {
         entity: itemEntry.id,
         dispense_on: ['minecraft:water', 'minecraft:flowing_water'],
         use_on: ['minecraft:water', 'minecraft:flowing_water'],
       };
-    }
-
-    // Custom component hooks
-    const customComponents = [];
-    if (shortName.endsWith('_hammer')) customComponents.push('betterend:hammer_mine');
-    if (shortName.endsWith('_spear')) customComponents.push('betterend:spear_combat');
-    if (consumable?.on_consume_effects?.length > 0 || consumable?.onConsumeEffects?.length > 0) {
-      customComponents.push('betterend:food_effects');
-    }
-    if (customComponents.length > 0) {
-      components['minecraft:custom_components'] = customComponents;
     }
 
     const itemJson = {
@@ -1131,11 +1156,24 @@ export function compileItems(registrations) {
     };
 
     itemJsonMap.set(`items/${shortName}.item.json`, itemJson);
+    if (!blockIds.has(itemEntry.id)) {
+      standaloneItemJsonMap.set(`items/${shortName}.item.json`, itemJson);
+    }
   }
 
   return {
     itemJsonMap,
+    standaloneItemJsonMap,
   };
+}
+
+const BEDROCK_ITEM_ALIASES = Object.freeze({
+  'minecraft:end_stone_bricks': 'minecraft:end_bricks',
+});
+
+function mapBedrockItemId(rawItemId) {
+  if (!rawItemId || typeof rawItemId !== 'string') return 'minecraft:air';
+  return BEDROCK_ITEM_ALIASES[rawItemId] ?? rawItemId;
 }
 
 function portToBedrockIngredient(port) {
@@ -1143,14 +1181,15 @@ function portToBedrockIngredient(port) {
   if (!pred || !pred.resolvedItems || pred.resolvedItems.length === 0) {
     return { item: 'minecraft:air' };
   }
+  const primaryItem = mapBedrockItemId(pred.resolvedItems[0]);
   if (pred.tagId) {
     return {
       tag: pred.tagId,
-      item: pred.resolvedItems[0],
+      item: primaryItem,
     };
   }
   return {
-    item: pred.resolvedItems[0],
+    item: primaryItem,
     ...(port.count > 1 ? { count: port.count } : {}),
   };
 }
@@ -1171,6 +1210,7 @@ export function compileRecipes(resources, runtime) {
     const shortId = `${edge.scope === 'main' ? '' : `${edge.scope.replace(/\//g, '_')}_`}${edge.id
       .replace(':', '_')
       .replace(/\//g, '_')}`;
+    const resultItemId = mapBedrockItemId(edge.result.itemId);
 
     if (
       edge.result.inheritancePolicy !== 'none' ||
@@ -1204,7 +1244,7 @@ export function compileRecipes(resources, runtime) {
           key: keyMap,
           unlock: Object.values(keyMap).map(k => ({ item: k.item })),
           result: {
-            item: edge.result.itemId,
+            item: resultItemId,
             count: edge.result.count,
           },
         },
@@ -1219,7 +1259,7 @@ export function compileRecipes(resources, runtime) {
           ingredients,
           unlock: ingredients.map(i => ({ item: i.item })),
           result: {
-            item: edge.result.itemId,
+            item: resultItemId,
             count: edge.result.count,
           },
         },
@@ -1245,7 +1285,7 @@ export function compileRecipes(resources, runtime) {
           description: { identifier: edge.id },
           tags,
           input: inputIngredient.item,
-          output: edge.result.itemId,
+          output: resultItemId,
         },
       });
       if (edge.serializer === 'minecraft:blasting') {
@@ -1265,9 +1305,10 @@ export function compileRecipes(resources, runtime) {
           description: { identifier: edge.id },
           tags: ['stonecutter'],
           ingredients: [inputIngredient],
+          unlock: [{ item: inputIngredient.item }],
           priority: 0,
           result: {
-            item: edge.result.itemId,
+            item: resultItemId,
             count: edge.result.count,
           },
         },
@@ -1276,17 +1317,45 @@ export function compileRecipes(resources, runtime) {
       const templatePort = edge.inputs.find(s => s.portId === 'template');
       const basePort = edge.inputs.find(s => s.portId === 'base');
       const additionPort = edge.inputs.find(s => s.portId === 'addition');
-      nativeRecipeFiles.set(`recipes/${shortId}.recipe.json`, {
-        format_version: BEDROCK_RECIPE_FORMAT_VERSION,
-        'minecraft:recipe_smithing_transform': {
-          description: { identifier: edge.id },
-          tags: ['smithing_table'],
-          template: portToBedrockIngredient(templatePort).item,
-          base: portToBedrockIngredient(basePort).item,
-          addition: portToBedrockIngredient(additionPort).item,
-          result: edge.result.itemId,
-        },
-      });
+      const templateItem = portToBedrockIngredient(templatePort).item;
+      const baseItem = portToBedrockIngredient(basePort).item;
+      const additionItem = portToBedrockIngredient(additionPort).item;
+
+      // In Bedrock, recipe_smithing_transform requires base to be armor/tool equipment,
+      // while non-equipment smithing (e.g. anvil upgrades, sword handles, or tool-head assembly) uses crafting_table.
+      if (
+        edge.id.endsWith('_anvil_updrade') ||
+        edge.id.endsWith('_sword_handle') ||
+        baseItem.endsWith('_head') ||
+        baseItem.endsWith('_blade') ||
+        baseItem.endsWith('_tip')
+      ) {
+        nativeRecipeFiles.set(`recipes/${shortId}.recipe.json`, {
+          format_version: BEDROCK_RECIPE_FORMAT_VERSION,
+          'minecraft:recipe_shapeless': {
+            description: { identifier: edge.id },
+            tags: ['crafting_table'],
+            ingredients: [{ item: templateItem }, { item: baseItem }, { item: additionItem }],
+            unlock: [{ item: baseItem }],
+            result: {
+              item: resultItemId,
+              count: edge.result.count,
+            },
+          },
+        });
+      } else {
+        nativeRecipeFiles.set(`recipes/${shortId}.recipe.json`, {
+          format_version: BEDROCK_RECIPE_FORMAT_VERSION,
+          'minecraft:recipe_smithing_transform': {
+            description: { identifier: edge.id },
+            tags: ['smithing_table'],
+            template: templateItem,
+            base: baseItem,
+            addition: additionItem,
+            result: resultItemId,
+          },
+        });
+      }
     } else if (edge.serializer === 'bclib:alloying') {
       stationRecipes.alloying.push({
         id: edge.id,
@@ -1379,10 +1448,6 @@ export function compileEntitiesAndFeatures(registrations, resources) {
       'minecraft:physics': {
         has_gravity: !isChair && ent.id !== 'betterend:dragonfly' && ent.id !== 'betterend:silk_moth',
         has_collision: !isChair,
-      },
-      'minecraft:pushable': {
-        is_pushable: !isChair,
-        is_pushable_by_piston: true,
       },
     };
 

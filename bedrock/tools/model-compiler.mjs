@@ -850,10 +850,46 @@ export async function compileAllModelsAndAssets({ repoRoot = defaultRepoRoot } =
           resolvedTexPath = `textures/items/betterend/${firstTex.slice('betterend:item/'.length)}`;
         } else if (firstTex.startsWith('betterend:block/')) {
           resolvedTexPath = `textures/blocks/betterend/${firstTex.slice('betterend:block/'.length)}`;
+        } else if (firstTex.startsWith('minecraft:item/')) {
+          resolvedTexPath = `textures/items/${firstTex.slice('minecraft:item/'.length)}`;
+        } else if (firstTex.startsWith('minecraft:block/')) {
+          const vanillaBlockTex = firstTex.slice('minecraft:block/'.length);
+          const aliasMap = {
+            polished_andesite: 'textures/blocks/stone_andesite_smooth',
+            polished_diorite: 'textures/blocks/stone_diorite_smooth',
+            polished_granite: 'textures/blocks/stone_granite_smooth',
+            purpur_pillar_top: 'textures/blocks/purpur_block_top',
+            purpur_block: 'textures/blocks/purpur_block_bottom',
+            purpur_pillar_side: 'textures/blocks/purpur_block_side',
+            quartz_pillar_top: 'textures/blocks/quartz_block_lines_top',
+            quartz_block_side: 'textures/blocks/quartz_block_side',
+            quartz_pillar_side: 'textures/blocks/quartz_block_lines',
+            end_stone: 'textures/blocks/end_stone',
+            water_still: 'textures/blocks/water_still',
+          };
+          resolvedTexPath = aliasMap[vanillaBlockTex] ?? `textures/blocks/${vanillaBlockTex}`;
         }
       }
     }
     itemTextureData[key] = { textures: resolvedTexPath };
+  }
+
+  // Register vanilla terrain texture aliases referenced by BetterEnd block models
+  const vanillaTerrainAliases = {
+    polished_andesite: 'textures/blocks/stone_andesite_smooth',
+    polished_diorite: 'textures/blocks/stone_diorite_smooth',
+    polished_granite: 'textures/blocks/stone_granite_smooth',
+    purpur_pillar_top: 'textures/blocks/purpur_block_top',
+    purpur_block: 'textures/blocks/purpur_block_bottom',
+    purpur_pillar_side: 'textures/blocks/purpur_block_side',
+    quartz_pillar_top: 'textures/blocks/quartz_block_lines_top',
+    quartz_block_side: 'textures/blocks/quartz_block_side',
+    quartz_pillar_side: 'textures/blocks/quartz_block_lines',
+    end_stone: 'textures/blocks/end_stone',
+    water_still: 'textures/blocks/water_still',
+  };
+  for (const [aliasKey, aliasPath] of Object.entries(vanillaTerrainAliases)) {
+    terrainTextureData[aliasKey] = { textures: aliasPath };
   }
 
   // Register pre-baked tint variations in terrain_texture.json
@@ -904,11 +940,9 @@ export async function compileAllModelsAndAssets({ repoRoot = defaultRepoRoot } =
     format_version: [1, 1, 0],
   };
   for (const block of registrations.blocks ?? []) {
-    const shortName = block.id.split(':')[1];
     const sound = (block.properties?.sound ?? 'stone').toLowerCase();
     blocksJson[block.id] = {
       sound,
-      textures: `betterend_${shortName}`,
     };
   }
 

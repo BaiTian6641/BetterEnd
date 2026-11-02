@@ -294,7 +294,7 @@ test('Content compiler lowers all 728 blocks (22,385 states), 850 items, 879 rec
 
   // Spot-check key items (pickaxe, chestplate, armored elytra, cooked chorus mushroom)
   const pickaxe = compiled.items.itemJsonMap.get('items/aeternium_pickaxe.item.json')['minecraft:item'].components;
-  assert.equal(pickaxe['minecraft:durability'].max_damage, 2196);
+  assert.equal(pickaxe['minecraft:durability'].max_durability, 2196);
   assert.ok(pickaxe['minecraft:digger']);
   assert.deepEqual(pickaxe['minecraft:fire_resistant'], { value: true });
 
@@ -303,7 +303,7 @@ test('Content compiler lowers all 728 blocks (22,385 states), 850 items, 879 rec
   assert.ok(chestplate['minecraft:wearable'].protection > 0);
 
   const elytra = compiled.items.itemJsonMap.get('items/elytra_armored.item.json')['minecraft:item'].components;
-  assert.ok(elytra['minecraft:glider']);
+  assert.equal(elytra['minecraft:wearable'].slot, 'slot.armor.chest');
 
   const food = compiled.items.itemJsonMap.get('items/chorus_mushroom_cooked.item.json')['minecraft:item'].components;
   assert.equal(food['minecraft:food'].nutrition, 6);

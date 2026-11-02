@@ -8,8 +8,16 @@
 
 import { InMemoryWorldPropertyAdapter, PersistenceStore } from "../persistence/store.js";
 import { RegionService } from "../regions/region-service.js";
-import { GenerationService } from "../generation/generation-service.js";
-import { StationsService } from "../stations/stations-service.js";
+import { FEATURES_BY_ID, REGION_CATALOGUE, REGIONS_BY_ID } from "../regions/region-catalogue.js";
+import { JavaRandom, MHelper } from "../regions/voronoi-hex.js";
+import { GenerationService, synthesizeAnchorPlacements } from "../generation/generation-service.js";
+import {
+  DEFAULT_ALLOYING_RECIPES,
+  DEFAULT_INFUSION_RECIPES,
+  DEFAULT_SINGLE_INPUT_SMELTER_RECIPES,
+  DEFAULT_SMITHING_RECIPES,
+  StationsService
+} from "../stations/stations-service.js";
 import { EquipmentService } from "../equipment/equipment-service.js";
 import { EcologyService } from "../ecology/ecology-service.js";
 import { TransportService } from "../transport/transport-service.js";
@@ -67,6 +75,15 @@ export const CUSTOM_ITEM_COMPONENTS = Object.freeze([
   ...COMPILER_ITEM_COMPONENT_ALIASES
 ]);
 
+function formatTitle(shortId) {
+  return String(shortId ?? "")
+    .replace(/^betterend:/, "")
+    .split("_")
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
 export class BetterEndRuntime {
   /**
    * @param {object} options
@@ -96,15 +113,25 @@ export class BetterEndRuntime {
     this.worldSeed = worldSeed;
     this.portSeed = portSeed;
     this.revision = revision;
+    this.explicitWorldAdapter = worldAdapter;
 
-    const adapter =
+    // Avoid accessing native World getters (`tickingAreaManager`, `getDynamicProperty`)
+    // during early execution before `world.afterEvents.worldLoad` fires.
+    const isMockWorld =
+      worldAdapter !== null ||
+      serverModule?.world instanceof InMemoryWorldPropertyAdapter;
+
+    const initialAdapter =
       worldAdapter ??
-      (serverModule?.world && typeof serverModule.world.getDynamicProperty === "function"
-        ? serverModule.world
-        : new InMemoryWorldPropertyAdapter());
+      (isMockWorld ? serverModule.world : new InMemoryWorldPropertyAdapter());
+
+    let initialTickingAreaManager = null;
+    if (isMockWorld && serverModule?.world?.tickingAreaManager) {
+      initialTickingAreaManager = serverModule.world.tickingAreaManager;
+    }
 
     this.store = new PersistenceStore({
-      worldAdapter: adapter,
+      worldAdapter: initialAdapter,
       autoFlush: true
     });
 
@@ -117,7 +144,7 @@ export class BetterEndRuntime {
     this.generationService = new GenerationService({
       regionService: this.regionService,
       store: this.store,
-      tickingAreaManager: serverModule?.world?.tickingAreaManager ?? null
+      tickingAreaManager: initialTickingAreaManager
     });
 
     this.stationsService = new StationsService({
@@ -159,6 +186,9 @@ export class BetterEndRuntime {
     this.registeredItemComponents = new Map();
     this.worldLoaded = false;
     this.startupRegistered = false;
+    this._decoratedLiveChunks = new Set();
+    this._welcomedPlayers = new Set();
+    this._tickCounter = 0;
   }
 
   /**
@@ -347,6 +377,7 @@ export class BetterEndRuntime {
       onUse: (event) => {
         if (!event?.source) return;
         this.presentationService.openGuidebook?.(event.source.id ?? "player");
+        this._openLiveGuidebookUi(event.source);
       }
     });
 
@@ -393,24 +424,49 @@ export class BetterEndRuntime {
   }
 
   /**
-   * Initializes world seed, recovers interrupted station and generation transactions,
-   * reconciles leaked `betterend:prep_*` ticking areas and `betterend:region_fog_*` fogs,
-   * and wires runtime tick intervals.
+   * Initializes world seed, binds dynamic properties & tickingAreaManager after `worldLoad`,
+   * recovers interrupted station and generation transactions, and reconciles leaked
+   * `betterend:prep_*` ticking areas.
    */
   async initializeWorld(worldInstance = null) {
     const world = worldInstance ?? this.serverModule?.world ?? null;
 
-    if (world && world.seed !== undefined && world.seed !== null) {
-      this.worldSeed = world.seed;
-      this.regionService = new RegionService({
-        worldSeed: this.worldSeed,
-        portSeed: this.portSeed,
-        revision: this.revision
-      });
-      this.generationService.regionService = this.regionService;
-      this.transportService.regionService = this.regionService;
-      this.presentationService.regionService = this.regionService;
-      this.compatibilityService.regionService = this.regionService;
+    if (world && !this.explicitWorldAdapter) {
+      try {
+        if (typeof world.getDynamicProperty === "function") {
+          this.store.worldAdapter = world;
+          this.store.world = world;
+          this.store._loadIndicesFromWorld?.();
+          this.generationService._hydrateJournalFromStore();
+        }
+      } catch {
+        // Fallback to in-memory store if dynamic properties are restricted
+      }
+
+      try {
+        if (world.tickingAreaManager) {
+          this.generationService.tickingAreaManager = world.tickingAreaManager;
+        }
+      } catch {
+        // Ignore if tickingAreaManager is unavailable
+      }
+    }
+
+    try {
+      if (world && world.seed !== undefined && world.seed !== null) {
+        this.worldSeed = world.seed;
+        this.regionService = new RegionService({
+          worldSeed: this.worldSeed,
+          portSeed: this.portSeed,
+          revision: this.revision
+        });
+        this.generationService.regionService = this.regionService;
+        this.transportService.regionService = this.regionService;
+        this.presentationService.regionService = this.regionService;
+        this.compatibilityService.regionService = this.regionService;
+      }
+    } catch {
+      // Ignore if world.seed is not exposed
     }
 
     const quarantinedTransactions = this.store.recoverInterruptedTransactions();
@@ -430,9 +486,673 @@ export class BetterEndRuntime {
     };
   }
 
+  // ============================================================================
+  // LIVE WORLD BIOME DECORATION & GUIDEBOOK TELEPORTER
+  // ============================================================================
+
+  /**
+   * Finds a deterministic outer-End coordinate (`|x| > 1024 || |z| > 1024`) belonging
+   * to `targetRegionId`.
+   */
+  _findRegionCoordinate(targetRegionId) {
+    const targetRegion = REGIONS_BY_ID.get(targetRegionId);
+    const probeY = targetRegion?.layer === "cave" ? 28 : 70;
+    for (let ring = 1280; ring <= 8192; ring += 192) {
+      for (let angleStep = 0; angleStep < 24; angleStep++) {
+        const angle = (angleStep / 24) * Math.PI * 2;
+        const x = Math.round(Math.cos(angle) * ring);
+        const z = Math.round(Math.sin(angle) * ring);
+        if (Math.abs(x) <= 1080 && Math.abs(z) <= 1080) continue;
+        const lookup = this.regionService.lookup("minecraft:the_end", x, probeY, z);
+        if (
+          lookup.effectiveRegion?.id === targetRegionId ||
+          lookup.surfaceRegion?.id === targetRegionId ||
+          lookup.caveRegion?.id === targetRegionId ||
+          lookup.aerialRegion?.id === targetRegionId
+        ) {
+          return { x, y: 68, z };
+        }
+      }
+    }
+    return { x: 1400, y: 68, z: 1400 };
+  }
+
+  /**
+   * Chooses the top and under surface block for a region at `(x, z)`.
+   */
+  _chooseSurfaceBlocks(region, x, z) {
+    const surface = region?.surface ?? {};
+    let topBlock = surface.topBlock ?? "betterend:end_moss";
+    if (topBlock === "minecraft:end_stone" && region?.layer === "aerial") {
+      topBlock = "betterend:end_moss";
+    }
+    const underBlock = surface.underBlock ?? "minecraft:end_stone";
+    const seed = MHelper.getSeed3D(this.regionService.effectiveSeed, x, z, 1);
+    const rng = new JavaRandom(seed);
+    if (surface.altTopBlock && rng.nextInt(4) === 0) {
+      topBlock = surface.altTopBlock;
+    } else if (Array.isArray(surface.rules)) {
+      for (const rule of surface.rules) {
+        if (rng.nextDouble() < (rule.chance ?? 0.35)) {
+          topBlock = rule.topBlock ?? topBlock;
+          break;
+        }
+      }
+    }
+    return { topBlock, underBlock, rng };
+  }
+
+  /**
+   * Decorates a 16x16 outer-End chunk in the live `minecraft:the_end` dimension,
+   * converting vanilla `minecraft:end_stone` surfaces into the Voronoi region's
+   * exact surface palette and placing regional trees, bushes, flowers, and crystals.
+   */
+  _decorateLiveChunk(dimension, chunkX, chunkZ) {
+    if (!dimension || typeof dimension.getBlock !== "function") return 0;
+    const minX = chunkX * 16;
+    const minZ = chunkZ * 16;
+    if (this.regionService.isProtectedCenter("minecraft:the_end", minX + 8, minZ + 8)) {
+      return 0;
+    }
+
+    let placedCount = 0;
+    for (let dx = 0; dx < 16; dx += 2) {
+      for (let dz = 0; dz < 16; dz += 2) {
+        const x = minX + dx;
+        const z = minZ + dz;
+        const lookup = this.regionService.lookup("minecraft:the_end", x, 70, z);
+        const region = lookup.effectiveRegion;
+        if (!region || lookup.protectedCenter) continue;
+
+        let topY = -1;
+        try {
+          if (typeof dimension.getTopmostBlock === "function") {
+            const topBlk = dimension.getTopmostBlock({ x, z }, 110);
+            if (topBlk && topBlk.typeId === "minecraft:end_stone" && topBlk.location.y >= 40) {
+              topY = topBlk.location.y;
+            }
+          } else {
+            for (let y = 84; y >= 48; y -= 2) {
+              const blk = dimension.getBlock({ x, y, z });
+              if (blk && blk.typeId === "minecraft:end_stone") {
+                topY = y;
+                break;
+              }
+            }
+          }
+        } catch {
+          continue;
+        }
+
+        if (topY < 40) continue;
+        const { topBlock, underBlock, rng } = this._chooseSurfaceBlocks(region, x, z);
+
+        try {
+          // Paint 2x2 patch on the surface so the entire chunk is covered smoothly
+          for (let ox = 0; ox < 2; ox++) {
+            for (let oz = 0; oz < 2; oz++) {
+              const b = dimension.getBlock({ x: x + ox, y: topY, z: z + oz });
+              if (b && b.typeId === "minecraft:end_stone" && topBlock !== "minecraft:end_stone") {
+                b.setType(topBlock);
+                placedCount++;
+              }
+              if (underBlock !== "minecraft:end_stone") {
+                const ub = dimension.getBlock({ x: x + ox, y: topY - 1, z: z + oz });
+                if (ub && ub.typeId === "minecraft:end_stone") {
+                  ub.setType(underBlock);
+                }
+              }
+            }
+          }
+
+          // Place regional vegetation / trees / crystals on top
+          const regFeatures = region.features ?? [];
+          if (regFeatures.length > 0 && rng.nextInt(5) === 0) {
+            const featId = regFeatures[rng.nextInt(regFeatures.length)];
+            const placements = synthesizeAnchorPlacements(
+              {
+                anchorId: `live:${x},${topY + 1},${z}`,
+                featureId: featId,
+                position: { x, y: topY + 1, z }
+              },
+              this.regionService.effectiveSeed
+            );
+            for (const p of placements) {
+              const target = dimension.getBlock({ x: p.x, y: p.y, z: p.z });
+              if (target && (target.typeId === "minecraft:air" || target.typeId === "minecraft:end_stone")) {
+                target.setType(p.blockId);
+                placedCount++;
+              }
+            }
+          }
+        } catch {
+          // Ignore unloaded neighbor block access
+        }
+      }
+    }
+    return placedCount;
+  }
+
+  /**
+   * Builds a lush 21x21 BetterEnd biome island around `(cx, cy, cz)` for `regionId`
+   * so teleporting to any of the 27 regions always lands the player on a complete,
+   * richly decorated BetterEnd island even if vanilla End had a void gap there.
+   */
+  _generateBiomeIslandAt(dimension, cx, cy, cz, regionId) {
+    if (!dimension || typeof dimension.getBlock !== "function") return;
+    const region = REGIONS_BY_ID.get(regionId) ?? REGION_CATALOGUE[0];
+    const radius = 10;
+
+    for (let dx = -radius; dx <= radius; dx++) {
+      for (let dz = -radius; dz <= radius; dz++) {
+        const distSq = dx * dx + dz * dz;
+        if (distSq > radius * radius) continue;
+        const x = Math.trunc(cx + dx);
+        const z = Math.trunc(cz + dz);
+        const { topBlock, underBlock, rng } = this._chooseSurfaceBlocks(region, x, z);
+        const thickness = Math.max(2, Math.round((1 - distSq / (radius * radius)) * 5));
+
+        try {
+          for (let dy = -thickness; dy <= -1; dy++) {
+            const blk = dimension.getBlock({ x, y: cy + dy, z });
+            if (blk) {
+              blk.setType(dy === -1 ? underBlock : "minecraft:end_stone");
+            }
+          }
+          const topBlk = dimension.getBlock({ x, y: cy, z });
+          if (topBlk) {
+            topBlk.setType(topBlock);
+          }
+          // Clear 4 blocks of headroom at the center landing pad
+          if (distSq <= 4) {
+            for (let ay = 1; ay <= 4; ay++) {
+              const airBlk = dimension.getBlock({ x, y: cy + ay, z });
+              if (airBlk && airBlk.typeId !== "minecraft:air") {
+                airBlk.setType("minecraft:air");
+              }
+            }
+          } else if (distSq >= 9 && distSq <= (radius - 2) * (radius - 2) && rng.nextInt(6) === 0) {
+            const customFeatures = (region.features ?? []).filter(
+              (f) => !["crashed_ship", "tunel_cave", "cave_surface_coat", "ender_ore", "amber_ore", "thallasium_ore", "flavolite_layer", "violecite_layer"].includes(f)
+            );
+            const pool = customFeatures.length > 0 ? customFeatures : region.features ?? [];
+            if (pool.length > 0) {
+              const featId = pool[rng.nextInt(pool.length)];
+              const placements = synthesizeAnchorPlacements(
+                {
+                  anchorId: `island:${x},${cy + 1},${z}`,
+                  featureId: featId,
+                  position: { x, y: cy + 1, z }
+                },
+                this.regionService.effectiveSeed
+              );
+              for (const p of placements) {
+                const target = dimension.getBlock({ x: p.x, y: p.y, z: p.z });
+                if (target && target.typeId === "minecraft:air") {
+                  target.setType(p.blockId);
+                }
+              }
+            }
+          }
+        } catch {
+          // Ignore if chunk still loading
+        }
+      }
+    }
+  }
+
+  // ============================================================================
+  // INTERACTIVE UIs (`@minecraft/server-ui` 2.1.0)
+  // ============================================================================
+
+  _openLiveGuidebookUi(player) {
+    const ActionFormData = this.uiModule?.ActionFormData;
+    if (!ActionFormData || !player) return;
+
+    const loc = player.location ?? { x: 0, y: 68, z: 0 };
+    const dimId = player.dimension?.id ?? "minecraft:the_end";
+    const lookup = this.regionService.lookup(dimId, loc.x, loc.y, loc.z);
+    const prog = this.presentationService.getPlayerProgression(player.id ?? "player");
+
+    const currentRegionLabel = lookup.protectedCenter
+      ? "Central End Dragon Island (Protected Radius <= 1024)"
+      : `${formatTitle(lookup.effectiveRegion?.id ?? "the_end")} (${lookup.effectiveRegion?.layer ?? "surface"})`;
+
+    const form = new ActionFormData()
+      .title("BetterEnd 26.40 — Guidebook")
+      .body(
+        `§dCurrent Position: §f(${Math.round(loc.x)}, ${Math.round(loc.y)}, ${Math.round(loc.z)})\n` +
+        `§dCurrent Region: §b${currentRegionLabel}\n` +
+        `§dSurface / Cave / Aerial: §f${formatTitle(lookup.surfaceRegion?.id)} / ${formatTitle(lookup.caveRegion?.id ?? "none")} / ${formatTitle(lookup.aerialRegion?.id ?? "none")}\n` +
+        `§dDiscovered Biomes: §a${prog.discoveredRegionsCount}/27 §7| §dAdvancements: §a${prog.unlockedCount}/${prog.totalAdvancements}\n\n` +
+        `§7Select any of the 27 BetterEnd regions below to teleport directly to that outer-End biome and generate its terrain:`
+      );
+
+    for (const region of REGION_CATALOGUE) {
+      form.button(`${formatTitle(region.id)} [${region.layer}]`);
+    }
+
+    form.show(player).then((response) => {
+      if (!response || response.canceled || response.selection === undefined) return;
+      const chosen = REGION_CATALOGUE[response.selection];
+      if (!chosen) return;
+
+      const target = this._findRegionCoordinate(chosen.id);
+      const endDim =
+        this.serverModule?.world?.getDimension?.("minecraft:the_end") ?? player.dimension;
+
+      try {
+        player.teleport(
+          { x: target.x + 0.5, y: target.y + 2, z: target.z + 0.5 },
+          { dimension: endDim }
+        );
+      } catch {
+        try {
+          player.runCommand?.(`tp @s ${target.x} ${target.y + 2} ${target.z}`);
+        } catch {}
+      }
+
+      // Generate the biome island after a short tick delay so the destination chunk is loaded
+      const runGenerate = () => {
+        this._generateBiomeIslandAt(endDim, target.x, target.y, target.z, chosen.id);
+        this.generationService.enqueuePlayerApproach(
+          player.id ?? "player",
+          "minecraft:the_end",
+          target,
+          { radiusCells: 1 }
+        );
+        this.generationService.stepPreparationQueue({ maxCells: 2 });
+        const pres = this.presentationService.updatePlayerPresentation({
+          playerId: player.id ?? "player",
+          dimension: "minecraft:the_end",
+          regionId: chosen.id,
+          immediate: true,
+          playerHandle: player
+        });
+        this._applyLivePlayerPresentation(player, pres);
+        try {
+          player.onScreenDisplay?.setActionBar?.(
+            `§dBetterEnd §8| §b${formatTitle(chosen.id)} §7(${chosen.layer}) — §aTop: ${formatTitle(chosen.surface?.topBlock)}`
+          );
+        } catch {}
+      };
+
+      if (this.serverModule?.system?.runTimeout) {
+        this.serverModule.system.runTimeout(runGenerate, 8);
+      } else {
+        runGenerate();
+      }
+    }).catch(() => {});
+  }
+
+  _openSmelterUi(player, block) {
+    const ActionFormData = this.uiModule?.ActionFormData;
+    if (!ActionFormData || !player) return;
+
+    const allRecipes = [
+      ...DEFAULT_ALLOYING_RECIPES.map((r) => ({
+        label: `Alloy: ${formatTitle(r.result.item)} x${r.result.count} (${r.ingredients.map(formatTitle).join(" + ")})`,
+        resultItem: r.result.item,
+        resultCount: r.result.count
+      })),
+      ...DEFAULT_SINGLE_INPUT_SMELTER_RECIPES.map((r) => ({
+        label: `Smelt: ${formatTitle(r.result.item)} x${r.result.count} (${formatTitle(r.ingredient)})`,
+        resultItem: r.result.item,
+        resultCount: r.result.count
+      }))
+    ];
+
+    const form = new ActionFormData()
+      .title("End Stone Smelter")
+      .body("§7Select an alloying or smelting recipe to execute at this End Stone Smelter:");
+
+    for (const r of allRecipes) {
+      form.button(r.label);
+    }
+
+    form.show(player).then((res) => {
+      if (!res || res.canceled || res.selection === undefined) return;
+      const chosen = allRecipes[res.selection];
+      if (!chosen) return;
+      try {
+        player.runCommand?.(`give @s ${chosen.resultItem} ${chosen.resultCount}`);
+        player.playSound?.("random.fizz");
+        player.onScreenDisplay?.setActionBar?.(
+          `§a[End Stone Smelter] Smelted ${chosen.resultCount}x ${formatTitle(chosen.resultItem)}!`
+        );
+      } catch {}
+    }).catch(() => {});
+  }
+
+  _openAnvilUi(player, block) {
+    const ActionFormData = this.uiModule?.ActionFormData;
+    if (!ActionFormData || !player) return;
+
+    const blockId = block?.typeId ?? "betterend:thallasium_anvil";
+    const anvilTier = blockId.includes("aeternium")
+      ? 5
+      : blockId.includes("terminite")
+        ? 2
+        : 1;
+
+    const available = DEFAULT_SMITHING_RECIPES.filter((r) => r.anvilLevel <= anvilTier);
+    const form = new ActionFormData()
+      .title(`${formatTitle(blockId)} (Tier ${anvilTier})`)
+      .body(`§7Available BetterEnd Anvil Smithing Recipes (Anvil Level <= ${anvilTier}):`);
+
+    for (const r of available) {
+      form.button(
+        `${formatTitle(r.result.item)} x${r.result.count} (${r.inputCount}x ${formatTitle(r.input)})`
+      );
+    }
+
+    form.show(player).then((res) => {
+      if (!res || res.canceled || res.selection === undefined) return;
+      const chosen = available[res.selection];
+      if (!chosen) return;
+      try {
+        player.runCommand?.(`give @s ${chosen.result.item} ${chosen.result.count}`);
+        player.playSound?.("random.anvil_use");
+        player.onScreenDisplay?.setActionBar?.(
+          `§a[Anvil Smithing] Forged ${chosen.result.count}x ${formatTitle(chosen.result.item)}!`
+        );
+      } catch {}
+    }).catch(() => {});
+  }
+
+  _openInfusionPedestalUi(player, block) {
+    const ActionFormData = this.uiModule?.ActionFormData;
+    if (!ActionFormData || !player) return;
+
+    const coreInfusions = DEFAULT_INFUSION_RECIPES.slice(0, 12);
+    const form = new ActionFormData()
+      .title("Infusion Pedestal Ritual")
+      .body("§d8-Pedestal Infusion Ritual\n§7Select an Infusion Ritual recipe to channel:");
+
+    for (const r of coreInfusions) {
+      form.button(
+        `${formatTitle(r.id)} -> ${formatTitle(r.result.item)} (Input: ${formatTitle(r.input)})`
+      );
+    }
+
+    form.show(player).then((res) => {
+      if (!res || res.canceled || res.selection === undefined) return;
+      const chosen = coreInfusions[res.selection];
+      if (!chosen) return;
+      try {
+        player.runCommand?.(`give @s ${chosen.result.item} ${chosen.result.count}`);
+        player.playSound?.("block.end_portal.spawn");
+        player.onScreenDisplay?.setActionBar?.(
+          `§d[Infusion Ritual] Infused ${chosen.result.count}x ${formatTitle(chosen.result.item)}!`
+        );
+      } catch {}
+    }).catch(() => {});
+  }
+
+  _applyLivePlayerPresentation(player, presResult) {
+    if (!player || !presResult) return;
+    try {
+      if (presResult.transitioned && Array.isArray(presResult.fogStack)) {
+        try {
+          player.runCommand?.(`fog @s remove "betterend_active_fog"`);
+        } catch {}
+        const topFog = presResult.fogStack[presResult.fogStack.length - 1];
+        if (topFog?.fogDefinitionId) {
+          try {
+            player.runCommand?.(`fog @s push "${topFog.fogDefinitionId}" "betterend_active_fog"`);
+          } catch {}
+        }
+        if (presResult.ambientSoundId) {
+          try {
+            player.playSound?.(presResult.ambientSoundId);
+          } catch {}
+        }
+      }
+    } catch {}
+  }
+
+  _handleLiveBlockInteract(event) {
+    const block = event?.block;
+    const player = event?.player;
+    if (!block || !player) return;
+
+    const blockId = String(block.typeId ?? "");
+    if (!blockId.startsWith("betterend:")) return;
+    const shortName = blockId.slice("betterend:".length).replace(/__p\d+$/, "");
+    const dimId = block.dimension?.id ?? player.dimension?.id ?? "minecraft:the_end";
+    const loc = block.location ?? { x: 0, y: 64, z: 0 };
+
+    if (shortName === "end_stone_smelter") {
+      this.stationsService.ensureStation?.({
+        dimension: dimId,
+        anchor: loc,
+        stationType: "end_stone_smelter"
+      });
+      this._openSmelterUi(player, block);
+    } else if (shortName.endsWith("_anvil")) {
+      this.stationsService.ensureStation?.({
+        dimension: dimId,
+        anchor: loc,
+        stationType: "anvil"
+      });
+      this._openAnvilUi(player, block);
+    } else if (shortName === "infusion_pedestal") {
+      this.stationsService.ensureStation?.({
+        dimension: dimId,
+        anchor: loc,
+        stationType: "infusion_pedestal"
+      });
+      this._openInfusionPedestalUi(player, block);
+    } else if (shortName === "eternal_pedestal" || shortName.endsWith("_pedestal")) {
+      this.stationsService.ensureStation?.({
+        dimension: dimId,
+        anchor: loc,
+        stationType: "pedestal"
+      });
+      try {
+        player.onScreenDisplay?.setActionBar?.(
+          `§d[${formatTitle(shortName)}] §fPedestal active at (${loc.x}, ${loc.y}, ${loc.z})`
+        );
+      } catch {}
+    } else if (shortName === "respawn_obelisk") {
+      this.transportService.placeRespawnObelisk({ dimension: dimId, bottomAnchor: loc });
+      this.transportService.activateRespawnObelisk?.({
+        playerId: player.id ?? "player",
+        dimension: dimId,
+        pos: loc,
+        amberGemCount: 6
+      });
+      try {
+        player.setSpawnPoint?.({
+          dimension: block.dimension ?? player.dimension,
+          x: loc.x + 1,
+          y: loc.y,
+          z: loc.z
+        });
+        player.playSound?.("respawn_anchor.set_spawn");
+        player.onScreenDisplay?.setActionBar?.(
+          `§d[Respawn Obelisk] §aEnd Respawn Anchor bound to (${loc.x}, ${loc.y}, ${loc.z})!`
+        );
+      } catch {}
+    } else if (shortName === "silk_moth_nest" || shortName === "silk_moth_hive") {
+      this.ecologyService.harvestSilkMothNest?.({
+        playerId: player.id ?? "player",
+        dimension: dimId,
+        position: loc
+      });
+      try {
+        player.runCommand?.("give @s betterend:silk_fiber 2");
+        player.playSound?.("block.beehive.shear");
+        player.onScreenDisplay?.setActionBar?.("§aHarvested 2x Silk Fiber from Silk Moth Nest!");
+      } catch {}
+    } else if (
+      shortName.endsWith("_chair") ||
+      shortName.endsWith("_bar_stool") ||
+      shortName.endsWith("_taburet")
+    ) {
+      this.ecologyService.sitOnChair({
+        playerId: player.id ?? "player",
+        blockId,
+        dimension: dimId,
+        blockLocation: loc
+      });
+      try {
+        const seatEntity = block.dimension?.spawnEntity?.("bclib:chair", {
+          x: loc.x + 0.5,
+          y: loc.y + 0.1,
+          z: loc.z + 0.5
+        });
+        const rideable = seatEntity?.getComponent?.("minecraft:rideable");
+        rideable?.addRider?.(player);
+      } catch {}
+    }
+  }
+
+  _handleLiveBlockBreak(event) {
+    const player = event?.player;
+    const block = event?.block;
+    const itemStack = event?.itemStackBeforeBreak ?? event?.itemStack;
+    if (!player || !block) return;
+
+    const itemId = String(itemStack?.typeId ?? "");
+    const loc = block.location;
+    const dim = block.dimension ?? player.dimension;
+
+    if (itemId.startsWith("betterend:") && itemId.endsWith("_hammer") && loc && dim) {
+      const look =
+        typeof player.getViewDirection === "function"
+          ? player.getViewDirection()
+          : { x: 0, y: 0, z: 1 };
+      this.equipmentService.mineWithHammer({
+        hammer: { id: itemId },
+        origin: loc,
+        lookVector: look,
+        isSneaking: Boolean(player.isSneaking),
+        getBlock: (pos) => {
+          try {
+            const b = dim.getBlock(pos);
+            return b ? { typeId: b.typeId, hardness: 1.5, requiredToolLevel: 0, mineable: true } : null;
+          } catch {
+            return null;
+          }
+        },
+        breakBlock: (pos, blk) => {
+          if (pos.x === loc.x && pos.y === loc.y && pos.z === loc.z) return;
+          if (!blk || blk.typeId === "minecraft:bedrock" || blk.typeId === "minecraft:end_portal_frame") return;
+          try {
+            dim.runCommand?.(`setblock ${pos.x} ${pos.y} ${pos.z} air destroy`);
+          } catch {}
+        }
+      });
+    }
+  }
+
+  _stepLiveWorldTick() {
+    this._tickCounter += 1;
+    this.generationService.stepPreparationQueue({ maxCells: 1 });
+
+    const world = this.serverModule?.world;
+    if (!world || typeof world.getAllPlayers !== "function") return;
+
+    let players = [];
+    try {
+      players = world.getAllPlayers();
+    } catch {
+      return;
+    }
+
+    for (const player of players) {
+      if (!player || !player.location) continue;
+      const pid = player.id ?? player.name ?? "player";
+      const dim = player.dimension;
+      const dimId = dim?.id ?? "minecraft:overworld";
+      const loc = player.location;
+
+      // Welcome player with BetterEnd Guidebook once per session
+      if (!this._welcomedPlayers.has(pid)) {
+        this._welcomedPlayers.add(pid);
+        try {
+          player.runCommand?.("give @s betterend:guidebook 1");
+        } catch {}
+      }
+
+      // Check bouncy blocks & hydrothermal vents under player
+      try {
+        const below = dim?.getBlock?.({
+          x: Math.floor(loc.x),
+          y: Math.floor(loc.y) - 1,
+          z: Math.floor(loc.z)
+        });
+        const belowId = String(below?.typeId ?? "");
+        if (
+          belowId.includes("mossy_glowshroom_hymenophore") ||
+          belowId.includes("umbrella_tree_membrane") ||
+          belowId.includes("gelatine_block")
+        ) {
+          player.applyKnockback?.(0, 0, 0, 0.9);
+        } else if (belowId.includes("hydrothermal_vent") && player.isGliding) {
+          player.applyKnockback?.(0, 0, 0, 1.2);
+        }
+      } catch {}
+
+      if (dimId === "minecraft:the_end") {
+        const lookup = this.regionService.lookup("minecraft:the_end", loc.x, loc.y, loc.z);
+        if (lookup.protectedCenter) {
+          if (this._tickCounter % 5 === 0) {
+            try {
+              player.onScreenDisplay?.setActionBar?.(
+                "§dBetterEnd §8| §eCentral Dragon Island (Protected <=1024m) §7— Use §bGuidebook §7to visit 27 Outer Biomes!"
+              );
+            } catch {}
+          }
+        } else {
+          const regionId = lookup.effectiveRegion?.id ?? "foggy_mushroomland";
+          const pres = this.presentationService.updatePlayerPresentation({
+            playerId: pid,
+            dimension: "minecraft:the_end",
+            regionId,
+            ticks: 10,
+            currentTick: this._tickCounter * 10,
+            playerHandle: player
+          });
+          this._applyLivePlayerPresentation(player, pres);
+
+          if (this._tickCounter % 4 === 0) {
+            try {
+              player.onScreenDisplay?.setActionBar?.(
+                `§dBetterEnd §8| §b${formatTitle(regionId)} §7(${lookup.effectiveRegion?.layer ?? "surface"})`
+              );
+            } catch {}
+          }
+
+          this.generationService.enqueuePlayerApproach(pid, "minecraft:the_end", loc, {
+            radiusCells: 1
+          });
+
+          // Decorate 16x16 chunks around the player in the outer End
+          const centerChunkX = Math.floor(loc.x / 16);
+          const centerChunkZ = Math.floor(loc.z / 16);
+          for (let dx = -1; dx <= 1; dx++) {
+            for (let dz = -1; dz <= 1; dz++) {
+              const cx = centerChunkX + dx;
+              const cz = centerChunkZ + dz;
+              const chunkKey = `${cx},${cz}`;
+              if (!this._decoratedLiveChunks.has(chunkKey)) {
+                this._decoratedLiveChunks.add(chunkKey);
+                this._decorateLiveChunk(dim, cx, cz);
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   /**
    * Attaches event listeners to `@minecraft/server` (`system.beforeEvents.startup`,
-   * `world.afterEvents.worldLoad`, `system.afterEvents.scriptEventReceive`, and bounded intervals).
+   * `world.afterEvents.worldLoad`, `system.afterEvents.scriptEventReceive`, live gameplay
+   * events, and bounded intervals).
    */
   attachServerEvents() {
     const system = this.serverModule?.system;
@@ -452,6 +1172,65 @@ export class BetterEndRuntime {
       });
     }
 
+    if (world?.afterEvents?.playerInteractWithBlock?.subscribe) {
+      world.afterEvents.playerInteractWithBlock.subscribe((event) => {
+        this._handleLiveBlockInteract(event);
+      });
+    }
+
+    if (world?.afterEvents?.playerBreakBlock?.subscribe) {
+      world.afterEvents.playerBreakBlock.subscribe((event) => {
+        this._handleLiveBlockBreak(event);
+      });
+    }
+
+    if (world?.afterEvents?.itemUse?.subscribe) {
+      world.afterEvents.itemUse.subscribe((event) => {
+        const itemId = String(event?.itemStack?.typeId ?? "");
+        const player = event?.source;
+        if (!player) return;
+        if (itemId === "betterend:guidebook") {
+          this.presentationService.openGuidebook?.(player.id ?? "player");
+          this._openLiveGuidebookUi(player);
+        } else if (itemId === "betterend:elytra_armored" || itemId === "betterend:elytra_crystalite") {
+          this.equipmentService.equipCustomElytra?.({
+            playerId: player.id ?? "player",
+            itemId
+          });
+          if (player.isGliding) {
+            try {
+              const dir = player.getViewDirection?.() ?? { x: 0, y: 0.3, z: 1 };
+              player.applyKnockback?.(dir.x, dir.z, 1.4, 0.45);
+            } catch {}
+          }
+        }
+      });
+    }
+
+    if (world?.afterEvents?.itemUseOn?.subscribe) {
+      world.afterEvents.itemUseOn.subscribe((event) => {
+        const itemId = String(event?.itemStack?.typeId ?? "");
+        const player = event?.source;
+        const block = event?.block;
+        if (!player || !block) return;
+        const loc = block.location ?? { x: 0, y: 64, z: 0 };
+        const dim = player.dimension;
+        if (itemId === "betterend:bucket_end_fish" || itemId === "betterend:bucket_cubozoa") {
+          const entityId =
+            itemId === "betterend:bucket_cubozoa" ? "betterend:cubozoa" : "betterend:end_fish";
+          this.ecologyService.releaseFishBucket?.({
+            playerId: player.id ?? "player",
+            itemId,
+            dimension: dim?.id ?? "minecraft:the_end",
+            position: loc
+          });
+          try {
+            dim?.spawnEntity?.(entityId, { x: loc.x + 0.5, y: loc.y + 1, z: loc.z + 0.5 });
+          } catch {}
+        }
+      });
+    }
+
     if (system?.afterEvents?.scriptEventReceive?.subscribe) {
       system.afterEvents.scriptEventReceive.subscribe((event) => {
         if (event?.id === QUERY_CHANNEL_ID) {
@@ -462,8 +1241,8 @@ export class BetterEndRuntime {
 
     if (system && typeof system.runInterval === "function") {
       system.runInterval(() => {
-        this.generationService.stepPreparationQueue({ maxCells: 1 });
-      }, 4);
+        this._stepLiveWorldTick();
+      }, 10);
     }
 
     return this;

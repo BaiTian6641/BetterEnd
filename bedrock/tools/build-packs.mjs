@@ -369,7 +369,7 @@ function buildProfilePackMaps({
   for (const [rel, doc] of compiled.blocks.blockJsonMap) {
     bp.set(rel, jsonBytes(doc));
   }
-  for (const [rel, doc] of compiled.items.itemJsonMap) {
+  for (const [rel, doc] of compiled.items.standaloneItemJsonMap ?? compiled.items.itemJsonMap) {
     bp.set(rel, jsonBytes(doc));
   }
   for (const [rel, doc] of compiled.recipes.nativeRecipeFiles) {
