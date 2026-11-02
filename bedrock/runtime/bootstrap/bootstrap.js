@@ -342,10 +342,12 @@ export class BetterEndRuntime {
     handlers.set("betterend:elytra_carrier", {
       onUse: (event) => {
         if (!event?.source) return;
+        const itemId = event.itemStack?.typeId ?? "betterend:elytra_armored";
         this.equipmentService.equipCustomElytra?.({
           playerId: event.source.id ?? "player",
-          itemId: event.itemStack?.typeId ?? "betterend:elytra_armored"
+          itemId
         });
+        this._equipBetterEndElytraCarrier(event.source, itemId);
       }
     });
 
@@ -492,35 +494,51 @@ export class BetterEndRuntime {
 
   /**
    * Computes the native C++ feature_rules biome region for outer-End `(x, z)`
-   * using the exact 256x256 cell formula in `biome_<id>_surface_rule.json`.
+   * using the domain-warped non-linear Voronoi cell formula in `biome_<id>_surface_rule.json`.
    */
   _lookupNativeCellRegion(x, z) {
-    const cellX = Math.floor(x / 256);
-    const cellZ = Math.floor(z / 256);
-    const idx = Math.abs(cellX * 73 + cellZ * 199) % REGION_CATALOGUE.length;
+    const deg = Math.PI / 180;
+    const wx = x + Math.sin(z * 0.45 * deg) * 70 + Math.cos((x + z) * 0.28 * deg) * 40;
+    const wz = z + Math.cos(x * 0.45 * deg) * 70 + Math.sin((z - x) * 0.28 * deg) * 40;
+    const cellX = Math.floor(wx / 320);
+    const cellZ = Math.floor(wz / 320);
+    const h = Math.floor(Math.abs(Math.sin((cellX * 127.1 + cellZ * 311.7) * deg) * 43758.5453));
+    const idx = h % REGION_CATALOGUE.length;
     return REGION_CATALOGUE[idx] ?? REGION_CATALOGUE[0];
   }
 
   /**
    * Finds a deterministic outer-End coordinate (`|x| > 1024 || |z| > 1024`) belonging
-   * to `targetRegionId`.
+   * to the interior center of `targetRegionId`.
    */
   _findRegionCoordinate(targetRegionId) {
-    for (let radiusCells = 5; radiusCells <= 24; radiusCells++) {
+    const deg = Math.PI / 180;
+    for (let radiusCells = 4; radiusCells <= 24; radiusCells++) {
       for (let cx = -radiusCells; cx <= radiusCells; cx++) {
         for (let cz = -radiusCells; cz <= radiusCells; cz++) {
           if (Math.abs(cx) !== radiusCells && Math.abs(cz) !== radiusCells) continue;
-          const x = cx * 256 + 128;
-          const z = cz * 256 + 128;
-          if (Math.abs(x) <= 1080 && Math.abs(z) <= 1080) continue;
-          const region = this._lookupNativeCellRegion(x, z);
-          if (region.id === targetRegionId) {
+          const h = Math.floor(Math.abs(Math.sin((cx * 127.1 + cz * 311.7) * deg) * 43758.5453));
+          const region = REGION_CATALOGUE[h % REGION_CATALOGUE.length];
+          if (!region || region.id !== targetRegionId) continue;
+
+          const targetWx = cx * 320 + 160;
+          const targetWz = cz * 320 + 160;
+          let x = targetWx;
+          let z = targetWz;
+          for (let iter = 0; iter < 4; iter++) {
+            const dx = Math.sin(z * 0.45 * deg) * 70 + Math.cos((x + z) * 0.28 * deg) * 40;
+            const dz = Math.cos(x * 0.45 * deg) * 70 + Math.sin((z - x) * 0.28 * deg) * 40;
+            x = Math.round(targetWx - dx);
+            z = Math.round(targetWz - dz);
+          }
+          if (Math.abs(x) <= 1120 && Math.abs(z) <= 1120) continue;
+          if (this._lookupNativeCellRegion(x, z).id === targetRegionId) {
             return { x, y: 68, z };
           }
         }
       }
     }
-    return { x: 1408, y: 68, z: 1408 };
+    return { x: 1440, y: 68, z: 1440 };
   }
 
   /**
@@ -1114,6 +1132,163 @@ export class BetterEndRuntime {
     }
   }
 
+  _createElytraCarrierItemStack(variant) {
+    const ItemStack = this.serverModule?.ItemStack;
+    if (!ItemStack) return null;
+    try {
+      const isCrystalite = String(variant).includes("crystalite");
+      const normVariant = isCrystalite ? "elytra_crystalite" : "elytra_armored";
+      const carrierMeta = this.equipmentService.createElytraCarrier(normVariant);
+      const stack = new ItemStack("minecraft:elytra", 1);
+      stack.nameTag = isCrystalite ? "§r§dCrystalite Elytra" : "§r§bArmored Elytra";
+      try {
+        stack.setLore?.([
+          isCrystalite
+            ? "§7BetterEnd Glider (+4 Armor, +0.5 Toughness, Vitality)"
+            : "§7BetterEnd Glider (+6 Armor, +1.0 Toughness, Fire Resistant)",
+          `§8Max Durability: ${carrierMeta.customMaxDurability} | Updraft Boost: 5.0x`
+        ]);
+      } catch {}
+      try {
+        stack.setDynamicProperty?.("betterend:elytra_variant", normVariant);
+        stack.setDynamicProperty?.("betterend:durability_damage", 0);
+        stack.setDynamicProperty?.("betterend:uid", carrierMeta.dynamicProperties["betterend:uid"]);
+      } catch {}
+      return stack;
+    } catch {
+      return null;
+    }
+  }
+
+  _equipBetterEndElytraCarrier(player, itemIdOrVariant) {
+    if (!player) return false;
+    const isCrystalite = String(itemIdOrVariant ?? "").includes("crystalite");
+    const normVariant = isCrystalite ? "elytra_crystalite" : "elytra_armored";
+    const label = isCrystalite ? "Crystalite Elytra" : "Armored Elytra";
+    let equipped = false;
+
+    try {
+      const equippable =
+        player.getComponent?.("minecraft:equippable") ?? player.getComponent?.("equippable");
+      const carrierStack = this._createElytraCarrierItemStack(normVariant);
+      if (equippable && typeof equippable.setEquipment === "function" && carrierStack) {
+        const prevChest = equippable.getEquipment?.("Chest");
+        equippable.setEquipment("Chest", carrierStack);
+        const mainhand = equippable.getEquipment?.("Mainhand");
+        if (
+          mainhand &&
+          (mainhand.typeId === "betterend:elytra_armored" ||
+            mainhand.typeId === "betterend:elytra_crystalite")
+        ) {
+          if (
+            prevChest &&
+            prevChest.typeId !== "betterend:elytra_armored" &&
+            prevChest.typeId !== "betterend:elytra_crystalite"
+          ) {
+            equippable.setEquipment("Mainhand", prevChest);
+          } else {
+            equippable.setEquipment("Mainhand", undefined);
+          }
+        }
+        equipped = true;
+      }
+    } catch {}
+
+    if (!equipped) {
+      try {
+        player.runCommand?.("replaceitem entity @s slot.armor.chest 0 elytra 1 0");
+        equipped = true;
+      } catch {}
+    }
+
+    if (equipped) {
+      try {
+        player.playSound?.("armor.equip_elytra");
+        player.onScreenDisplay?.setActionBar?.(
+          `§d[BetterEnd] §bEquipped ${label}! §7(Jump in mid-air to glide & use Firework Rockets)`
+        );
+      } catch {}
+    }
+    return equipped;
+  }
+
+  _syncPlayerElytraAndArmor(player) {
+    if (!player) return;
+    try {
+      const equippable =
+        player.getComponent?.("minecraft:equippable") ?? player.getComponent?.("equippable");
+      if (!equippable || typeof equippable.getEquipment !== "function") return;
+
+      const head = equippable.getEquipment("Head");
+      const chest = equippable.getEquipment("Chest");
+      const legs = equippable.getEquipment("Legs");
+      const feet = equippable.getEquipment("Feet");
+
+      const chestId = String(chest?.typeId ?? "");
+      if (chestId === "betterend:elytra_armored" || chestId === "betterend:elytra_crystalite") {
+        this._equipBetterEndElytraCarrier(player, chestId);
+        return;
+      }
+
+      let activeElytraVariant = null;
+      if (chestId === "minecraft:elytra") {
+        try {
+          activeElytraVariant = chest.getDynamicProperty?.("betterend:elytra_variant") ?? null;
+        } catch {}
+        if (!activeElytraVariant && typeof chest?.nameTag === "string") {
+          if (chest.nameTag.includes("Crystalite Elytra")) {
+            activeElytraVariant = "elytra_crystalite";
+          } else if (chest.nameTag.includes("Armored Elytra")) {
+            activeElytraVariant = "elytra_armored";
+          }
+        }
+      }
+
+      if (activeElytraVariant) {
+        const isCrystalite = activeElytraVariant === "elytra_crystalite";
+        try {
+          player.addEffect?.("resistance", 160, {
+            amplifier: isCrystalite ? 0 : 1,
+            showParticles: false
+          });
+          if (isCrystalite) {
+            player.addEffect?.("regeneration", 160, {
+              amplifier: 0,
+              showParticles: false
+            });
+          }
+        } catch {}
+      }
+
+      const headId = String(head?.typeId ?? "");
+      const legsId = String(legs?.typeId ?? "");
+      const feetId = String(feet?.typeId ?? "");
+
+      const hasCrystaliteHead = headId === "betterend:crystalite_helmet";
+      const hasCrystaliteChest =
+        chestId === "betterend:crystalite_chestplate" || activeElytraVariant === "elytra_crystalite";
+      const hasCrystaliteLegs = legsId === "betterend:crystalite_leggings";
+      const hasCrystaliteFeet = feetId === "betterend:crystalite_boots";
+
+      if (hasCrystaliteHead || hasCrystaliteChest) {
+        try {
+          player.addEffect?.("regeneration", 160, { amplifier: 0, showParticles: false });
+        } catch {}
+      }
+      if (hasCrystaliteFeet) {
+        try {
+          player.addEffect?.("speed", 160, { amplifier: 0, showParticles: false });
+        } catch {}
+      }
+      if (hasCrystaliteHead && hasCrystaliteChest && hasCrystaliteLegs && hasCrystaliteFeet) {
+        try {
+          player.addEffect?.("haste", 160, { amplifier: 0, showParticles: false });
+          player.addEffect?.("absorption", 160, { amplifier: 0, showParticles: false });
+        } catch {}
+      }
+    } catch {}
+  }
+
   _stepLiveWorldTick() {
     this._tickCounter += 1;
     this.generationService.stepPreparationQueue({ maxCells: 1 });
@@ -1142,6 +1317,9 @@ export class BetterEndRuntime {
           player.runCommand?.("give @s betterend:guidebook 1");
         } catch {}
       }
+
+      // Sync Armored/Crystalite Elytra glider carrier & Crystalite armor abilities
+      this._syncPlayerElytraAndArmor(player);
 
       // Check bouncy blocks & hydrothermal vents under player
       try {
@@ -1269,6 +1447,7 @@ export class BetterEndRuntime {
             playerId: player.id ?? "player",
             itemId
           });
+          this._equipBetterEndElytraCarrier(player, itemId);
           if (player.isGliding) {
             try {
               const dir = player.getViewDirection?.() ?? { x: 0, y: 0.3, z: 1 };

@@ -2351,7 +2351,7 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
     umbrella_jungle: ['umbrella_moss_double', 'twisted_umbrella_moss_double', 'menger_sponge'],
     glowing_grasslands: ['lumecorn', 'umbrella_moss_double'],
     dragon_graveyards: ['large_amaranita', 'small_amaranita'],
-    lantern_woods: ['lucernia_bush', 'filalux'],
+    lantern_woods: ['lucernia_bush'],
     neon_oasis: ['neon_cactus'],
     flower_islets: ['large_amaranita', 'small_amaranita'],
     waterfall_ponds: ['lumecorn', 'umbrella_moss_double'],
@@ -2396,9 +2396,22 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
       },
     });
 
-    const cellCond = `((math.abs(variable.originx + 8) > 1024 || math.abs(variable.originz + 8) > 1024) && math.mod(math.abs(math.floor((variable.originx + 8) / 256) * 73 + math.floor((variable.originz + 8) / 256) * 199), 27) == ${idx})`;
+    const warpXExpr = (xE, zE) =>
+      `(${xE} + math.sin(${zE} * 0.45) * 70 + math.cos((${xE} + ${zE}) * 0.28) * 40 + query.noise(${xE} * 0.012, ${zE} * 0.012) * 28 + query.noise(${xE} * 0.04 + 53, ${zE} * 0.04 + 53) * 8)`;
+    const warpZExpr = (xE, zE) =>
+      `(${zE} + math.cos(${xE} * 0.45) * 70 + math.sin((${zE} - ${xE}) * 0.28) * 40 + query.noise(${xE} * 0.012 + 97, ${zE} * 0.012 + 97) * 28 + query.noise(${xE} * 0.04 + 149, ${zE} * 0.04 + 149) * 8)`;
+    const cellMatchAt = (xE, zE) => {
+      const cxE = `math.floor(${warpXExpr(xE, zE)} / 320)`;
+      const czE = `math.floor(${warpZExpr(xE, zE)} / 320)`;
+      return `((math.abs(${xE}) > 1024 || math.abs(${zE}) > 1024) && math.mod(math.floor(math.abs(math.sin(${cxE} * 127.1 + ${czE} * 311.7) * 43758.5453)), 27) == ${idx})`;
+    };
+    const cellCond = cellMatchAt('variable.originx + 8', 'variable.originz + 8');
+    const colCellCond = cellMatchAt('variable.worldx', 'variable.worldz');
+    const chunkSurfaceCond = `(${cellCond} || ${cellMatchAt('variable.originx', 'variable.originz')} || ${cellMatchAt('variable.originx + 15', 'variable.originz + 15')} || ${cellMatchAt('variable.originx + 15', 'variable.originz')} || ${cellMatchAt('variable.originx', 'variable.originz + 15')})`;
+    const chunkHashExpr = (saltA, saltB, saltC) =>
+      `math.floor(math.abs(math.sin(math.floor(variable.originx / 16) * ${saltA} + math.floor(variable.originz / 16) * ${saltB} + ${saltC}) * 43758.5453))`;
 
-    // 2. Native Surface Replacement (16x16x3 vertical column covering top 3 layers of every column so slopes have zero end_stone rings)
+    // 2. Native Perlin-Noise Coherent Surface Replacement (16x16x3 vertical column covering top 3 layers of every column)
     const primaryTop =
       region.surface?.topBlock && region.surface.topBlock !== 'minecraft:end_stone'
         ? region.surface.topBlock
@@ -2409,39 +2422,63 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
         : null;
 
     const primarySurfaceFeat = ensureSurfaceBlockFeature(primaryTop);
-    let surfaceTargetFeat = primarySurfaceFeat;
+    const colFeatId = `betterend:biome_${region.id}_surface_col_feature`;
     if (altTop) {
       const altSurfaceFeat = ensureSurfaceBlockFeature(altTop);
-      const choiceId = `betterend:biome_${region.id}_surface_choice_feature`;
-      features.set(`features/biome_${region.id}_surface_choice_feature.json`, {
+      const surfaceNoiseExpr = `(query.noise(variable.worldx * 0.075, variable.worldz * 0.075) + query.noise(variable.worldx * 0.21 + 37, variable.worldz * 0.21 + 71) * 0.35)`;
+      const colPrimaryId = `betterend:biome_${region.id}_surface_col_primary_feature`;
+      const colAltId = `betterend:biome_${region.id}_surface_col_alt_feature`;
+      features.set(`features/biome_${region.id}_surface_col_primary_feature.json`, {
         format_version: BEDROCK_FEATURE_FORMAT_VERSION,
-        'minecraft:weighted_random_feature': {
-          description: { identifier: choiceId },
-          features: [
-            [primarySurfaceFeat, 70],
-            [altSurfaceFeat, 30],
-          ],
+        'minecraft:scatter_feature': {
+          description: { identifier: colPrimaryId },
+          iterations: `${colCellCond} && query.heightmap(variable.worldx, variable.worldz) >= 16 && ${surfaceNoiseExpr} <= 0.16 ? 3 : 0`,
+          coordinate_eval_order: 'zyx',
+          x: 0,
+          z: 0,
+          y: { distribution: 'fixed_grid', extent: [-2, 0] },
+          project_input_to_floor: false,
+          places_feature: primarySurfaceFeat,
         },
       });
-      surfaceTargetFeat = choiceId;
-    }
-
-    const colFeatId = `betterend:biome_${region.id}_surface_col_feature`;
-    features.set(`features/biome_${region.id}_surface_col_feature.json`, {
-      format_version: BEDROCK_FEATURE_FORMAT_VERSION,
-      'minecraft:scatter_feature': {
-        description: {
-          identifier: colFeatId,
+      features.set(`features/biome_${region.id}_surface_col_alt_feature.json`, {
+        format_version: BEDROCK_FEATURE_FORMAT_VERSION,
+        'minecraft:scatter_feature': {
+          description: { identifier: colAltId },
+          iterations: `${colCellCond} && query.heightmap(variable.worldx, variable.worldz) >= 16 && ${surfaceNoiseExpr} > 0.16 ? 3 : 0`,
+          coordinate_eval_order: 'zyx',
+          x: 0,
+          z: 0,
+          y: { distribution: 'fixed_grid', extent: [-2, 0] },
+          project_input_to_floor: false,
+          places_feature: altSurfaceFeat,
         },
-        iterations: 'query.heightmap(variable.worldx, variable.worldz) >= 16 ? 3 : 0',
-        coordinate_eval_order: 'zyx',
-        x: 0,
-        z: 0,
-        y: { distribution: 'fixed_grid', extent: [-2, 0] },
-        project_input_to_floor: false,
-        places_feature: surfaceTargetFeat,
-      },
-    });
+      });
+      features.set(`features/biome_${region.id}_surface_col_feature.json`, {
+        format_version: BEDROCK_FEATURE_FORMAT_VERSION,
+        'minecraft:aggregate_feature': {
+          description: { identifier: colFeatId },
+          early_out: 'none',
+          features: [colPrimaryId, colAltId],
+        },
+      });
+    } else {
+      features.set(`features/biome_${region.id}_surface_col_feature.json`, {
+        format_version: BEDROCK_FEATURE_FORMAT_VERSION,
+        'minecraft:scatter_feature': {
+          description: {
+            identifier: colFeatId,
+          },
+          iterations: `${colCellCond} && query.heightmap(variable.worldx, variable.worldz) >= 16 ? 3 : 0`,
+          coordinate_eval_order: 'zyx',
+          x: 0,
+          z: 0,
+          y: { distribution: 'fixed_grid', extent: [-2, 0] },
+          project_input_to_floor: false,
+          places_feature: primarySurfaceFeat,
+        },
+      });
+    }
 
     const gridFeatId = `betterend:biome_${region.id}_surface_grid_feature`;
     features.set(`features/biome_${region.id}_surface_grid_feature.json`, {
@@ -2474,7 +2511,7 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
           ],
         },
         distribution: {
-          iterations: `${cellCond} ? 1 : 0`,
+          iterations: `${chunkSurfaceCond} ? 1 : 0`,
           x: 0,
           y: 0,
           z: 0,
@@ -2482,7 +2519,7 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
       },
     });
 
-    // 3. Native Curated Flora Scatter in after_surface_pass
+    // 3. Native Curated Flora Scatter in after_surface_pass (modulated by Perlin noise density)
     const curatedFlora = (BIOME_SURFACE_FLORA[region.id] ?? ['betterend:creeping_moss', 'betterend:amber_grass']).filter(
       blk => knownBlockIds.has(blk),
     );
@@ -2525,7 +2562,7 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
           ],
         },
         distribution: {
-          iterations: `${cellCond} && query.heightmap(variable.originx + 8, variable.originz + 8) >= 48 ? ${floraDensity} : 0`,
+          iterations: `${cellCond} && query.heightmap(variable.originx + 8, variable.originz + 8) >= 48 ? math.max(4, math.floor(${floraDensity} * (0.65 + 0.65 * query.noise(variable.originx * 0.04, variable.originz * 0.04)))) : 0`,
           x: { distribution: 'uniform', extent: [0, 16] },
           y: 'query.heightmap(variable.worldx, variable.worldz)',
           z: { distribution: 'uniform', extent: [0, 16] },
@@ -2533,7 +2570,7 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
       },
     });
 
-    // 4. Native 1:1 BetterEnd SDF/Spline Tree / Giant Mushroom Scatter in after_surface_pass
+    // 4. Native 1:1 BetterEnd SDF/Spline Tree / Giant Mushroom Scatter in after_surface_pass (Perlin noise groves + non-linear hash)
     if (regionTrees.length > 0) {
       let targetTreeFeat = regionTrees[0];
       if (regionTrees.length > 1) {
@@ -2548,6 +2585,8 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
         targetTreeFeat = mixId;
       }
 
+      const treeHash = chunkHashExpr(127.1, 311.7, 13.7 + idx);
+      const treeNoise = `query.noise(variable.originx * 0.025 + ${idx * 17}, variable.originz * 0.025 + ${idx * 17})`;
       featureRules.set(`feature_rules/biome_${region.id}_tree_rule.json`, {
         format_version: BEDROCK_FEATURE_FORMAT_VERSION,
         'minecraft:feature_rules': {
@@ -2562,16 +2601,16 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
             ],
           },
           distribution: {
-            iterations: `${cellCond} && query.heightmap(variable.originx + 8, variable.originz + 8) >= 50 && math.mod(math.abs(math.floor(variable.originx / 16) * 37 + math.floor(variable.originz / 16) * 73), 3) == 0 ? 1 : 0`,
-            x: { distribution: 'uniform', extent: [5, 11] },
+            iterations: `${cellCond} && query.heightmap(variable.originx + 8, variable.originz + 8) >= 50 && ((${treeNoise} > 0.25 && math.mod(${treeHash}, 2) == 0) || (${treeNoise} > -0.2 && math.mod(${treeHash}, 4) == 0)) ? 1 : 0`,
+            x: { distribution: 'uniform', extent: [1, 15] },
             y: 'query.heightmap(variable.worldx, variable.worldz)',
-            z: { distribution: 'uniform', extent: [5, 11] },
+            z: { distribution: 'uniform', extent: [1, 15] },
           },
         },
       });
     }
 
-    // 5. Native 1:1 Multi-Block Plants & Bushes per Biome
+    // 5. Native 1:1 Multi-Block Plants & Bushes per Biome (Perlin noise + non-linear hash)
     const subFeatureList = BIOME_PROCEDURAL_SUBFEATURES[region.id] ?? [];
     if (subFeatureList.length > 0) {
       const subChoices = subFeatureList.map(procId => [
@@ -2587,6 +2626,7 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
         },
       });
 
+      const subHash = chunkHashExpr(269.5, 183.3, 31.1 + idx);
       featureRules.set(`feature_rules/biome_${region.id}_subfeatures_rule.json`, {
         format_version: BEDROCK_FEATURE_FORMAT_VERSION,
         'minecraft:feature_rules': {
@@ -2601,10 +2641,10 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
             ],
           },
           distribution: {
-            iterations: `${cellCond} && query.heightmap(variable.originx + 8, variable.originz + 8) >= 50 && math.mod(math.abs(math.floor(variable.originx / 16) * 29 + math.floor(variable.originz / 16) * 61), 2) == 0 ? 1 : 0`,
-            x: { distribution: 'uniform', extent: [4, 12] },
+            iterations: `${cellCond} && query.heightmap(variable.originx + 8, variable.originz + 8) >= 50 && query.noise(variable.originx * 0.035 + 41, variable.originz * 0.035 + 41) > -0.15 && math.mod(${subHash}, 3) == 0 ? 1 : 0`,
+            x: { distribution: 'uniform', extent: [2, 14] },
             y: 'query.heightmap(variable.worldx, variable.worldz)',
-            z: { distribution: 'uniform', extent: [4, 12] },
+            z: { distribution: 'uniform', extent: [2, 14] },
           },
         },
       });
@@ -2629,7 +2669,8 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
             : region.id === 'waterfall_ponds'
               ? 'betterend:pond_with_waterfall_feature'
               : 'betterend:water_pond_patch_feature';
-      const lakeStride = region.id === 'megalake' || region.id === 'megalake_grove' ? 4 : 6;
+      const lakeStride = region.id === 'megalake' || region.id === 'megalake_grove' ? 5 : 8;
+      const lakeHash = chunkHashExpr(419.2, 371.9, 59.3 + idx);
       featureRules.set(`feature_rules/biome_${region.id}_pond_rule.json`, {
         format_version: BEDROCK_FEATURE_FORMAT_VERSION,
         'minecraft:feature_rules': {
@@ -2644,10 +2685,10 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
             ],
           },
           distribution: {
-            iterations: `${cellCond} && query.heightmap(variable.originx + 8, variable.originz + 8) >= 50 && math.mod(math.abs(math.floor(variable.originx / 16) * 53 + math.floor(variable.originz / 16) * 97), ${lakeStride}) == 0 ? 1 : 0`,
-            x: 8,
+            iterations: `${cellCond} && query.heightmap(variable.originx + 8, variable.originz + 8) >= 50 && math.mod(${lakeHash}, ${lakeStride}) == 0 ? 1 : 0`,
+            x: { distribution: 'uniform', extent: [3, 13] },
             y: 'query.heightmap(variable.worldx, variable.worldz) - 1',
-            z: 8,
+            z: { distribution: 'uniform', extent: [3, 13] },
           },
         },
       });
@@ -2655,6 +2696,7 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
 
     // 7. Native 3D Spiky Ice Stars in Ice Starfield
     if (region.id === 'ice_starfield') {
+      const starHash = chunkHashExpr(173.9, 293.1, 71.7);
       featureRules.set(`feature_rules/biome_ice_starfield_star_rule.json`, {
         format_version: BEDROCK_FEATURE_FORMAT_VERSION,
         'minecraft:feature_rules': {
@@ -2669,10 +2711,10 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
             ],
           },
           distribution: {
-            iterations: `${cellCond} && math.mod(math.abs(math.floor(variable.originx / 16) * 31 + math.floor(variable.originz / 16) * 17), 5) == 0 ? 1 : 0`,
-            x: { distribution: 'uniform', extent: [4, 12] },
+            iterations: `${cellCond} && query.noise(variable.originx * 0.02, variable.originz * 0.02) > -0.2 && math.mod(${starHash}, 7) == 0 ? 1 : 0`,
+            x: { distribution: 'uniform', extent: [2, 14] },
             y: { distribution: 'uniform', extent: [58, 94] },
-            z: { distribution: 'uniform', extent: [4, 12] },
+            z: { distribution: 'uniform', extent: [2, 14] },
           },
         },
       });
@@ -2680,6 +2722,7 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
 
     // 8. Native 3D Big Aurora Crystal Hexagonal Prisms in Crystal Mountains & Aurora Caves (strictly void-gated!)
     if (['crystal_mountains', 'empty_aurora_cave', 'lush_aurora_cave'].includes(region.id)) {
+      const auroraHash = chunkHashExpr(347.3, 197.7, 83.9 + idx);
       featureRules.set(`feature_rules/biome_${region.id}_aurora_pillar_rule.json`, {
         format_version: BEDROCK_FEATURE_FORMAT_VERSION,
         'minecraft:feature_rules': {
@@ -2694,10 +2737,10 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
             ],
           },
           distribution: {
-            iterations: `${cellCond} && query.heightmap(variable.originx + 8, variable.originz + 8) >= 50 && math.mod(math.abs(math.floor(variable.originx / 16) * 41 + math.floor(variable.originz / 16) * 79), 5) == 0 ? 1 : 0`,
-            x: { distribution: 'uniform', extent: [5, 11] },
+            iterations: `${cellCond} && query.heightmap(variable.originx + 8, variable.originz + 8) >= 50 && math.mod(${auroraHash}, 6) == 0 ? 1 : 0`,
+            x: { distribution: 'uniform', extent: [2, 14] },
             y: 'query.heightmap(variable.worldx, variable.worldz)',
-            z: { distribution: 'uniform', extent: [5, 11] },
+            z: { distribution: 'uniform', extent: [2, 14] },
           },
         },
       });
@@ -2718,6 +2761,7 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
           features: nbtChoices,
         },
       });
+      const nbtHash = chunkHashExpr(521.7, 241.3, 101.5 + idx);
       featureRules.set(`feature_rules/biome_${region.id}_nbt_structures_rule.json`, {
         format_version: BEDROCK_FEATURE_FORMAT_VERSION,
         'minecraft:feature_rules': {
@@ -2732,10 +2776,10 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
             ],
           },
           distribution: {
-            iterations: `${cellCond} && query.heightmap(variable.originx + 8, variable.originz + 8) >= 50 && math.mod(math.abs(math.floor(variable.originx / 16) * 43 + math.floor(variable.originz / 16) * 89), 12) == 0 ? 1 : 0`,
-            x: 8,
+            iterations: `${cellCond} && query.heightmap(variable.originx + 8, variable.originz + 8) >= 50 && math.mod(${nbtHash}, 18) == 0 ? 1 : 0`,
+            x: { distribution: 'uniform', extent: [3, 13] },
             y: 'query.heightmap(variable.worldx, variable.worldz)',
-            z: 8,
+            z: { distribution: 'uniform', extent: [3, 13] },
           },
         },
       });
@@ -2757,6 +2801,7 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
         },
       });
       const isAerialBiome = region.id === 'flower_islets' || region.id === 'waterfall_ponds';
+      const lmHash = chunkHashExpr(389.3, 463.7, 137.9 + idx);
       featureRules.set(`feature_rules/biome_${region.id}_landmarks_rule.json`, {
         format_version: BEDROCK_FEATURE_FORMAT_VERSION,
         'minecraft:feature_rules': {
@@ -2771,12 +2816,12 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
             ],
           },
           distribution: {
-            iterations: `${cellCond} && math.mod(math.abs(math.floor(variable.originx / 16) * 59 + math.floor(variable.originz / 16) * 97), 9) == 0 ? 1 : 0`,
-            x: 8,
+            iterations: `${cellCond} && query.noise(variable.originx * 0.02 + 91, variable.originz * 0.02 + 91) > -0.15 && math.mod(${lmHash}, 14) == 0 ? 1 : 0`,
+            x: { distribution: 'uniform', extent: [2, 14] },
             y: isAerialBiome
               ? { distribution: 'uniform', extent: [58, 86] }
               : 'query.heightmap(variable.worldx, variable.worldz)',
-            z: 8,
+            z: { distribution: 'uniform', extent: [2, 14] },
           },
         },
       });

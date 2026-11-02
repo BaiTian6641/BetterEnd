@@ -454,8 +454,40 @@ export function convertModelToBedrockGeometry(flattenedModel, {
 
     if (el.rotation && typeof el.rotation.angle === 'number' && el.rotation.angle !== 0) {
       const [ox, oy, oz] = el.rotation.origin ?? [8, 8, 8];
-      const pivot = [8 - ox, oy, oz - 8];
       const angle = el.rotation.angle;
+      const rad = (angle * Math.PI) / 180;
+      const jcx = (x1 + x2) / 2;
+      const jcy = (y1 + y2) / 2;
+      const jcz = (z1 + z2) / 2;
+      const dx = jcx - ox;
+      const dy = jcy - oy;
+      const dz = jcz - oz;
+      let rx = dx;
+      let ry = dy;
+      let rz = dz;
+      if (el.rotation.axis === 'y') {
+        rx = dx * Math.cos(rad) + dz * Math.sin(rad);
+        rz = -dx * Math.sin(rad) + dz * Math.cos(rad);
+      } else if (el.rotation.axis === 'x') {
+        ry = dy * Math.cos(rad) - dz * Math.sin(rad);
+        rz = dy * Math.sin(rad) + dz * Math.cos(rad);
+      } else if (el.rotation.axis === 'z') {
+        rx = dx * Math.cos(rad) - dy * Math.sin(rad);
+        ry = dx * Math.sin(rad) + dy * Math.cos(rad);
+      }
+      const rcx = 8 - (ox + rx);
+      const rcy = oy + ry;
+      const rcz = oz + rz - 8;
+      const pivot = [
+        Number(rcx.toFixed(4)),
+        Number(rcy.toFixed(4)),
+        Number(rcz.toFixed(4)),
+      ];
+      cube.origin = [
+        Number((rcx - size[0] / 2).toFixed(4)),
+        Number((rcy - size[1] / 2).toFixed(4)),
+        Number((rcz - size[2] / 2).toFixed(4)),
+      ];
       const rot = [
         el.rotation.axis === 'x' ? -angle : 0,
         el.rotation.axis === 'y' ? -angle : 0,
@@ -622,6 +654,47 @@ export function convertModelToBedrockGeometry(flattenedModel, {
     bounds = computeWorstCaseBounds();
   }
 
+  const applyAxisScale = (sXZ, sY) => {
+    for (const b of bones) {
+      if (b.pivot) {
+        b.pivot = [
+          Number((b.pivot[0] * sXZ).toFixed(4)),
+          Number((8 + (b.pivot[1] - 8) * sY).toFixed(4)),
+          Number((b.pivot[2] * sXZ).toFixed(4)),
+        ];
+      }
+      for (const c of b.cubes ?? []) {
+        c.origin = [
+          Number((c.origin[0] * sXZ).toFixed(4)),
+          Number((8 + (c.origin[1] - 8) * sY).toFixed(4)),
+          Number((c.origin[2] * sXZ).toFixed(4)),
+        ];
+        c.size = [
+          Number(Math.max(0.05, c.size[0] * sXZ).toFixed(4)),
+          Number(Math.max(0.05, c.size[1] * sY).toFixed(4)),
+          Number(Math.max(0.05, c.size[2] * sXZ).toFixed(4)),
+        ];
+      }
+    }
+  };
+
+  const maxDistXZ = Math.max(
+    Math.abs(bounds.bMinX),
+    Math.abs(bounds.bMaxX),
+    Math.abs(bounds.bMinZ),
+    Math.abs(bounds.bMaxZ),
+  );
+  const maxDistY = Math.max(
+    Math.abs(bounds.bMinY - 8),
+    Math.abs(bounds.bMaxY - 8),
+  );
+  const scaleXZ = maxDistXZ > 13.5 && Number.isFinite(maxDistXZ) ? 13.5 / maxDistXZ : 1.0;
+  const scaleY = maxDistY > 13.5 && Number.isFinite(maxDistY) ? 13.5 / maxDistY : 1.0;
+  if (scaleXZ < 1.0 || scaleY < 1.0) {
+    applyAxisScale(scaleXZ, scaleY);
+    bounds = computeWorstCaseBounds();
+  }
+
   const maxDistFromCenter = Math.max(
     Math.abs(bounds.bMinX),
     Math.abs(bounds.bMaxX),
@@ -631,28 +704,8 @@ export function convertModelToBedrockGeometry(flattenedModel, {
     Math.abs(bounds.bMaxZ),
   );
   if (maxDistFromCenter > 13.5 && Number.isFinite(maxDistFromCenter)) {
-    const scale = 13.5 / maxDistFromCenter;
-    for (const b of bones) {
-      if (b.pivot) {
-        b.pivot = [
-          Number((b.pivot[0] * scale).toFixed(4)),
-          Number((8 + (b.pivot[1] - 8) * scale).toFixed(4)),
-          Number((b.pivot[2] * scale).toFixed(4)),
-        ];
-      }
-      for (const c of b.cubes ?? []) {
-        c.origin = [
-          Number((c.origin[0] * scale).toFixed(4)),
-          Number((8 + (c.origin[1] - 8) * scale).toFixed(4)),
-          Number((c.origin[2] * scale).toFixed(4)),
-        ];
-        c.size = [
-          Number(Math.max(0.05, c.size[0] * scale).toFixed(4)),
-          Number(Math.max(0.05, c.size[1] * scale).toFixed(4)),
-          Number(Math.max(0.05, c.size[2] * scale).toFixed(4)),
-        ];
-      }
-    }
+    const trim = 13.5 / maxDistFromCenter;
+    applyAxisScale(trim, trim);
     bounds = computeWorstCaseBounds();
   }
 
