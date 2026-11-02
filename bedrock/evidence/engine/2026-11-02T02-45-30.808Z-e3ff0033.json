@@ -1,0 +1,494 @@
+{
+  "certifiesAllPlatforms": false,
+  "clientRenderingVerified": false,
+  "events": [
+    {
+      "phase": "startup"
+    },
+    {
+      "blockRegistered": true,
+      "itemRegistered": true,
+      "phase": "worldLoad",
+      "players": 0,
+      "seed": "2640",
+      "tick": 0
+    },
+    {
+      "action": "scan",
+      "completedTick": 18,
+      "dimension": "minecraft:the_end",
+      "item": {
+        "amount": 1,
+        "typeId": "betterend_probe:thallasium_ingot"
+      },
+      "phase": "result",
+      "players": 0,
+      "records": [
+        {
+          "featureMatches": [
+            {
+              "location": {
+                "x": 2056,
+                "y": 58,
+                "z": 2056
+              },
+              "states": {
+                "betterend_probe:finish": "rough"
+              },
+              "typeId": "betterend_probe:flavolite"
+            }
+          ],
+          "location": {
+            "x": 2056,
+            "y": 64,
+            "z": 2056
+          },
+          "states": {},
+          "surface": {
+            "location": {
+              "x": 2056,
+              "y": 58,
+              "z": 2056
+            },
+            "states": {
+              "betterend_probe:finish": "rough"
+            },
+            "typeId": "betterend_probe:flavolite"
+          },
+          "typeId": "minecraft:air"
+        },
+        {
+          "featureMatches": [],
+          "location": {
+            "x": 2056,
+            "y": 64,
+            "z": 2072
+          },
+          "states": {},
+          "surface": null,
+          "typeId": "minecraft:air"
+        },
+        {
+          "featureMatches": [],
+          "location": {
+            "x": 2056,
+            "y": 64,
+            "z": 2088
+          },
+          "states": {},
+          "surface": null,
+          "typeId": "minecraft:air"
+        },
+        {
+          "featureMatches": [],
+          "location": {
+            "x": 2056,
+            "y": 64,
+            "z": 2104
+          },
+          "states": {},
+          "surface": null,
+          "typeId": "minecraft:air"
+        },
+        {
+          "featureMatches": [
+            {
+              "location": {
+                "x": 2072,
+                "y": 57,
+                "z": 2056
+              },
+              "states": {
+                "betterend_probe:finish": "rough"
+              },
+              "typeId": "betterend_probe:flavolite"
+            }
+          ],
+          "location": {
+            "x": 2072,
+            "y": 64,
+            "z": 2056
+          },
+          "states": {},
+          "surface": {
+            "location": {
+              "x": 2072,
+              "y": 57,
+              "z": 2056
+            },
+            "states": {
+              "betterend_probe:finish": "rough"
+            },
+            "typeId": "betterend_probe:flavolite"
+          },
+          "typeId": "minecraft:air"
+        },
+        {
+          "featureMatches": [
+            {
+              "location": {
+                "x": 2072,
+                "y": 50,
+                "z": 2072
+              },
+              "states": {
+                "betterend_probe:finish": "rough"
+              },
+              "typeId": "betterend_probe:flavolite"
+            }
+          ],
+          "location": {
+            "x": 2072,
+            "y": 64,
+            "z": 2072
+          },
+          "states": {},
+          "surface": {
+            "location": {
+              "x": 2072,
+              "y": 50,
+              "z": 2072
+            },
+            "states": {
+              "betterend_probe:finish": "rough"
+            },
+            "typeId": "betterend_probe:flavolite"
+          },
+          "typeId": "minecraft:air"
+        },
+        {
+          "featureMatches": [],
+          "location": {
+            "x": 2072,
+            "y": 64,
+            "z": 2088
+          },
+          "states": {},
+          "surface": null,
+          "typeId": "minecraft:air"
+        },
+        {
+          "featureMatches": [
+            {
+              "location": {
+                "x": 2072,
+                "y": 28,
+                "z": 2104
+              },
+              "states": {
+                "betterend_probe:finish": "rough"
+              },
+              "typeId": "betterend_probe:flavolite"
+            }
+          ],
+          "location": {
+            "x": 2072,
+            "y": 64,
+            "z": 2104
+          },
+          "states": {},
+          "surface": {
+            "location": {
+              "x": 2072,
+              "y": 28,
+              "z": 2104
+            },
+            "states": {
+              "betterend_probe:finish": "rough"
+            },
+            "typeId": "betterend_probe:flavolite"
+          },
+          "typeId": "minecraft:air"
+        },
+        {
+          "featureMatches": [
+            {
+              "location": {
+                "x": 2088,
+                "y": 56,
+                "z": 2056
+              },
+              "states": {
+                "betterend_probe:finish": "rough"
+              },
+              "typeId": "betterend_probe:flavolite"
+            }
+          ],
+          "location": {
+            "x": 2088,
+            "y": 64,
+            "z": 2056
+          },
+          "states": {},
+          "surface": {
+            "location": {
+              "x": 2088,
+              "y": 56,
+              "z": 2056
+            },
+            "states": {
+              "betterend_probe:finish": "rough"
+            },
+            "typeId": "betterend_probe:flavolite"
+          },
+          "typeId": "minecraft:air"
+        },
+        {
+          "featureMatches": [
+            {
+              "location": {
+                "x": 2088,
+                "y": 57,
+                "z": 2072
+              },
+              "states": {
+                "betterend_probe:finish": "rough"
+              },
+              "typeId": "betterend_probe:flavolite"
+            }
+          ],
+          "location": {
+            "x": 2088,
+            "y": 64,
+            "z": 2072
+          },
+          "states": {},
+          "surface": {
+            "location": {
+              "x": 2088,
+              "y": 57,
+              "z": 2072
+            },
+            "states": {
+              "betterend_probe:finish": "rough"
+            },
+            "typeId": "betterend_probe:flavolite"
+          },
+          "typeId": "minecraft:air"
+        },
+        {
+          "featureMatches": [
+            {
+              "location": {
+                "x": 2088,
+                "y": 57,
+                "z": 2088
+              },
+              "states": {
+                "betterend_probe:finish": "rough"
+              },
+              "typeId": "betterend_probe:flavolite"
+            }
+          ],
+          "location": {
+            "x": 2088,
+            "y": 64,
+            "z": 2088
+          },
+          "states": {},
+          "surface": {
+            "location": {
+              "x": 2088,
+              "y": 57,
+              "z": 2088
+            },
+            "states": {
+              "betterend_probe:finish": "rough"
+            },
+            "typeId": "betterend_probe:flavolite"
+          },
+          "typeId": "minecraft:air"
+        },
+        {
+          "featureMatches": [
+            {
+              "location": {
+                "x": 2088,
+                "y": 59,
+                "z": 2104
+              },
+              "states": {
+                "betterend_probe:finish": "rough"
+              },
+              "typeId": "betterend_probe:flavolite"
+            }
+          ],
+          "location": {
+            "x": 2088,
+            "y": 64,
+            "z": 2104
+          },
+          "states": {},
+          "surface": {
+            "location": {
+              "x": 2088,
+              "y": 59,
+              "z": 2104
+            },
+            "states": {
+              "betterend_probe:finish": "rough"
+            },
+            "typeId": "betterend_probe:flavolite"
+          },
+          "typeId": "minecraft:air"
+        },
+        {
+          "featureMatches": [
+            {
+              "location": {
+                "x": 2104,
+                "y": 57,
+                "z": 2056
+              },
+              "states": {
+                "betterend_probe:finish": "rough"
+              },
+              "typeId": "betterend_probe:flavolite"
+            }
+          ],
+          "location": {
+            "x": 2104,
+            "y": 64,
+            "z": 2056
+          },
+          "states": {},
+          "surface": {
+            "location": {
+              "x": 2104,
+              "y": 57,
+              "z": 2056
+            },
+            "states": {
+              "betterend_probe:finish": "rough"
+            },
+            "typeId": "betterend_probe:flavolite"
+          },
+          "typeId": "minecraft:air"
+        },
+        {
+          "featureMatches": [
+            {
+              "location": {
+                "x": 2104,
+                "y": 58,
+                "z": 2072
+              },
+              "states": {
+                "betterend_probe:finish": "rough"
+              },
+              "typeId": "betterend_probe:flavolite"
+            }
+          ],
+          "location": {
+            "x": 2104,
+            "y": 64,
+            "z": 2072
+          },
+          "states": {},
+          "surface": {
+            "location": {
+              "x": 2104,
+              "y": 58,
+              "z": 2072
+            },
+            "states": {
+              "betterend_probe:finish": "rough"
+            },
+            "typeId": "betterend_probe:flavolite"
+          },
+          "typeId": "minecraft:air"
+        },
+        {
+          "featureMatches": [
+            {
+              "location": {
+                "x": 2104,
+                "y": 60,
+                "z": 2088
+              },
+              "states": {
+                "betterend_probe:finish": "rough"
+              },
+              "typeId": "betterend_probe:flavolite"
+            }
+          ],
+          "location": {
+            "x": 2104,
+            "y": 64,
+            "z": 2088
+          },
+          "states": {},
+          "surface": {
+            "location": {
+              "x": 2104,
+              "y": 60,
+              "z": 2088
+            },
+            "states": {
+              "betterend_probe:finish": "rough"
+            },
+            "typeId": "betterend_probe:flavolite"
+          },
+          "typeId": "minecraft:air"
+        },
+        {
+          "featureMatches": [
+            {
+              "location": {
+                "x": 2104,
+                "y": 61,
+                "z": 2104
+              },
+              "states": {
+                "betterend_probe:finish": "rough"
+              },
+              "typeId": "betterend_probe:flavolite"
+            }
+          ],
+          "location": {
+            "x": 2104,
+            "y": 64,
+            "z": 2104
+          },
+          "states": {},
+          "surface": {
+            "location": {
+              "x": 2104,
+              "y": 61,
+              "z": 2104
+            },
+            "states": {
+              "betterend_probe:finish": "rough"
+            },
+            "typeId": "betterend_probe:flavolite"
+          },
+          "typeId": "minecraft:air"
+        }
+      ],
+      "requestId": "e3ff0033-284b-4f67-a44d-c3a3160a8264",
+      "seed": "2640",
+      "startedTick": 2
+    }
+  ],
+  "executableSha256": "e7775e636b9fdcbc354823d92d0c22c12738a2141d12557d856744293d258372",
+  "exit": {
+    "code": 0,
+    "signal": null
+  },
+  "expectedBuild": "1.26.40.8",
+  "failure": null,
+  "forcedTermination": false,
+  "observedBuild": "1.26.40.8",
+  "packageSha256": "b80f951aeafc6c2ec78f73a17e9199fde63ca27bb2f65684592c0df15aabb1cd",
+  "request": {
+    "action": "scan",
+    "dimension": "the_end",
+    "requestId": "e3ff0033-284b-4f67-a44d-c3a3160a8264",
+    "width": 4,
+    "x": 2048,
+    "y": 64,
+    "z": 2048
+  },
+  "schemaVersion": 1,
+  "scope": "supporting-server-side-evidence-not-full-capability-certification"
+}

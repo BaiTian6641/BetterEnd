@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "target": {
+    "marketedVersion": "26.40",
+    "serverBuild": "1.26.40.8",
+    "clientReferenceBuild": "1.26.40.5",
+    "protocolReportedBySecondarySource": 2168,
+    "acquisitionStatus": "acquired-official-browser-download",
+    "serverUrl": "https://www.minecraft.net/bedrockdedicatedserver/bin-win/bedrock-server-1.26.40.8.zip",
+    "downloadEvidence": [
+      "curl: operation timed out after 180011 ms with 0 bytes received",
+      "reader binary fetch aborted",
+      "IPv4 request: connection reset",
+      "Chromium same-origin HEAD returned 200; isolated browser download completed with 94954789 bytes"
+    ],
+    "archiveSha256": "7b649671e1d88f8bd1499c580910f099e27533efc213f9faf5a5c68dd41a77c9",
+    "executableSha256": "e7775e636b9fdcbc354823d92d0c22c12738a2141d12557d856744293d258372",
+    "authenticodeStatus": "Valid",
+    "signer": "Microsoft Corporation",
+    "staticFileVersion": null,
+    "versionVerification": "Require exact runtime startup version; this signed executable has no static FileVersion resource",
+    "runtimeVerified": true,
+    "observedRuntimeBuild": "1.26.40.8",
+    "verificationScope": "Diagnostic block/item registration, native End feature scan, central exclusion and material-board permutation state; no client rendering or full-port certification",
+    "receipts": [
+      "evidence/engine/2026-11-02T02-45-30.808Z-e3ff0033.json",
+      "evidence/engine/2026-11-02T02-45-35.690Z-ad6f05a1.json",
+      "evidence/engine/2026-11-02T02-45-39.876Z-3903fe5c.json"
+    ]
+  },
+  "apis": {
+    "server": "2.9.0",
+    "serverUi": "2.1.0",
+    "graphicsRuntime": "1.0.0-beta",
+    "graphicsTypes": "1.0.0-beta.1.26.40-stable",
+    "graphicsRequiresExperiment": "Beta APIs"
+  },
+  "samples": {
+    "repository": "https://github.com/Mojang/bedrock-samples",
+    "commit": "7844835b6baad4c0010f46901a4accf87413a022",
+    "version": "1.26.40.5"
+  },
+  "forwardEngine": {
+    "build": "1.26.61.1",
+    "buildId": "53069369",
+    "engineCommit": "86f7b32281709abd4444adb52887796af061c7bd",
+    "source": "user-supplied local archive",
+    "archiveFileName": "bedrock-server-1.26.61.1.zip",
+    "archiveSha256": "63a98e36b4c5751a8563dff6635d16e02ed0fe5a3049b2c36d388c657af01a7f",
+    "executableSha256": "2443400aa2fb41eb85e0c3d93762d8031b9d229049e77a2132778fad7dced1eb",
+    "authenticodeStatus": "Valid",
+    "signer": "Microsoft Corporation",
+    "vanillaStartupObserved": true,
+    "packRuntimeVerified": true,
+    "verificationScope": "Diagnostic block/item registration, native End feature scan, central exclusion and material-board permutation state; no client rendering or full-port certification",
+    "receipts": [
+      "evidence/engine/2026-11-02T02-36-10.661Z-da72778b.json",
+      "evidence/engine/2026-11-02T02-36-15.014Z-eccbeb7a.json",
+      "evidence/engine/2026-11-02T02-36-18.751Z-8047929b.json"
+    ],
+    "certifies2640": false
+  },
+  "sources": [
+    "https://www.minecraft.net/en-us/download/server/bedrock",
+    "https://minecraft.wiki/w/Bedrock_Edition_26.40",
+    "https://learn.microsoft.com/en-us/minecraft/creator/documents/update1.26.40?view=minecraft-bedrock-stable",
+    "https://unpkg.com/@minecraft/server@2.9.0/index.d.ts",
+    "https://registry.npmjs.org/@minecraft/server-graphics/1.0.0-beta.1.26.40-stable"
+  ]
+}

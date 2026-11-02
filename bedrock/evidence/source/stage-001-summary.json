@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "scope": "source tooling and diagnostic engine probes; not a complete survival port",
+  "upstreamCommit": "5a25059ef4fd77409024a2919fb0a0098388104f",
+  "automatedTests": {
+    "command": "npm --prefix bedrock test",
+    "passed": 32,
+    "failed": 0,
+    "log": "evidence/source/verified-stage-002.log"
+  },
+  "sourceReproducibility": {
+    "command": "npm --prefix bedrock run verify:source",
+    "exitCode": 0,
+    "log": "evidence/source/verified-stage-001.log",
+    "catalogueCounts": {
+      "biomes": 27,
+      "blockStateSnapshotRows": 18852,
+      "blocks": 728,
+      "explicitMobs": 6,
+      "items": 850,
+      "mainRecipes": 878,
+      "optionalRecipes": 1,
+      "parityEntries": 4931,
+      "recipes": 879,
+      "resources": 3320,
+      "unresolved": 7
+    },
+    "assetCounts": {
+      "animation-metadata": 36,
+      "audio": 43,
+      "blockstate": 732,
+      "equipment-definition": 6,
+      "explicitlyRestricted": 3,
+      "item-definition": 850,
+      "localization": 16,
+      "model": 2548,
+      "model-template": 75,
+      "non-content-metadata": 1,
+      "other-source-asset": 336,
+      "particle-definition": 14,
+      "renderer-metadata": 83,
+      "sound-events": 1,
+      "texture": 1917,
+      "total": 6658
+    },
+    "unresolvedCount": 27
+  },
+  "probeArchives": {
+    "runtimeTested": "b80f951aeafc6c2ec78f73a17e9199fde63ca27bb2f65684592c0df15aabb1cd",
+    "timezoneCorrected": "f83717c059952ec31a619d2e7b6e9bd5dd0b34577b7456fc8d927c72890c536d",
+    "uncompressedPayloadIdentical": true,
+    "payloadFiles": 20
+  },
+  "baselineRuntimeReceipts": [
+    "evidence/engine/2026-11-02T02-45-30.808Z-e3ff0033.json",
+    "evidence/engine/2026-11-02T02-45-35.690Z-ad6f05a1.json",
+    "evidence/engine/2026-11-02T02-45-39.876Z-3903fe5c.json",
+    "evidence/engine/2026-11-02T02-59-08.940Z-428f9ce3.json",
+    "evidence/engine/2026-11-02T02-59-14.053Z-e5441443.json"
+  ],
+  "clientRenderingVerified": false,
+  "platformCertificationComplete": false,
+  "survivalPortComplete": false
+}

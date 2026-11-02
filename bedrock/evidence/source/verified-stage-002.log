@@ -1,0 +1,50 @@
+Command: npm --prefix bedrock test
+Exit code: 0
+
+[stdout]
+
+> @baitian6641/betterend-bedrock@0.1.0 test
+> node --test tests/*.test.mjs
+
+✔ pack archives have identical bytes in western, UTC and eastern build timezones (341.4069ms)
+✔ authored resources win packaging but duplicates remain explicit policy violations (1.3319ms)
+✔ resource identity includes scope and registry category rather than output item name (0.3936ms)
+✔ enchantment tags retain their registry category and original tag identifiers (0.2546ms)
+✔ registration snapshots preserve sentinel and compact values and reject duplicate/malformed IDs (0.8ms)
+✔ shape snapshot retains waterlogging, empty collision and out-of-unit collision bounds without inventing defaults (0.8754ms)
+✔ biome declarations preserve parent relationships and exclude codec registration identifiers (0.734ms)
+✔ explicit mob extraction does not treat spawn eggs or registry helper methods as additional mobs (0.594ms)
+✔ failed attempts remain cumulative across passing runs and other gates (1.3713ms)
+✔ recorded evidence binds retained artifact bytes and rejects a false passing exit (86.9348ms)
+✔ fifteen failures prevent another attempt without erasing history (446.5525ms)
+✔ missing or unretained artifacts cannot produce evidence and release the writer lock (66.1213ms)
+✔ corrupt or out-of-sequence evidence fails closed rather than resetting attempt counts (36.9059ms)
+✔ changing or deleting retained evidence invalidates an earlier passing receipt (73.5725ms)
+✔ non-string gate IDs cannot evade cumulative failure accounting (94.2427ms)
+✔ persisted evidence without a bound digest is not accepted as a passing record (125.6622ms)
+✔ pinned source uses committed bytes instead of checkout newline conversion or local modifications (1004.8907ms)
+✔ generation acceptance evaluates protection per column when a scan crosses a region boundary (1.4784ms)
+✔ incomplete or all-air outer scans do not masquerade as native generation success (0.2847ms)
+✔ native placement requires the correct precondition, post-permutation and requested dimension (0.2605ms)
+✔ restart inspection rejects a block whose identity survives but its permutation resets (0.2518ms)
+✔ an exact normalized restricted asset cannot inherit the ordinary repository license (1.8804ms)
+✔ renaming or combining restricted artwork preserves its obligations and byte-bound source identities (0.9685ms)
+✔ destination mapping preserves colliding basenames and separates namespaces and image classes (0.4159ms)
+✔ typed references distinguish bindings, templates, external models and actual audio files (0.4798ms)
+✔ invalid source JSON remains inventoried with a blocking diagnostic rather than silently overwritten (287.0764ms)
+✔ portable source paths reject traversal, absolute paths and Windows archive hazards (1.3346ms)
+✔ archive destinations reject duplicate and case-only collisions without rejecting distinct assets (0.4896ms)
+✔ source JSON retains exact byte provenance and reports malformed input with its path (104.5326ms)
+✔ duplicate decoded keys cannot silently overwrite source translations or recipe fields (50.7099ms)
+✔ directory discovery and fingerprints are independent of creation/input order (105.029ms)
+✔ deterministic JSON preserves array semantics while normalizing object key order (0.3965ms)
+ℹ tests 32
+ℹ suites 0
+ℹ pass 32
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1232.3028
+
+[stderr]

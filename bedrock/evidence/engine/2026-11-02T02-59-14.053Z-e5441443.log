@@ -1,0 +1,52 @@
+NO LOG FILE! - setting up server logging...
+[2026-11-02 10:59:14:118 INFO] Starting Server
+[2026-11-02 10:59:14:118 INFO] Version: 1.26.40.8
+[2026-11-02 10:59:14:118 INFO] Session ID: dd76aecd-5ddc-4f48-8ce5-4237be427ef3
+[2026-11-02 10:59:14:118 INFO] Build ID: 48609425
+[2026-11-02 10:59:14:118 INFO] Branch: r/26_u4
+[2026-11-02 10:59:14:118 INFO] Commit ID: 93e89c3199ffce33269d88e6fec322330c130ae3
+[2026-11-02 10:59:14:118 INFO] Configuration: Publish
+[2026-11-02 10:59:14:119 INFO] Contents of server.properties: {}
+[2026-11-02 10:59:14:119 INFO] Level Name: betterend-capability-2640
+[2026-11-02 10:59:14:119 INFO] Profiler config ('bootstrap.json') load result: success=1, errorMessage=(null)
+[2026-11-02 10:59:14:121 INFO] No CDN config file found at: cdn_config.json for dedicated server
+[2026-11-02 10:59:14:121 INFO] Game mode: 1 Creative
+[2026-11-02 10:59:14:121 INFO] Difficulty: 1 EASY
+[2026-11-02 10:59:14:121 INFO] Content logging to console is enabled.
+[2026-11-02 10:59:14:124 INFO] 
+
+#####################################################
+#                                                   #
+#               LOADING VANILLA WORLD               #
+#                                                   #
+#####################################################
+[2026-11-02 10:59:14:952 INFO] Opening level 'worlds/betterend-capability-2640/db'
+[2026-11-02 10:59:15:223 INFO] Pack Stack - [00] BetterEnd engine capability probes (id: d16a5a53-d15f-482e-bf74-26c4d256ed24, version: 0.1.0) @ behavior_packs/betterend_probe
+[2026-11-02 10:59:15:274 WARN] [Scripting] BETTEREND_PROBE {"phase":"startup"}
+
+[2026-11-02 10:59:16:482 INFO] IPv4 supported, port: 29140: Used for gameplay
+[2026-11-02 10:59:16:482 INFO] IPv6 supported, port: 29141: Used for gameplay
+[2026-11-02 10:59:16:515 INFO] Signed in to signaling service successfully
+[2026-11-02 10:59:16:528 INFO] Waiting for Minecraft services...
+[2026-11-02 10:59:16:638 INFO] Server started.
+[2026-11-02 10:59:16:638 WARN] ================ ALLOW LIST WARNING ===================
+[2026-11-02 10:59:16:638 WARN] Allow list is enabled but contains no entries. 
+[2026-11-02 10:59:16:638 WARN] Use allowlist add <playername> for you and your friends so that they can access the server, or modify allowlist.json manually.
+[2026-11-02 10:59:16:638 WARN] 
+Alternatively, the allow list can be turned off by typing allowlist off or manually toggled in the server.properties file.
+[2026-11-02 10:59:16:638 WARN] =======================================================
+[2026-11-02 10:59:16:638 INFO] ================ TELEMETRY MESSAGE ===================
+[2026-11-02 10:59:16:638 INFO] Server Telemetry is currently not enabled. 
+[2026-11-02 10:59:16:638 INFO] Enabling this telemetry helps us improve the game.
+[2026-11-02 10:59:16:638 INFO] 
+[2026-11-02 10:59:16:638 INFO] To enable this feature, add the line 'emit-server-telemetry=true'
+[2026-11-02 10:59:16:638 INFO] to the server.properties file in the handheld/src-server directory
+[2026-11-02 10:59:16:638 INFO] ======================================================
+[2026-11-02 10:59:16:661 WARN] [Scripting] BETTEREND_PROBE {"phase":"worldLoad","tick":73,"seed":"2640","players":0,"blockRegistered":true,"itemRegistered":true}
+
+[2026-11-02 10:59:16:809 INFO] Script event betterend_probe:run has been sent
+[2026-11-02 10:59:17:318 WARN] [Scripting] BETTEREND_PROBE {"phase":"result","requestId":"e5441443-7d12-4818-95fc-637674e3dcc2","action":"inspect","dimension":"minecraft:the_end","seed":"2640","startedTick":76,"completedTick":87,"players":0,"item":{"typeId":"betterend_probe:thallasium_ingot","amount":1},"records":[{"location":{"x":2084,"y":80,"z":2080},"before":{"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"emissive"}},"featurePlaced":null,"after":{"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"emissive"}}}]}
+
+[2026-11-02 10:59:17:381 INFO] Server stop requested.
+[2026-11-02 10:59:17:446 INFO] Stopping server...
+Quit correctly

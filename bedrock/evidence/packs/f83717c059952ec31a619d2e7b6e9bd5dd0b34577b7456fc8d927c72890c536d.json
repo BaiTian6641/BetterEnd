@@ -1,0 +1,150 @@
+{
+  "archive": {
+    "bytes": 8434,
+    "path": "BetterEnd-Probes.mcaddon",
+    "sha256": "f83717c059952ec31a619d2e7b6e9bd5dd0b34577b7456fc8d927c72890c536d"
+  },
+  "calibrationNote": "MER extremes are diagnostic controls, not claimed upstream material properties. All block states retain gameplay light level zero.",
+  "files": [
+    {
+      "pack": "behavior",
+      "path": "manifest.json",
+      "sha256": "86253b859ef309d2f2dc1db686e7f5c8f75bcca71c8525b58ecd1534a802002e"
+    },
+    {
+      "pack": "behavior",
+      "path": "blocks/flavolite.json",
+      "sha256": "a1c460b6ce3eb0d1c977528d826a4a4cc5bd1509ed9aef8b7a3bac7fbcf6d0cd"
+    },
+    {
+      "pack": "behavior",
+      "path": "items/thallasium_ingot.json",
+      "sha256": "4abb6294a72c2ab10ded6897e12783207356a45f515b1da1161f4a36c9c0dea1"
+    },
+    {
+      "pack": "behavior",
+      "path": "features/flavolite_feature.json",
+      "sha256": "0e2a7fa162cc92449afb9468783e56b085ff08dbde76bcf41fcd9a29579454f5"
+    },
+    {
+      "pack": "behavior",
+      "path": "feature_rules/outer_end_rule.json",
+      "sha256": "994604234bdaae1eb89705d42dedf70cf9d555e564b4e7650beaed84a0c9ce82"
+    },
+    {
+      "pack": "behavior",
+      "path": "scripts/main.js",
+      "sha256": "4314baef49c6d9f02c11f0d7c986ef68e24e0e25f602b54f1e47a6ef9606236d"
+    },
+    {
+      "pack": "behavior",
+      "path": "LICENSE.txt",
+      "sha256": "cbd12be92c00bebebce478f81518792a8a13bf00bcef9cdf7535aa19b8d616e2"
+    },
+    {
+      "pack": "resource",
+      "path": "manifest.json",
+      "sha256": "7c0f84860bdcdd5e3d9752bbd5556536e7d10712aaa22d00134ac74f074322e3"
+    },
+    {
+      "pack": "resource",
+      "path": "textures/terrain_texture.json",
+      "sha256": "a244de420fd85f702181d299a5acbfe9892c3278c69b69dfc19d0be356d123bd"
+    },
+    {
+      "pack": "resource",
+      "path": "textures/item_texture.json",
+      "sha256": "ced1c8bdb4a3dbe98cd0ee4eef74b622c537c654e87480f0fb3367c202ed41fb"
+    },
+    {
+      "pack": "resource",
+      "path": "textures/blocks/flavolite_rough.png",
+      "sha256": "019c667541c0884a09422fe2c962352bdf40433ef87a6cd95518e5fdde898b6c"
+    },
+    {
+      "pack": "resource",
+      "path": "textures/blocks/flavolite_rough.texture_set.json",
+      "sha256": "2a2f61dc92aa3a935deb9945c4505342e42549acc3a4d19cf88e704a8a9254a8"
+    },
+    {
+      "pack": "resource",
+      "path": "textures/blocks/flavolite_metal.png",
+      "sha256": "019c667541c0884a09422fe2c962352bdf40433ef87a6cd95518e5fdde898b6c"
+    },
+    {
+      "pack": "resource",
+      "path": "textures/blocks/flavolite_metal.texture_set.json",
+      "sha256": "e0b673e794ce9741e758feb81391b744519e5db286377d3518379aaa0d93576c"
+    },
+    {
+      "pack": "resource",
+      "path": "textures/blocks/flavolite_emissive.png",
+      "sha256": "019c667541c0884a09422fe2c962352bdf40433ef87a6cd95518e5fdde898b6c"
+    },
+    {
+      "pack": "resource",
+      "path": "textures/blocks/flavolite_emissive.texture_set.json",
+      "sha256": "b03f4ef3567f0dfb2d35a8288b33a79c7b3c16a7e11f9fa715f792a1e9560897"
+    },
+    {
+      "pack": "resource",
+      "path": "textures/items/thallasium_ingot.png",
+      "sha256": "f2069cbbb24692384ed69fb8c9b28ae6a4dae02242eccc96f551e96579561dae"
+    },
+    {
+      "pack": "resource",
+      "path": "textures/items/thallasium_ingot.texture_set.json",
+      "sha256": "d4cd577fba3c2fb5bf33a5760a22c0366de3b0505b2cf25aab5da7f1842659d6"
+    },
+    {
+      "pack": "resource",
+      "path": "LICENSE.txt",
+      "sha256": "cbd12be92c00bebebce478f81518792a8a13bf00bcef9cdf7535aa19b8d616e2"
+    },
+    {
+      "pack": "resource",
+      "path": "LICENSE.ASSETS.txt",
+      "sha256": "16a0d82a00e08b92cca6a995401d9e15c79c26343b379a27ed5c6750355093c1"
+    }
+  ],
+  "identity": {
+    "behaviorDataModule": "393559df-44ee-4c80-8bb7-9acb3c262141",
+    "behaviorHeader": "d16a5a53-d15f-482e-bf74-26c4d256ed24",
+    "behaviorScriptModule": "3ee680d7-833e-4f82-8daf-a3478c437cdd",
+    "namespace": "betterend_probe",
+    "resourceHeader": "da0a04d5-ea63-492c-a620-461751f5a788",
+    "resourceModule": "9c4f867f-b48b-4af5-a8bc-bd8d282d2c26",
+    "schemaVersion": 1,
+    "version": [
+      0,
+      1,
+      0
+    ]
+  },
+  "purpose": "capability-diagnostics-not-production-port",
+  "schemaVersion": 1,
+  "sourceAssets": [
+    {
+      "basis": "repository-license-inheritance; not among explicit LICENSE.ASSETS exceptions",
+      "destinations": [
+        "textures/blocks/flavolite_rough.png",
+        "textures/blocks/flavolite_metal.png",
+        "textures/blocks/flavolite_emissive.png"
+      ],
+      "license": "MIT",
+      "sha256": "019c667541c0884a09422fe2c962352bdf40433ef87a6cd95518e5fdde898b6c",
+      "source": "src/main/resources/assets/betterend/textures/block/flavolite.png"
+    },
+    {
+      "basis": "repository-license-inheritance; not among explicit LICENSE.ASSETS exceptions",
+      "destinations": [
+        "textures/items/thallasium_ingot.png"
+      ],
+      "license": "MIT",
+      "sha256": "f2069cbbb24692384ed69fb8c9b28ae6a4dae02242eccc96f551e96579561dae",
+      "source": "src/main/resources/assets/betterend/textures/item/thallasium_ingot.png"
+    }
+  ],
+  "sourceCommit": "5a25059ef4fd77409024a2919fb0a0098388104f",
+  "target": "26.40"
+}

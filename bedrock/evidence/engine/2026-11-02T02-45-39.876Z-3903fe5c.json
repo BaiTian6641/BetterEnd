@@ -1,0 +1,104 @@
+{
+  "certifiesAllPlatforms": false,
+  "clientRenderingVerified": false,
+  "events": [
+    {
+      "phase": "startup"
+    },
+    {
+      "blockRegistered": true,
+      "itemRegistered": true,
+      "phase": "worldLoad",
+      "players": 0,
+      "seed": "2640",
+      "tick": 36
+    },
+    {
+      "action": "board",
+      "completedTick": 52,
+      "dimension": "minecraft:the_end",
+      "item": {
+        "amount": 1,
+        "typeId": "betterend_probe:thallasium_ingot"
+      },
+      "phase": "result",
+      "players": 0,
+      "records": [
+        {
+          "after": {
+            "states": {
+              "betterend_probe:finish": "rough"
+            },
+            "typeId": "betterend_probe:flavolite"
+          },
+          "before": {
+            "states": {},
+            "typeId": "minecraft:air"
+          },
+          "location": {
+            "x": 2080,
+            "y": 80,
+            "z": 2080
+          }
+        },
+        {
+          "after": {
+            "states": {
+              "betterend_probe:finish": "metal"
+            },
+            "typeId": "betterend_probe:flavolite"
+          },
+          "before": {
+            "states": {},
+            "typeId": "minecraft:air"
+          },
+          "location": {
+            "x": 2082,
+            "y": 80,
+            "z": 2080
+          }
+        },
+        {
+          "after": {
+            "states": {
+              "betterend_probe:finish": "emissive"
+            },
+            "typeId": "betterend_probe:flavolite"
+          },
+          "before": {
+            "states": {},
+            "typeId": "minecraft:air"
+          },
+          "location": {
+            "x": 2084,
+            "y": 80,
+            "z": 2080
+          }
+        }
+      ],
+      "requestId": "3903fe5c-8070-4c5a-9c9b-04ad69d457fd",
+      "seed": "2640",
+      "startedTick": 39
+    }
+  ],
+  "executableSha256": "e7775e636b9fdcbc354823d92d0c22c12738a2141d12557d856744293d258372",
+  "exit": {
+    "code": 0,
+    "signal": null
+  },
+  "expectedBuild": "1.26.40.8",
+  "failure": null,
+  "forcedTermination": false,
+  "observedBuild": "1.26.40.8",
+  "packageSha256": "b80f951aeafc6c2ec78f73a17e9199fde63ca27bb2f65684592c0df15aabb1cd",
+  "request": {
+    "action": "board",
+    "dimension": "the_end",
+    "requestId": "3903fe5c-8070-4c5a-9c9b-04ad69d457fd",
+    "x": 2080,
+    "y": 80,
+    "z": 2080
+  },
+  "schemaVersion": 1,
+  "scope": "supporting-server-side-evidence-not-full-capability-certification"
+}

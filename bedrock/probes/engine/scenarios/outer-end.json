@@ -1,0 +1,8 @@
+{
+  "action": "scan",
+  "dimension": "the_end",
+  "x": 2048,
+  "y": 64,
+  "z": 2048,
+  "width": 4
+}

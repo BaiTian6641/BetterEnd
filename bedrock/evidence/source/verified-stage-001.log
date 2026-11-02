@@ -1,0 +1,91 @@
+Command: npm --prefix bedrock run verify:source
+Exit code: 0
+
+[stdout]
+
+> @baitian6641/betterend-bedrock@0.1.0 verify:source
+> node --test tests/*.test.mjs && node tools/source-stage.mjs check
+
+✔ authored resources win packaging but duplicates remain explicit policy violations (1.2391ms)
+✔ resource identity includes scope and registry category rather than output item name (0.3191ms)
+✔ enchantment tags retain their registry category and original tag identifiers (0.1389ms)
+✔ registration snapshots preserve sentinel and compact values and reject duplicate/malformed IDs (0.472ms)
+✔ shape snapshot retains waterlogging, empty collision and out-of-unit collision bounds without inventing defaults (0.5964ms)
+✔ biome declarations preserve parent relationships and exclude codec registration identifiers (0.5222ms)
+✔ explicit mob extraction does not treat spawn eggs or registry helper methods as additional mobs (0.423ms)
+✔ failed attempts remain cumulative across passing runs and other gates (2.9507ms)
+✔ recorded evidence binds retained artifact bytes and rejects a false passing exit (73.4565ms)
+✔ fifteen failures prevent another attempt without erasing history (534.4339ms)
+✔ missing or unretained artifacts cannot produce evidence and release the writer lock (162.0286ms)
+✔ corrupt or out-of-sequence evidence fails closed rather than resetting attempt counts (37.9159ms)
+✔ changing or deleting retained evidence invalidates an earlier passing receipt (151.6118ms)
+✔ non-string gate IDs cannot evade cumulative failure accounting (68.2129ms)
+✔ persisted evidence without a bound digest is not accepted as a passing record (116.5592ms)
+✔ pinned source uses committed bytes instead of checkout newline conversion or local modifications (1208.3368ms)
+✔ generation acceptance evaluates protection per column when a scan crosses a region boundary (1.5949ms)
+✔ incomplete or all-air outer scans do not masquerade as native generation success (0.3902ms)
+✔ native placement requires the correct precondition, post-permutation and requested dimension (0.4379ms)
+✔ restart inspection rejects a block whose identity survives but its permutation resets (0.294ms)
+✔ an exact normalized restricted asset cannot inherit the ordinary repository license (2.9209ms)
+✔ renaming or combining restricted artwork preserves its obligations and byte-bound source identities (1.3094ms)
+✔ destination mapping preserves colliding basenames and separates namespaces and image classes (0.5668ms)
+✔ typed references distinguish bindings, templates, external models and actual audio files (0.8603ms)
+✔ invalid source JSON remains inventoried with a blocking diagnostic rather than silently overwritten (325.8212ms)
+✔ portable source paths reject traversal, absolute paths and Windows archive hazards (1.1842ms)
+✔ archive destinations reject duplicate and case-only collisions without rejecting distinct assets (0.3769ms)
+✔ source JSON retains exact byte provenance and reports malformed input with its path (116.2101ms)
+✔ duplicate decoded keys cannot silently overwrite source translations or recipe fields (37.7678ms)
+✔ directory discovery and fingerprints are independent of creation/input order (86.4353ms)
+✔ deterministic JSON preserves array semantics while normalizing object key order (0.5557ms)
+ℹ tests 31
+ℹ suites 0
+ℹ pass 31
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1491.3069
+{
+  "mode": "check",
+  "outputFiles": 6,
+  "catalogue": {
+    "blocks": 728,
+    "items": 850,
+    "explicitMobs": 6,
+    "biomes": 27,
+    "blockStateSnapshotRows": 18852,
+    "resources": 3320,
+    "recipes": 879,
+    "mainRecipes": 878,
+    "optionalRecipes": 1,
+    "parityEntries": 4931,
+    "unresolved": 7
+  },
+  "assets": {
+    "blockstate": 732,
+    "texture": 1917,
+    "localization": 16,
+    "other-source-asset": 336,
+    "renderer-metadata": 83,
+    "model": 2548,
+    "particle-definition": 14,
+    "model-template": 75,
+    "audio": 43,
+    "sound-events": 1,
+    "animation-metadata": 36,
+    "non-content-metadata": 1,
+    "equipment-definition": 6,
+    "item-definition": 850,
+    "total": 6658,
+    "explicitlyRestricted": 3
+  },
+  "unresolved": 27,
+  "runtimeCertified": false
+}
+
+[stderr]
+npm notice
+npm notice New major version of npm available! 11.17.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice

@@ -1,0 +1,6 @@
+# Local dependencies and reproducible release output
+node_modules/
+dist/
+
+# Downloaded engines, disposable worlds, caches, and test fixtures
+.work/

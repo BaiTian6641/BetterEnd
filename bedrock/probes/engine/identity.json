@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "version": [
+    0,
+    1,
+    0
+  ],
+  "namespace": "betterend_probe",
+  "behaviorHeader": "d16a5a53-d15f-482e-bf74-26c4d256ed24",
+  "behaviorDataModule": "393559df-44ee-4c80-8bb7-9acb3c262141",
+  "behaviorScriptModule": "3ee680d7-833e-4f82-8daf-a3478c437cdd",
+  "resourceHeader": "da0a04d5-ea63-492c-a620-461751f5a788",
+  "resourceModule": "9c4f867f-b48b-4af5-a8bc-bd8d282d2c26"
+}

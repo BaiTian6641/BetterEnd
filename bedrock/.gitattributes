@@ -1,0 +1,12 @@
+*.mjs text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.jsonl text eol=lf
+*.md text eol=lf
+*.png binary
+*.ogg binary
+*.mcpack binary
+*.mcaddon binary
+
+# Evidence digests bind exact retained bytes, including original line endings.
+evidence/** -text

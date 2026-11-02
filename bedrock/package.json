@@ -1,0 +1,22 @@
+{
+  "name": "@baitian6641/betterend-bedrock",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Native BetterEnd Bedrock port and audited source/engine verification tooling",
+  "engines": {
+    "node": ">=24.0.0 <25"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "evidence": "node tools/evidence.mjs",
+    "extract:source": "node tools/source-stage.mjs extract",
+    "verify:source": "node --test tests/*.test.mjs && node tools/source-stage.mjs check",
+    "package:probe": "node tools/build-probe.mjs",
+    "probe:bds": "node tools/run-bds-probe.mjs"
+  },
+  "devDependencies": {
+    "fflate": "0.8.2",
+    "jsonc-parser": "3.3.1"
+  }
+}

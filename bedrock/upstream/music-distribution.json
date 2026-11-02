@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "distribution": {
+    "project": "gc8OEnCC",
+    "versionId": "lBlALTjv",
+    "version": "26.301.2",
+    "url": "https://cdn.modrinth.com/data/gc8OEnCC/versions/lBlALTjv/better-end-26.301.2.jar",
+    "metadataUrl": "https://api.modrinth.com/v2/version/lBlALTjv",
+    "sha512": "47f6825aa26ac3bf8ee74ebc2c66dd817afcd79434bea5e08a5bd36a01e1e43233a092a57a214d5512e325d82a4ecc6c17a4cec26ad586e1fe1c54cb6071fab2",
+    "sha512VerifiedLocally": true,
+    "sourceRelationship": "Published release is the direct parent of the pinned ladder-fix commit; it is not a byte-identical executable of the later commit."
+  },
+  "tracks": [
+    {
+      "id": "betterend:ender_hollow",
+      "member": "assets/betterend/sounds/music/ender_hollow.ogg",
+      "bytes": 2368361,
+      "sha256": "1b05ebe3f690ffe921d64613e13616943be4cdcedade1807839388d9820cd28b",
+      "artistCredit": "noqwww",
+      "attributionEvidence": "src/main/resources/assets/betterend/lang/en_us.json",
+      "decodingVerified": false,
+      "playbackVerified": false,
+      "distributionAudit": "pending"
+    },
+    {
+      "id": "betterend:moonlit_undercurrents",
+      "member": "assets/betterend/sounds/music/moonlit_undercurrents.ogg",
+      "bytes": 2632879,
+      "sha256": "2196752806dff9e8a0b234e03e1dc24c425f0bcbead7cbf51333c2993a01da81",
+      "artistCredit": "noqwww",
+      "attributionEvidence": "src/main/resources/assets/betterend/lang/en_us.json",
+      "decodingVerified": false,
+      "playbackVerified": false,
+      "distributionAudit": "pending"
+    }
+  ],
+  "licenseObservation": "The downloaded archive contains LICENSE and LICENSE.ASSETS with the same MIT notice and three explicit CC BY-NC-SA file exceptions as the source. No separate track-specific license notice was located among the archive license/credit filenames. This is recorded distribution-license evidence, not a completed per-track rights approval.",
+  "status": "Required bytes located and hash-verified in the official distribution; audio decoding, playback, integration and distribution review remain open."
+}

@@ -1,0 +1,52 @@
+NO LOG FILE! - setting up server logging...
+[2026-11-02 10:45:30:988 INFO] Starting Server
+[2026-11-02 10:45:30:988 INFO] Version: 1.26.40.8
+[2026-11-02 10:45:30:988 INFO] Session ID: b49be1e2-e166-43fd-8540-e54849fabab8
+[2026-11-02 10:45:30:988 INFO] Build ID: 48609425
+[2026-11-02 10:45:30:988 INFO] Branch: r/26_u4
+[2026-11-02 10:45:30:988 INFO] Commit ID: 93e89c3199ffce33269d88e6fec322330c130ae3
+[2026-11-02 10:45:30:988 INFO] Configuration: Publish
+[2026-11-02 10:45:30:989 INFO] Contents of server.properties: {}
+[2026-11-02 10:45:30:989 INFO] Level Name: betterend-capability-2640
+[2026-11-02 10:45:30:989 INFO] Profiler config ('bootstrap.json') load result: success=1, errorMessage=(null)
+[2026-11-02 10:45:30:992 INFO] No CDN config file found at: cdn_config.json for dedicated server
+[2026-11-02 10:45:30:992 INFO] Game mode: 1 Creative
+[2026-11-02 10:45:30:992 INFO] Difficulty: 1 EASY
+[2026-11-02 10:45:30:992 INFO] Content logging to console is enabled.
+[2026-11-02 10:45:30:996 INFO] 
+
+#####################################################
+#                                                   #
+#              CREATING VANILLA WORLD               #
+#                                                   #
+#####################################################
+[2026-11-02 10:45:31:663 INFO] Opening level 'worlds/betterend-capability-2640/db'
+[2026-11-02 10:45:31:942 INFO] Pack Stack - [00] BetterEnd engine capability probes (id: d16a5a53-d15f-482e-bf74-26c4d256ed24, version: 0.1.0) @ behavior_packs/betterend_probe
+[2026-11-02 10:45:32:000 WARN] [Scripting] BETTEREND_PROBE {"phase":"startup"}
+
+[2026-11-02 10:45:33:090 INFO] IPv4 supported, port: 29140: Used for gameplay
+[2026-11-02 10:45:33:090 INFO] IPv6 supported, port: 29141: Used for gameplay
+[2026-11-02 10:45:33:120 INFO] Signed in to signaling service successfully
+[2026-11-02 10:45:33:144 INFO] Waiting for Minecraft services...
+[2026-11-02 10:45:33:257 INFO] Server started.
+[2026-11-02 10:45:33:257 WARN] ================ ALLOW LIST WARNING ===================
+[2026-11-02 10:45:33:257 WARN] Allow list is enabled but contains no entries. 
+[2026-11-02 10:45:33:257 WARN] Use allowlist add <playername> for you and your friends so that they can access the server, or modify allowlist.json manually.
+[2026-11-02 10:45:33:257 WARN] 
+Alternatively, the allow list can be turned off by typing allowlist off or manually toggled in the server.properties file.
+[2026-11-02 10:45:33:257 WARN] =======================================================
+[2026-11-02 10:45:33:257 INFO] ================ TELEMETRY MESSAGE ===================
+[2026-11-02 10:45:33:257 INFO] Server Telemetry is currently not enabled. 
+[2026-11-02 10:45:33:257 INFO] Enabling this telemetry helps us improve the game.
+[2026-11-02 10:45:33:257 INFO] 
+[2026-11-02 10:45:33:257 INFO] To enable this feature, add the line 'emit-server-telemetry=true'
+[2026-11-02 10:45:33:257 INFO] to the server.properties file in the handheld/src-server directory
+[2026-11-02 10:45:33:257 INFO] ======================================================
+[2026-11-02 10:45:33:297 WARN] [Scripting] BETTEREND_PROBE {"phase":"worldLoad","tick":0,"seed":"2640","players":0,"blockRegistered":true,"itemRegistered":true}
+
+[2026-11-02 10:45:33:407 INFO] Script event betterend_probe:run has been sent
+[2026-11-02 10:45:34:148 WARN] [Scripting] BETTEREND_PROBE {"phase":"result","requestId":"e3ff0033-284b-4f67-a44d-c3a3160a8264","action":"scan","dimension":"minecraft:the_end","seed":"2640","startedTick":2,"completedTick":18,"players":0,"item":{"typeId":"betterend_probe:thallasium_ingot","amount":1},"records":[{"location":{"x":2056,"y":64,"z":2056},"typeId":"minecraft:air","states":{},"surface":{"location":{"x":2056,"y":58,"z":2056},"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"rough"}},"featureMatches":[{"location":{"x":2056,"y":58,"z":2056},"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"rough"}}]},{"location":{"x":2056,"y":64,"z":2072},"typeId":"minecraft:air","states":{},"surface":null,"featureMatches":[]},{"location":{"x":2056,"y":64,"z":2088},"typeId":"minecraft:air","states":{},"surface":null,"featureMatches":[]},{"location":{"x":2056,"y":64,"z":2104},"typeId":"minecraft:air","states":{},"surface":null,"featureMatches":[]},{"location":{"x":2072,"y":64,"z":2056},"typeId":"minecraft:air","states":{},"surface":{"location":{"x":2072,"y":57,"z":2056},"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"rough"}},"featureMatches":[{"location":{"x":2072,"y":57,"z":2056},"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"rough"}}]},{"location":{"x":2072,"y":64,"z":2072},"typeId":"minecraft:air","states":{},"surface":{"location":{"x":2072,"y":50,"z":2072},"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"rough"}},"featureMatches":[{"location":{"x":2072,"y":50,"z":2072},"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"rough"}}]},{"location":{"x":2072,"y":64,"z":2088},"typeId":"minecraft:air","states":{},"surface":null,"featureMatches":[]},{"location":{"x":2072,"y":64,"z":2104},"typeId":"minecraft:air","states":{},"surface":{"location":{"x":2072,"y":28,"z":2104},"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"rough"}},"featureMatches":[{"location":{"x":2072,"y":28,"z":2104},"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"rough"}}]},{"location":{"x":2088,"y":64,"z":2056},"typeId":"minecraft:air","states":{},"surface":{"location":{"x":2088,"y":56,"z":2056},"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"rough"}},"featureMatches":[{"location":{"x":2088,"y":56,"z":2056},"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"rough"}}]},{"location":{"x":2088,"y":64,"z":2072},"typeId":"minecraft:air","states":{},"surface":{"location":{"x":2088,"y":57,"z":2072},"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"rough"}},"featureMatches":[{"location":{"x":2088,"y":57,"z":2072},"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"rough"}}]},{"location":{"x":2088,"y":64,"z":2088},"typeId":"minecraft:air","states":{},"surface":{"location":{"x":2088,"y":57,"z":2088},"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"rough"}},"featureMatches":[{"location":{"x":2088,"y":57,"z":2088},"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"rough"}}]},{"location":{"x":2088,"y":64,"z":2104},"typeId":"minecraft:air","states":{},"surface":{"location":{"x":2088,"y":59,"z":2104},"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"rough"}},"featureMatches":[{"location":{"x":2088,"y":59,"z":2104},"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"rough"}}]},{"location":{"x":2104,"y":64,"z":2056},"typeId":"minecraft:air","states":{},"surface":{"location":{"x":2104,"y":57,"z":2056},"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"rough"}},"featureMatches":[{"location":{"x":2104,"y":57,"z":2056},"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"rough"}}]},{"location":{"x":2104,"y":64,"z":2072},"typeId":"minecraft:air","states":{},"surface":{"location":{"x":2104,"y":58,"z":2072},"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"rough"}},"featureMatches":[{"location":{"x":2104,"y":58,"z":2072},"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"rough"}}]},{"location":{"x":2104,"y":64,"z":2088},"typeId":"minecraft:air","states":{},"surface":{"location":{"x":2104,"y":60,"z":2088},"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"rough"}},"featureMatches":[{"location":{"x":2104,"y":60,"z":2088},"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"rough"}}]},{"location":{"x":2104,"y":64,"z":2104},"typeId":"minecraft:air","states":{},"surface":{"location":{"x":2104,"y":61,"z":2104},"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"rough"}},"featureMatches":[{"location":{"x":2104,"y":61,"z":2104},"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"rough"}}]}]}
+
+ [2026-11-02 10:45:34:177 INFO] Server stop requested.
+[2026-11-02 10:45:34:258 INFO] Stopping server...
+Quit correctly

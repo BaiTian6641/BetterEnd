@@ -1,0 +1,51 @@
+NO LOG FILE! - setting up server logging...
+[2026-11-02 10:45:35:755 INFO] Starting Server
+[2026-11-02 10:45:35:755 INFO] Version: 1.26.40.8
+[2026-11-02 10:45:35:755 INFO] Session ID: 3c45713b-246c-487d-a228-e8eb45616235
+[2026-11-02 10:45:35:755 INFO] Build ID: 48609425
+[2026-11-02 10:45:35:755 INFO] Branch: r/26_u4
+[2026-11-02 10:45:35:755 INFO] Commit ID: 93e89c3199ffce33269d88e6fec322330c130ae3
+[2026-11-02 10:45:35:755 INFO] Configuration: Publish
+[2026-11-02 10:45:35:755 INFO] Contents of server.properties: {}
+[2026-11-02 10:45:35:755 INFO] Level Name: betterend-capability-2640
+[2026-11-02 10:45:35:755 INFO] Profiler config ('bootstrap.json') load result: success=1, errorMessage=(null)
+[2026-11-02 10:45:35:757 INFO] No CDN config file found at: cdn_config.json for dedicated server
+[2026-11-02 10:45:35:757 INFO] Game mode: 1 Creative
+[2026-11-02 10:45:35:757 INFO] Difficulty: 1 EASY
+[2026-11-02 10:45:35:757 INFO] Content logging to console is enabled.
+[2026-11-02 10:45:35:760 INFO] 
+
+#####################################################
+#                                                   #
+#               LOADING VANILLA WORLD               #
+#                                                   #
+#####################################################
+[2026-11-02 10:45:36:447 INFO] Opening level 'worlds/betterend-capability-2640/db'
+[2026-11-02 10:45:36:685 INFO] Pack Stack - [00] BetterEnd engine capability probes (id: d16a5a53-d15f-482e-bf74-26c4d256ed24, version: 0.1.0) @ behavior_packs/betterend_probe
+[2026-11-02 10:45:36:733 WARN] [Scripting] BETTEREND_PROBE {"phase":"startup"}
+
+[2026-11-02 10:45:37:794 INFO] IPv4 supported, port: 29140: Used for gameplay
+[2026-11-02 10:45:37:795 INFO] IPv6 supported, port: 29141: Used for gameplay
+[2026-11-02 10:45:37:825 INFO] Signed in to signaling service successfully
+[2026-11-02 10:45:37:855 INFO] Server started.
+[2026-11-02 10:45:37:855 WARN] ================ ALLOW LIST WARNING ===================
+[2026-11-02 10:45:37:855 WARN] Allow list is enabled but contains no entries. 
+[2026-11-02 10:45:37:855 WARN] Use allowlist add <playername> for you and your friends so that they can access the server, or modify allowlist.json manually.
+[2026-11-02 10:45:37:855 WARN] 
+Alternatively, the allow list can be turned off by typing allowlist off or manually toggled in the server.properties file.
+[2026-11-02 10:45:37:855 WARN] =======================================================
+[2026-11-02 10:45:37:855 INFO] ================ TELEMETRY MESSAGE ===================
+[2026-11-02 10:45:37:855 INFO] Server Telemetry is currently not enabled. 
+[2026-11-02 10:45:37:855 INFO] Enabling this telemetry helps us improve the game.
+[2026-11-02 10:45:37:855 INFO] 
+[2026-11-02 10:45:37:855 INFO] To enable this feature, add the line 'emit-server-telemetry=true'
+[2026-11-02 10:45:37:855 INFO] to the server.properties file in the handheld/src-server directory
+[2026-11-02 10:45:37:855 INFO] ======================================================
+[2026-11-02 10:45:37:893 WARN] [Scripting] BETTEREND_PROBE {"phase":"worldLoad","tick":21,"seed":"2640","players":0,"blockRegistered":true,"itemRegistered":true}
+
+[2026-11-02 10:45:38:006 INFO] Script event betterend_probe:run has been sent
+[2026-11-02 10:45:38:446 WARN] [Scripting] BETTEREND_PROBE {"phase":"result","requestId":"ad6f05a1-948d-4146-9cba-6fba95950dd8","action":"scan","dimension":"minecraft:the_end","seed":"2640","startedTick":23,"completedTick":33,"players":0,"item":{"typeId":"betterend_probe:thallasium_ingot","amount":1},"records":[{"location":{"x":8,"y":64,"z":8},"typeId":"minecraft:air","states":{},"surface":{"location":{"x":8,"y":60,"z":8},"typeId":"minecraft:end_stone","states":{}},"featureMatches":[]},{"location":{"x":8,"y":64,"z":24},"typeId":"minecraft:air","states":{},"surface":{"location":{"x":8,"y":60,"z":24},"typeId":"minecraft:end_stone","states":{}},"featureMatches":[]},{"location":{"x":8,"y":64,"z":40},"typeId":"minecraft:air","states":{},"surface":{"location":{"x":8,"y":59,"z":40},"typeId":"minecraft:end_stone","states":{}},"featureMatches":[]},{"location":{"x":8,"y":64,"z":56},"typeId":"minecraft:air","states":{},"surface":{"location":{"x":8,"y":58,"z":56},"typeId":"minecraft:end_stone","states":{}},"featureMatches":[]},{"location":{"x":24,"y":64,"z":8},"typeId":"minecraft:air","states":{},"surface":{"location":{"x":24,"y":58,"z":8},"typeId":"minecraft:end_stone","states":{}},"featureMatches":[]},{"location":{"x":24,"y":64,"z":24},"typeId":"minecraft:air","states":{},"surface":{"location":{"x":24,"y":60,"z":24},"typeId":"minecraft:end_stone","states":{}},"featureMatches":[]},{"location":{"x":24,"y":64,"z":40},"typeId":"minecraft:air","states":{},"surface":{"location":{"x":24,"y":59,"z":40},"typeId":"minecraft:end_stone","states":{}},"featureMatches":[]},{"location":{"x":24,"y":64,"z":56},"typeId":"minecraft:air","states":{},"surface":{"location":{"x":24,"y":59,"z":56},"typeId":"minecraft:end_stone","states":{}},"featureMatches":[]},{"location":{"x":40,"y":64,"z":8},"typeId":"minecraft:air","states":{},"surface":{"location":{"x":40,"y":58,"z":8},"typeId":"minecraft:end_stone","states":{}},"featureMatches":[]},{"location":{"x":40,"y":64,"z":24},"typeId":"minecraft:air","states":{},"surface":{"location":{"x":40,"y":60,"z":24},"typeId":"minecraft:end_stone","states":{}},"featureMatches":[]},{"location":{"x":40,"y":64,"z":40},"typeId":"minecraft:air","states":{},"surface":{"location":{"x":40,"y":59,"z":40},"typeId":"minecraft:end_stone","states":{}},"featureMatches":[]},{"location":{"x":40,"y":64,"z":56},"typeId":"minecraft:air","states":{},"surface":{"location":{"x":40,"y":58,"z":56},"typeId":"minecraft:end_stone","states":{}},"featureMatches":[]},{"location":{"x":56,"y":64,"z":8},"typeId":"minecraft:air","states":{},"surface":{"location":{"x":56,"y":60,"z":8},"typeId":"minecraft:end_stone","states":{}},"featureMatches":[]},{"location":{"x":56,"y":64,"z":24},"typeId":"minecraft:air","states":{},"surface":{"location":{"x":56,"y":60,"z":24},"typeId":"minecraft:end_stone","states":{}},"featureMatches":[]},{"location":{"x":56,"y":64,"z":40},"typeId":"minecraft:air","states":{},"surface":{"location":{"x":56,"y":59,"z":40},"typeId":"minecraft:end_stone","states":{}},"featureMatches":[]},{"location":{"x":56,"y":64,"z":56},"typeId":"minecraft:air","states":{},"surface":{"location":{"x":56,"y":58,"z":56},"typeId":"minecraft:end_stone","states":{}},"featureMatches":[]}]}
+
+[2026-11-02 10:45:38:469 INFO] Server stop requested.
+[2026-11-02 10:45:38:533 INFO] Stopping server...
+Quit correctly

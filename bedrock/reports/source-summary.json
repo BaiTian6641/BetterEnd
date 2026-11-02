@@ -1,0 +1,332 @@
+{
+  "assets": {
+    "animation-metadata": 36,
+    "audio": 43,
+    "blockstate": 732,
+    "equipment-definition": 6,
+    "explicitlyRestricted": 3,
+    "item-definition": 850,
+    "localization": 16,
+    "model": 2548,
+    "model-template": 75,
+    "non-content-metadata": 1,
+    "other-source-asset": 336,
+    "particle-definition": 14,
+    "renderer-metadata": 83,
+    "sound-events": 1,
+    "texture": 1917,
+    "total": 6658
+  },
+  "catalogue": {
+    "biomes": 27,
+    "blockStateSnapshotRows": 18852,
+    "blocks": 728,
+    "explicitMobs": 6,
+    "items": 850,
+    "mainRecipes": 878,
+    "optionalRecipes": 1,
+    "parityEntries": 4931,
+    "recipes": 879,
+    "resources": 3320,
+    "unresolved": 7
+  },
+  "recipeTypes": {
+    "bclib:alloying": 8,
+    "bclib:smithing": 26,
+    "betterend:infusion": 49,
+    "minecraft:blasting": 23,
+    "minecraft:campfire_cooking": 4,
+    "minecraft:crafting_shaped": 487,
+    "minecraft:crafting_shapeless": 126,
+    "minecraft:smelting": 31,
+    "minecraft:smithing_transform": 32,
+    "minecraft:smoking": 4,
+    "minecraft:stonecutting": 89
+  },
+  "schemaVersion": 1,
+  "scope": "source-inventory-not-port-or-runtime-certification",
+  "sourceCommit": "5a25059ef4fd77409024a2919fb0a0098388104f",
+  "unresolved": [
+    {
+      "code": "runtime-registry-not-exported",
+      "detail": "Checked-in registration/property/shape audits do not prove live default states, intrinsic item components, conditional registrations, or dependency-created entity types.",
+      "severity": "release-blocker"
+    },
+    {
+      "code": "dependency-assets-not-resolved",
+      "detail": "BCLib, WorldWeaver, WunderLib, vanilla reference assets and any external WunderVault inputs require pinned provenance and runtime reconciliation.",
+      "severity": "release-blocker"
+    },
+    {
+      "code": "snapshot-flammability-disagreement",
+      "detail": "EndWoodenComplexMaterial requests non-log flammability 5/20 while the checked-in dragon_tree_planks audit reports 5/5; resolve with the pinned Java runtime.",
+      "severity": "release-blocker",
+      "sources": [
+        "src/main/java/org/betterx/betterend/complexmaterials/EndWoodenComplexMaterial.java",
+        "src/main/generated/block_registrations.json"
+      ]
+    },
+    {
+      "code": "nonregistry-blockstate-resource",
+      "id": "betterend:bulb_lantern",
+      "severity": "review",
+      "source": "src/main/resources/assets/betterend/blockstates/bulb_lantern.json"
+    },
+    {
+      "code": "nonregistry-blockstate-resource",
+      "id": "betterend:custom_chorus_flower",
+      "severity": "review",
+      "source": "src/main/resources/assets/betterend/blockstates/custom_chorus_flower.json"
+    },
+    {
+      "code": "nonregistry-blockstate-resource",
+      "id": "betterend:custom_chorus_plant",
+      "severity": "review",
+      "source": "src/main/resources/assets/betterend/blockstates/custom_chorus_plant.json"
+    },
+    {
+      "code": "nonregistry-blockstate-resource",
+      "id": "betterend:ivis_vine",
+      "severity": "review",
+      "source": "src/main/resources/assets/betterend/blockstates/ivis_vine.json"
+    },
+    {
+      "code": "invalid-source-asset-json",
+      "detail": "\"betterend:smaragdant_crystal_shard\"",
+      "issue": "duplicate-key",
+      "severity": "release-blocker",
+      "source": "src/main/resources/assets/colored_lights/light_colors.json"
+    },
+    {
+      "code": "missing-local-asset",
+      "reference": {
+        "kind": "model",
+        "namespace": "betterend",
+        "pointer": "/variants/is_floor=false/model",
+        "raw": "betterend:block/bulb_vine_lantern_ceil",
+        "resolution": "missing-local-file",
+        "resourcePath": "betterend/models/block/bulb_vine_lantern_ceil.json"
+      },
+      "severity": "release-blocker",
+      "source": "src/main/resources/assets/betterend/blockstates/bulb_lantern.json"
+    },
+    {
+      "code": "missing-local-asset",
+      "reference": {
+        "kind": "model",
+        "namespace": "betterend",
+        "pointer": "/variants/is_floor=true/model",
+        "raw": "betterend:block/bulb_vine_lantern_floor",
+        "resolution": "missing-local-file",
+        "resourcePath": "betterend/models/block/bulb_vine_lantern_floor.json"
+      },
+      "severity": "release-blocker",
+      "source": "src/main/resources/assets/betterend/blockstates/bulb_lantern.json"
+    },
+    {
+      "code": "missing-local-asset",
+      "reference": {
+        "kind": "texture",
+        "namespace": "betterend",
+        "pointer": "/textures/texture",
+        "raw": "betterend:block/aurora_crystal_2",
+        "resolution": "missing-local-file",
+        "resourcePath": "betterend/textures/block/aurora_crystal_2.png"
+      },
+      "severity": "release-blocker",
+      "source": "src/main/resources/assets/betterend/models/block/aurora_crystal_2.json"
+    },
+    {
+      "code": "missing-local-asset",
+      "reference": {
+        "kind": "texture",
+        "namespace": "betterend",
+        "pointer": "/textures/bottom",
+        "raw": "betterend:block/chorus_planks",
+        "resolution": "missing-local-file",
+        "resourcePath": "betterend/textures/block/chorus_planks.png"
+      },
+      "severity": "release-blocker",
+      "source": "src/main/resources/assets/betterend/models/block/chorus_outer_stairs.json"
+    },
+    {
+      "code": "missing-local-asset",
+      "reference": {
+        "kind": "texture",
+        "namespace": "betterend",
+        "pointer": "/textures/side",
+        "raw": "betterend:block/chorus_planks",
+        "resolution": "missing-local-file",
+        "resourcePath": "betterend/textures/block/chorus_planks.png"
+      },
+      "severity": "release-blocker",
+      "source": "src/main/resources/assets/betterend/models/block/chorus_outer_stairs.json"
+    },
+    {
+      "code": "missing-local-asset",
+      "reference": {
+        "kind": "texture",
+        "namespace": "betterend",
+        "pointer": "/textures/top",
+        "raw": "betterend:block/chorus_planks",
+        "resolution": "missing-local-file",
+        "resourcePath": "betterend/textures/block/chorus_planks.png"
+      },
+      "severity": "release-blocker",
+      "source": "src/main/resources/assets/betterend/models/block/chorus_outer_stairs.json"
+    },
+    {
+      "code": "missing-local-asset",
+      "reference": {
+        "kind": "texture",
+        "namespace": "betterend",
+        "pointer": "/textures/particle",
+        "raw": "betterend:block/lumecorn_bark",
+        "resolution": "missing-local-file",
+        "resourcePath": "betterend/textures/block/lumecorn_bark.png"
+      },
+      "severity": "release-blocker",
+      "source": "src/main/resources/assets/betterend/models/block/lumecon_middle_big.json"
+    },
+    {
+      "code": "missing-local-asset",
+      "reference": {
+        "kind": "texture",
+        "namespace": "betterend",
+        "pointer": "/textures/texture",
+        "raw": "betterend:block/lumecorn_bark",
+        "resolution": "missing-local-file",
+        "resourcePath": "betterend/textures/block/lumecorn_bark.png"
+      },
+      "severity": "release-blocker",
+      "source": "src/main/resources/assets/betterend/models/block/lumecon_middle_big.json"
+    },
+    {
+      "code": "missing-local-asset",
+      "reference": {
+        "kind": "texture",
+        "namespace": "betterend",
+        "pointer": "/textures/particle",
+        "raw": "betterend:block/lumecorn_bark",
+        "resolution": "missing-local-file",
+        "resourcePath": "betterend/textures/block/lumecorn_bark.png"
+      },
+      "severity": "release-blocker",
+      "source": "src/main/resources/assets/betterend/models/block/lumecorn_bottom_big.json"
+    },
+    {
+      "code": "missing-local-asset",
+      "reference": {
+        "kind": "texture",
+        "namespace": "betterend",
+        "pointer": "/textures/texture",
+        "raw": "betterend:block/lumecorn_bark",
+        "resolution": "missing-local-file",
+        "resourcePath": "betterend/textures/block/lumecorn_bark.png"
+      },
+      "severity": "release-blocker",
+      "source": "src/main/resources/assets/betterend/models/block/lumecorn_bottom_big.json"
+    },
+    {
+      "code": "missing-local-asset",
+      "reference": {
+        "kind": "texture",
+        "namespace": "betterend",
+        "pointer": "/textures/particle",
+        "raw": "betterend:block/lumecorn_bark",
+        "resolution": "missing-local-file",
+        "resourcePath": "betterend/textures/block/lumecorn_bark.png"
+      },
+      "severity": "release-blocker",
+      "source": "src/main/resources/assets/betterend/models/block/lumecorn_bottom_small.json"
+    },
+    {
+      "code": "missing-local-asset",
+      "reference": {
+        "kind": "texture",
+        "namespace": "betterend",
+        "pointer": "/textures/texture",
+        "raw": "betterend:block/lumecorn_bark",
+        "resolution": "missing-local-file",
+        "resourcePath": "betterend/textures/block/lumecorn_bark.png"
+      },
+      "severity": "release-blocker",
+      "source": "src/main/resources/assets/betterend/models/block/lumecorn_bottom_small.json"
+    },
+    {
+      "code": "missing-local-asset",
+      "reference": {
+        "kind": "model",
+        "namespace": "betterend",
+        "pointer": "/parent",
+        "raw": "betterend:block/bulb_vine_lantern_ceil",
+        "resolution": "missing-local-file",
+        "resourcePath": "betterend/models/block/bulb_vine_lantern_ceil.json"
+      },
+      "severity": "release-blocker",
+      "source": "src/main/resources/assets/betterend/models/item/bulb_lantern.json"
+    },
+    {
+      "code": "missing-local-asset",
+      "reference": {
+        "kind": "audio",
+        "namespace": "betterend",
+        "pointer": "/betterend.music.ender_hollow/sounds/0",
+        "raw": "betterend:music/ender_hollow",
+        "resolution": "missing-local-file",
+        "resourcePath": "betterend/sounds/music/ender_hollow.ogg"
+      },
+      "severity": "release-blocker",
+      "source": "src/main/resources/assets/betterend/sounds.json"
+    },
+    {
+      "code": "missing-local-asset",
+      "reference": {
+        "kind": "audio",
+        "namespace": "betterend",
+        "pointer": "/betterend.music.ender_hollow/sounds/1",
+        "raw": "betterend:music/moonlit_undercurrents",
+        "resolution": "missing-local-file",
+        "resourcePath": "betterend/sounds/music/moonlit_undercurrents.ogg"
+      },
+      "severity": "release-blocker",
+      "source": "src/main/resources/assets/betterend/sounds.json"
+    },
+    {
+      "code": "missing-local-asset",
+      "reference": {
+        "kind": "audio",
+        "namespace": "betterend",
+        "pointer": "/betterend.record.ender_hollow/sounds/0",
+        "raw": "betterend:music/ender_hollow",
+        "resolution": "missing-local-file",
+        "resourcePath": "betterend/sounds/music/ender_hollow.ogg"
+      },
+      "severity": "release-blocker",
+      "source": "src/main/resources/assets/betterend/sounds.json"
+    },
+    {
+      "code": "missing-local-asset",
+      "reference": {
+        "kind": "audio",
+        "namespace": "betterend",
+        "pointer": "/betterend.record.moonlit_undercurrents/sounds/0",
+        "raw": "betterend:music/moonlit_undercurrents",
+        "resolution": "missing-local-file",
+        "resourcePath": "betterend/sounds/music/moonlit_undercurrents.ogg"
+      },
+      "severity": "release-blocker",
+      "source": "src/main/resources/assets/betterend/sounds.json"
+    },
+    {
+      "code": "asset-rights-audit-pending",
+      "detail": "License inheritance is recorded, not a completed per-asset distribution review. Restricted assets and derivatives must retain their conditions.",
+      "severity": "release-blocker"
+    },
+    {
+      "code": "external-asset-dependencies",
+      "detail": "Minecraft/BCLib/WorldWeaver/Canvas references and any WunderVault music inputs require their own pinned source/license evidence; source filenames are not legal clearance.",
+      "severity": "release-blocker"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "action": "inspect",
+  "dimension": "the_end",
+  "x": 2084,
+  "y": 80,
+  "z": 2080,
+  "expectTypeId": "betterend_probe:flavolite",
+  "expectStates": {
+    "betterend_probe:finish": "emissive"
+  }
+}
