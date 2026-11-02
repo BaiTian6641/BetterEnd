@@ -4,6 +4,8 @@ Native Bedrock port on `experimental/bedrock-26.40`. The required baseline is **
 
 **Current implementation:** deterministic source/provenance tooling, an input-attested live Java reference exporter, integrity-checked acceptance receipts, and native Bedrock block/worldgen/inventory diagnostic packs. **The full survival port is not complete and no platform/rendering certification is claimed.** The [execution contract](docs/execution-contract.md) remains the completion standard.
 
+For another coding agent, start with [AGENTS.md](AGENTS.md) and the [detailed handoff](docs/HANDOFF.md). The handoff records a confirmed uniform-shape-audit interpretation bug that is not yet fixed in the generated reconciliation.
+
 ## Implemented source pipeline
 
 Source extraction materializes the immutable upstream Git commit, preserving its bytes independently of checkout conversion or local changes. It joins checked-in audits/resources with a hash-pinned production Java runtime corpus: true defaults, complete state domains, intrinsic components, dependency-created entities and merged registry tags. Raw resource visibility is not recipe activation; registry observations are not gameplay or client certification.
@@ -19,8 +21,8 @@ Source extraction materializes the immutable upstream Git commit, preserving its
 | Region keys | 27 |
 | Observed state/shape snapshot rows | 18,852 |
 | Live possible block states | 22,385 |
-| Live states missing checked-in shape rows | 3,712 |
-| Stale checked-in state/shape rows | 179 |
+| Live states represented by uniform rows on property-bearing blocks | 3,712 |
+| Property-bearing blocks using uniform audit rows | 179 |
 | Main recipes | 878 |
 | Separately scoped optional recipe | 1 |
 | Source/runtime parity records | 4,954 |
@@ -28,6 +30,8 @@ Source extraction materializes the immutable upstream Git commit, preserving its
 | Explicit CC BY-NC-SA asset exceptions | 3 |
 
 Generated source records live in `catalogue/generated/`, provenance/locks in `upstream/`, and reconciliation findings in `reports/source-summary.json`. Mandatory gameplay entries remain `Unproven` until actually implemented and verified. Missing resources, ambiguous source JSON, stale audit observations, external dependencies and rights reviews remain visible; extraction success does not clear them.
+
+**Handoff correction:** the current generated report incorrectly calls those uniform rows “missing/stale” coverage. The upstream audit deliberately compresses equal neutral-context shape pairs; expanded coverage is all 22,385 live states. Fix the parser/reconciliation rather than inventing geometry. This does not certify context-dependent physics.
 
 ## Runnable commands
 

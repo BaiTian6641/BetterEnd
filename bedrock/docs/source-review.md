@@ -28,7 +28,7 @@ The reference/inventory stage added the following reviewed corrections:
 
 Parallel reviewers inspected the source/runtime identity joins and native inventory custody, including the hopper delta. Their concrete findings were corrected and regression-tested or exercised against actual runtimes. Static review alone is not treated as an engine/client result.
 
-## Source issues intentionally retained
+## Open findings and source issues
 
 The exporter inventories all physical assets even when source JSON is ambiguous; its strict parser does not silently select a duplicate key. Such files retain hashes and explicit release-blocking diagnostics. This is different from clearing or copying malformed data into the port.
 
@@ -36,7 +36,7 @@ The live reference resolved the wood odds to 5/5, while retaining the source's 5
 
 Missing model/texture references, source JSON ambiguity, unaudited external asset rights and the three restricted assets remain visible. The two tracks absent from the Git source were found, hash-verified and decoded from the official distribution; actual Bedrock playback/integration and per-track distribution review remain open.
 
-Live state enumeration found 22,385 states. The checked-in geometry audit lacks rows for 3,712 of them and includes 179 stale state rows. No geometry is invented to fill that gap. Registry/default-component observations do not prove context-dependent collision, AI, riding, recipes or client presentation.
+**Correction discovered at handoff:** the reported 3,712 missing states and 179 stale rows are a parser/reconciliation bug, not missing upstream geometry. WorldWeaver compresses identical neutral-context, four-decimal shape pairs into one unqualified row. The 179 property-bearing uniform rows cover 3,712 states, so `18,852 - 179 + 3,712 = 22,385`; no audit row is `unavailable`. The code correction was not started after the user requested handoff. See [the verified investigation](research/geometry-oracle.md) and [the next-agent instructions](HANDOFF.md#4-immediate-priority-correct-uniform-shape-audit-semantics). Historical generated-output evidence remains unchanged. Context-dependent collision, AI, riding, recipes and client presentation are still separate requirements.
 
 ## Verified stage evidence
 
