@@ -1,0 +1,110 @@
+{
+  "certifiesAllPlatforms": false,
+  "clientRenderingVerified": false,
+  "events": [
+    {
+      "phase": "startup"
+    },
+    {
+      "blockRegistered": true,
+      "itemRegistered": true,
+      "phase": "worldLoad",
+      "players": 0,
+      "seed": "2640",
+      "tick": 328
+    },
+    {
+      "action": "board",
+      "completedTick": 341,
+      "dimension": "minecraft:the_end",
+      "item": {
+        "amount": 1,
+        "typeId": "betterend_probe:thallasium_ingot"
+      },
+      "phase": "result",
+      "players": 0,
+      "records": [
+        {
+          "after": {
+            "states": {
+              "betterend_probe:finish": "rough"
+            },
+            "typeId": "betterend_probe:flavolite"
+          },
+          "before": {
+            "states": {
+              "betterend_probe:finish": "rough"
+            },
+            "typeId": "betterend_probe:flavolite"
+          },
+          "location": {
+            "x": 2080,
+            "y": 80,
+            "z": 2080
+          }
+        },
+        {
+          "after": {
+            "states": {
+              "betterend_probe:finish": "metal"
+            },
+            "typeId": "betterend_probe:flavolite"
+          },
+          "before": {
+            "states": {
+              "betterend_probe:finish": "metal"
+            },
+            "typeId": "betterend_probe:flavolite"
+          },
+          "location": {
+            "x": 2082,
+            "y": 80,
+            "z": 2080
+          }
+        },
+        {
+          "after": {
+            "states": {
+              "betterend_probe:finish": "emissive"
+            },
+            "typeId": "betterend_probe:flavolite"
+          },
+          "before": {
+            "states": {
+              "betterend_probe:finish": "emissive"
+            },
+            "typeId": "betterend_probe:flavolite"
+          },
+          "location": {
+            "x": 2084,
+            "y": 80,
+            "z": 2080
+          }
+        }
+      ],
+      "requestId": "18b49511-bd5a-457e-b024-3b102896f698",
+      "seed": "2640",
+      "startedTick": 330
+    }
+  ],
+  "executableSha256": "e7775e636b9fdcbc354823d92d0c22c12738a2141d12557d856744293d258372",
+  "exit": {
+    "code": 0,
+    "signal": null
+  },
+  "expectedBuild": "1.26.40.8",
+  "failure": null,
+  "forcedTermination": false,
+  "observedBuild": "1.26.40.8",
+  "packageSha256": "e559c9430763e886eabb00fa19499da1eba59cb27c21685d6e099333cf867024",
+  "request": {
+    "action": "board",
+    "dimension": "the_end",
+    "requestId": "18b49511-bd5a-457e-b024-3b102896f698",
+    "x": 2080,
+    "y": 80,
+    "z": 2080
+  },
+  "schemaVersion": 1,
+  "scope": "supporting-server-side-evidence-not-full-capability-certification"
+}

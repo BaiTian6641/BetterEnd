@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "status": "awaiting-client-observations",
+  "userSelection": {
+    "setup": "separate-test-server",
+    "versionLanes": ["26.40-baseline", "newer-retail"]
+  },
+  "preparedServerBuilds": ["1.26.40.8", "1.26.61.1"],
+  "versionRule": "Match each actual client to its server build; never upgrade the baseline fixture or substitute newer evidence for 26.40.",
+  "packVersion": [0, 1, 2],
+  "packSha256": "e559c9430763e886eabb00fa19499da1eba59cb27c21685d6e099333cf867024",
+  "pack": "evidence/packs/e559c9430763e886eabb00fa19499da1eba59cb27c21685d6e099333cf867024.mcaddon",
+  "instructions": "probes/inventory/README.md#required-stock-client-session",
+  "requiredEvidence": [
+    "Exact client/BDS versions, device/OS, input method, graphics mode/settings, pack order/hash and connection route",
+    "Clean-cache server resource download and reconnect outcome",
+    "Vanilla/runtime/generic carrier screen opening, inventory layout and ordinary/sneaking/held-item interaction",
+    "Native item movement and returned sword metadata, including concurrent clients",
+    "Classic/VV carrier and material-board screenshots or video, including item display forms",
+    "BETTEREND_PROBE console output and client content errors"
+  ],
+  "scope": "Supporting CAP-001/CAP-006/CAP-009/CAP-015/CAP-017 observations; not full capability, survival or platform certification",
+  "clientResultsReceived": false
+}

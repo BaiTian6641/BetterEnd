@@ -1,0 +1,51 @@
+NO LOG FILE! - setting up server logging...
+[2026-11-02 14:15:43:776 INFO] Starting Server
+[2026-11-02 14:15:43:776 INFO] Version: 1.26.40.8
+[2026-11-02 14:15:43:776 INFO] Session ID: 3b3af1a0-2154-467c-9e09-8aef1acf90e5
+[2026-11-02 14:15:43:776 INFO] Build ID: 48609425
+[2026-11-02 14:15:43:776 INFO] Branch: r/26_u4
+[2026-11-02 14:15:43:776 INFO] Commit ID: 93e89c3199ffce33269d88e6fec322330c130ae3
+[2026-11-02 14:15:43:776 INFO] Configuration: Publish
+[2026-11-02 14:15:43:776 INFO] Contents of server.properties: {}
+[2026-11-02 14:15:43:776 INFO] Level Name: betterend-capability-2640
+[2026-11-02 14:15:43:777 INFO] Profiler config ('bootstrap.json') load result: success=1, errorMessage=(null)
+[2026-11-02 14:15:43:778 INFO] No CDN config file found at: cdn_config.json for dedicated server
+[2026-11-02 14:15:43:778 INFO] Game mode: 1 Creative
+[2026-11-02 14:15:43:778 INFO] Difficulty: 1 EASY
+[2026-11-02 14:15:43:778 INFO] Content logging to console is enabled.
+[2026-11-02 14:15:43:780 INFO] 
+
+#####################################################
+#                                                   #
+#               LOADING VANILLA WORLD               #
+#                                                   #
+#####################################################
+[2026-11-02 14:15:44:487 INFO] Opening level 'worlds/betterend-capability-2640/db'
+[2026-11-02 14:15:44:779 INFO] Pack Stack - [00] BetterEnd engine capability probes (id: d16a5a53-d15f-482e-bf74-26c4d256ed24, version: 0.1.2) @ behavior_packs/betterend_probe
+[2026-11-02 14:15:44:827 WARN] [Scripting] BETTEREND_PROBE {"phase":"startup"}
+
+[2026-11-02 14:15:45:919 INFO] IPv4 supported, port: 29140: Used for gameplay
+[2026-11-02 14:15:45:919 INFO] IPv6 supported, port: 29141: Used for gameplay
+[2026-11-02 14:15:45:947 INFO] Signed in to signaling service successfully
+[2026-11-02 14:15:45:981 INFO] Server started.
+[2026-11-02 14:15:45:981 WARN] ================ ALLOW LIST WARNING ===================
+[2026-11-02 14:15:45:981 WARN] Allow list is enabled but contains no entries. 
+[2026-11-02 14:15:45:981 WARN] Use allowlist add <playername> for you and your friends so that they can access the server, or modify allowlist.json manually.
+[2026-11-02 14:15:45:981 WARN] 
+Alternatively, the allow list can be turned off by typing allowlist off or manually toggled in the server.properties file.
+[2026-11-02 14:15:45:981 WARN] =======================================================
+[2026-11-02 14:15:45:981 INFO] ================ TELEMETRY MESSAGE ===================
+[2026-11-02 14:15:45:981 INFO] Server Telemetry is currently not enabled. 
+[2026-11-02 14:15:45:981 INFO] Enabling this telemetry helps us improve the game.
+[2026-11-02 14:15:45:981 INFO] 
+[2026-11-02 14:15:45:981 INFO] To enable this feature, add the line 'emit-server-telemetry=true'
+[2026-11-02 14:15:45:981 INFO] to the server.properties file in the handheld/src-server directory
+[2026-11-02 14:15:45:981 INFO] ======================================================
+[2026-11-02 14:15:46:027 WARN] [Scripting] BETTEREND_PROBE {"phase":"worldLoad","tick":328,"seed":"2640","players":0,"blockRegistered":true,"itemRegistered":true}
+
+[2026-11-02 14:15:46:138 INFO] Script event betterend_probe:run has been sent
+[2026-11-02 14:15:46:637 WARN] [Scripting] BETTEREND_PROBE {"phase":"result","requestId":"18b49511-bd5a-457e-b024-3b102896f698","action":"board","dimension":"minecraft:the_end","seed":"2640","startedTick":330,"completedTick":341,"players":0,"item":{"typeId":"betterend_probe:thallasium_ingot","amount":1},"records":[{"location":{"x":2080,"y":80,"z":2080},"before":{"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"rough"}},"after":{"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"rough"}}},{"location":{"x":2082,"y":80,"z":2080},"before":{"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"metal"}},"after":{"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"metal"}}},{"location":{"x":2084,"y":80,"z":2080},"before":{"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"emissive"}},"after":{"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"emissive"}}}]}
+
+[2026-11-02 14:15:46:667 INFO] Server stop requested.
+[2026-11-02 14:15:46:780 INFO] Stopping server...
+Quit correctly

@@ -52,18 +52,25 @@ npm --prefix bedrock run probe:bds -- --engine .work/engines/bds-1.26.40.8 --bui
 Use a **separate disposable server/world** with the same pack identity and version. The automatic runner deliberately empties its allowlist and stops after each result; it is not a client-session launcher.
 
 1. Install both built pack folders and activate their header UUIDs/version in the new world's pack references. Require the server resource pack. Keep official BDS and unmodified, version-compatible clients.
-2. While no clients are connected, send this command from the server console:
+2. After the `BETTEREND_PROBE` world-load message, while no clients are connected, send this command from the server console:
 
    ```text
    scriptevent betterend_probe:run {"requestId":"client-fixture-setup","action":"inventory-setup","probeId":"native-inventory-v1"}
    ```
 
-   Require a successful structured result before joining. This command is intentionally not accepted from a player-sourced script event.
+   Require its matching successful structured result before continuing. Then create the material board and wait for its result too:
+
+   ```text
+   scriptevent betterend_probe:run {"requestId":"client-material-board","action":"board","dimension":"the_end","x":2080,"y":80,"z":2080}
+   ```
+
+   Send the commands separately, not as an overlapping batch. Neither command is accepted from a player-sourced script event.
 3. Configure the intended allowlist and custom-server connection route. Join from a clean client resource cache. Console-local add-on import is unnecessary; this gate concerns server delivery.
 4. Use creative mode and fly to the outer-End fixtures, or prepare a walking platform in this disposable world. A console teleport can use `execute in the_end run tp @a 4100 82 4094`. Do not run fixture-mutating commands in a player world.
 5. Interact with the vanilla control first, then each custom candidate. Record ordinary use, sneaking use, empty hand and held-item use. A hit/interaction event alone is not UI evidence.
 6. Record the actual native screen, its 27 carrier slots and player inventory, slot selection, quick move, drag/split, close/reopen and reconnect. Capture the returned sword's name, lore, enchantment and durability presentation. The observers emit `inventoryContainerOpened`/`inventoryContainerClosed` with actor/accessor IDs.
 7. Use two clients concurrently. Record any stale stacks, duplication/loss, movement or unwanted cart/chest overlays. Keep a Classic/non-VV client and a VV client on the same compatible server where hardware permits.
+   After the inventory session, inspect the rough/metal/emissive board at `(2080,80,2080)`, `(2082,80,2080)` and `(2084,80,2080)`. A console teleport can use `execute in the_end run tp @a 2082 82 2077`; remain in creative flight. Give the registered diagnostic item with `give @a betterend_probe:thallasium_ingot 1` and inspect its inventory/held/dropped/frame forms. These are material controls, not the complete forest/water or per-player atmosphere gate.
 8. Repeat relevant controls on keyboard/mouse, touch and controller. Record exact device, OS, client/BDS build, pack SHA/version, graphics mode/settings, connection route, steps, screenshots/video, logs and observed failures. No platform is certified by another platform's result.
 
 No stock Minecraft client was available in the coding environment for these observations. The workstation-carrier choice remains unapproved until this session demonstrates usable native UI and visuals; neither the runtime identifier nor `container_type` alone proves that result.
