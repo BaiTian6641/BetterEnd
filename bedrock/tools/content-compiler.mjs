@@ -5,6 +5,7 @@ import { buildRecipeHyperedgeGraph } from './recipes.mjs';
 import { loadLockedRuntime } from './runtime-reconciliation.mjs';
 import { compareText } from './source-files.mjs';
 import { compileAllModelsAndAssets, getGeometryIdForModel, normalizeModelId } from './model-compiler.mjs';
+import { compileAllMcStructures } from './mcstructure-compiler.mjs';
 import {
   FEATURES_BY_CATEGORY,
   FEATURES_BY_ID,
@@ -600,11 +601,84 @@ function buildMaterialInstances(blockEntry, flatModel, stateProps = {}, geoDoc =
   return instances;
 }
 
-function deriveBlockCustomComponents(blockEntry) {
-  const components = [];
+const TICKING_BLOCK_CUSTOM_COMPONENTS = new Set([
+  'betterend:silk_moth_nest',
+  'betterend:bouncy',
+  'betterend:hazard',
+  'betterend:sponge',
+  'betterend:hydrothermal_vent',
+  'betterend:brimstone',
+  'betterend:emerald_ice',
+  'betterend:umbrella_cluster',
+  'betterend:ecology_tick',
+]);
+
+function deriveBlockCustomComponents(blockEntry, partitions = [], partition = null) {
+  const components = new Set();
   const shortName = blockEntry.id.split(':')[1];
   const hierarchy = blockEntry.hierarchy ?? [];
   const topClass = hierarchy.at(-1) ?? '';
+
+  if (shortName === 'end_stone_smelter') {
+    components.add('betterend:smelter');
+  }
+  if (shortName.endsWith('_anvil')) {
+    components.add('betterend:anvil');
+  }
+  if (shortName === 'infusion_pedestal') {
+    components.add('betterend:infusion_pedestal');
+  } else if (shortName === 'eternal_pedestal') {
+    components.add('betterend:eternal_pedestal');
+  } else if (shortName.endsWith('_pedestal')) {
+    components.add('betterend:pedestal');
+  }
+  if (shortName === 'respawn_obelisk') {
+    components.add('betterend:respawn_obelisk');
+  }
+  if (shortName === 'silk_moth_nest' || shortName === 'silk_moth_hive') {
+    components.add('betterend:silk_moth_nest');
+  }
+  if (
+    shortName.endsWith('_chair') ||
+    shortName.endsWith('_bar_stool') ||
+    shortName.endsWith('_taburet')
+  ) {
+    components.add('betterend:chair');
+  }
+  if (shortName === 'jellyshroom_cap_purple' || shortName === 'umbrella_tree_membrane') {
+    components.add('betterend:bouncy');
+  }
+  if (
+    shortName === 'needlegrass' ||
+    shortName === 'hydralux_sapling' ||
+    shortName === 'lanceleaf_seed' ||
+    shortName === 'glowing_pillar_seed' ||
+    shortName === 'lumecorn_seed' ||
+    shortName === 'chorus_mushroom_raw'
+  ) {
+    components.add('betterend:hazard');
+  }
+  if (shortName === 'menger_sponge' || shortName === 'menger_sponge_wet') {
+    components.add('betterend:sponge');
+  }
+  if (shortName === 'hydrothermal_vent') {
+    components.add('betterend:hydrothermal_vent');
+  }
+  if (shortName === 'brimstone') {
+    components.add('betterend:brimstone');
+  }
+  if (shortName === 'emerald_ice' || shortName === 'dense_emerald_ice') {
+    components.add('betterend:emerald_ice');
+  }
+  if (shortName === 'umbrella_tree_cluster') {
+    components.add('betterend:umbrella_cluster');
+  }
+  if (shortName.endsWith('_flower_pot')) {
+    components.add('betterend:flower_pot');
+  }
+  if (partitions.length > 1 || (partition && partition.partitionIndex > 0)) {
+    components.add('betterend:partitioned_state');
+  }
 
   if (
     shortName === 'end_stone_smelter' ||
@@ -619,7 +693,7 @@ function deriveBlockCustomComponents(blockEntry) {
     shortName.endsWith('_chest') ||
     shortName.endsWith('_bookshelf')
   ) {
-    components.push('betterend:station_interaction');
+    components.add('betterend:station_interaction');
   }
   if (
     shortName.endsWith('_door') ||
@@ -635,7 +709,7 @@ function deriveBlockCustomComponents(blockEntry) {
     shortName.endsWith('_sign') ||
     shortName.endsWith('_flower_pot')
   ) {
-    components.push('betterend:interactive_furniture');
+    components.add('betterend:interactive_furniture');
   }
   if (
     topClass.includes('Sapling') ||
@@ -649,13 +723,13 @@ function deriveBlockCustomComponents(blockEntry) {
     shortName.includes('brimstone') ||
     shortName.includes('budding_')
   ) {
-    components.push('betterend:ecology_tick');
+    components.add('betterend:ecology_tick');
   }
   const propNames = (blockEntry.stateModel?.properties ?? []).map(p => p.name);
   if (propNames.includes('half') || propNames.includes('shape') || propNames.includes('part')) {
-    components.push('betterend:multiblock_guard');
+    components.add('betterend:multiblock_guard');
   }
-  return components;
+  return [...components];
 }
 
 function evaluateVariantMatch(clause, stateProps) {
@@ -982,6 +1056,21 @@ export function compileBlocks(registrations, modelAssets) {
         baseComponents['minecraft:friction'] = clamp(1.0 - friction + 0.4, 0.0, 0.9);
       }
 
+      const customComponents = deriveBlockCustomComponents(blockEntry, partitions, partition);
+      let requiresTick = false;
+      for (const compId of customComponents) {
+        baseComponents[compId] = {};
+        if (TICKING_BLOCK_CUSTOM_COMPONENTS.has(compId)) {
+          requiresTick = true;
+        }
+      }
+      if (requiresTick) {
+        baseComponents['minecraft:tick'] = {
+          interval_range: [40, 80],
+          looping: true,
+        };
+      }
+
       const permutations = [];
       for (const st of partition.states) {
         const bedrockStates = Object.create(null);
@@ -1093,7 +1182,32 @@ export function compileBlocks(registrations, modelAssets) {
         .sort(([a], [b]) => compareText(a, b))
         .map(([k, v]) => `${k}=${v}`)
         .join(',')}]`;
-      return forwardStateMap.get(key) ?? null;
+      const exact = forwardStateMap.get(key);
+      if (exact) return exact;
+
+      // Support partial or empty javaProps by matching against the block's live states
+      const partitions = blockPartitions.get(javaBlockId);
+      if (!partitions || partitions.length === 0) return null;
+      const requestedEntries = Object.entries(javaProps ?? {});
+      let fallbackRecord = null;
+      for (const part of partitions) {
+        for (const st of part.states) {
+          const stKey = `${javaBlockId}[${Object.entries(st.properties)
+            .sort(([a], [b]) => compareText(a, b))
+            .map(([k, v]) => `${k}=${v}`)
+            .join(',')}]`;
+          const rec = forwardStateMap.get(stKey);
+          if (!rec) continue;
+          if (!fallbackRecord) fallbackRecord = rec;
+          const matchesAll = requestedEntries.every(
+            ([k, v]) => !(k in st.properties) || String(st.properties[k]) === String(v),
+          );
+          if (matchesAll) {
+            return rec;
+          }
+        }
+      }
+      return fallbackRecord;
     },
     lookupJavaState(bedrockBlockId, bedrockStates = {}) {
       const key = `${bedrockBlockId}[${Object.entries(bedrockStates)
@@ -1324,11 +1438,28 @@ export function compileItems(registrations) {
       };
     } else if (shortName.endsWith('_boat') || shortName.endsWith('_raft')) {
       components['minecraft:liquid_clipped'] = true;
-      components['minecraft:entity_placer'] = {
-        entity: itemEntry.id,
-        dispense_on: ['minecraft:water', 'minecraft:flowing_water'],
-        use_on: ['minecraft:water', 'minecraft:flowing_water'],
-      };
+      components['betterend:boat_spawner'] = {};
+    }
+
+    // Custom Components V2 for standalone BetterEnd items
+    if (shortName.endsWith('_hammer')) {
+      components['betterend:hammer'] = {};
+      components['betterend:hammer_mine'] = {};
+    }
+    if (shortName.endsWith('_spear')) {
+      components['betterend:spear_combat'] = {};
+    }
+    if (shortName.includes('elytra')) {
+      components['betterend:elytra_carrier'] = {};
+    }
+    if (shortName.startsWith('bucket_')) {
+      components['betterend:bucket_spawner'] = {};
+    }
+    if (food) {
+      components['betterend:food_effects'] = {};
+    }
+    if (shortName === 'guidebook') {
+      components['betterend:guidebook'] = {};
     }
 
     const itemJson = {
@@ -1610,7 +1741,7 @@ const STATION_CARRIERS = Object.freeze([
   { id: 'betterend:chest_carrier', slots: 27 },
 ]);
 
-export function compileEntitiesAndFeatures(registrations, resources) {
+export function compileEntitiesAndFeatures(registrations, resources, mcStructures = null) {
   const serverEntities = new Map();
   const clientEntities = new Map();
   const entityGeometries = new Map();
@@ -2028,247 +2159,176 @@ export function compileEntitiesAndFeatures(registrations, resources) {
     dry_shrubland: 16,
   };
 
-  // Shared native C++ features for Water Lakes/Ponds, 3D Spiky Ice Stars, and Big Aurora Crystal Pillars
-  const waterCheckBlocks = [...allSoilBlocks, 'minecraft:water'];
-  features.set('features/water_basin_cell_feature.json', {
-    format_version: BEDROCK_FEATURE_FORMAT_VERSION,
-    'minecraft:single_block_feature': {
-      description: { identifier: 'betterend:water_basin_cell_feature' },
-      places_block: 'minecraft:water',
-      enforce_placement_rules: false,
-      enforce_survivability_rules: false,
-      may_replace: allSoilBlocks,
-      may_attach_to: {
-        bottom: allSoilBlocks,
-        north: waterCheckBlocks,
-        south: waterCheckBlocks,
-        east: waterCheckBlocks,
-        west: waterCheckBlocks,
+  // Native .mcstructure template & placement helpers (zero placeholders, 100% original BetterEnd Java SDF/NBT structures)
+  const resolvedStructures =
+    mcStructures ??
+    compileAllMcStructures({
+      repoRoot: defaultRepoRoot,
+      blocks: compileBlocks(registrations, {
+        flattenedBlockstates: new Map(),
+        flattenedModels: new Map(),
+        geometries: new Map(),
+        terrainTextureJson: null,
+        blocksJson: null,
+      }),
+    });
+
+  const ensureStructureTemplateFeature = (meta, { groundCheck = true } = {}) => {
+    const rawShort = meta.structureName.split(':')[1];
+    const tplFeatId = `betterend:struct_tpl_${rawShort}_feature`;
+    const tplRel = `features/struct_tpl_${rawShort}_feature.json`;
+    if (!features.has(tplRel)) {
+      features.set(tplRel, {
+        format_version: BEDROCK_FEATURE_FORMAT_VERSION,
+        'minecraft:structure_template_feature': {
+          description: { identifier: tplFeatId },
+          structure_name: meta.structureName,
+          adjustment_radius: 0,
+          facing_direction: 'south',
+          constraints: {},
+        },
+      });
+    }
+
+    const modeSuffix = groundCheck ? 'grounded' : 'aerial';
+    const placeFeatId = `betterend:struct_place_${rawShort}_${modeSuffix}_feature`;
+    const placeRel = `features/struct_place_${rawShort}_${modeSuffix}_feature.json`;
+    if (!features.has(placeRel)) {
+      const [ox, oy, oz] = meta.originOffset ?? [0, 0, 0];
+      const groundIterations = groundCheck
+        ? 'query.heightmap(variable.worldx, variable.worldz) >= 48 && query.heightmap(variable.worldx + 2, variable.worldz) >= 48 && query.heightmap(variable.worldx - 2, variable.worldz) >= 48 && query.heightmap(variable.worldx, variable.worldz + 2) >= 48 && query.heightmap(variable.worldx, variable.worldz - 2) >= 48 && math.abs(query.heightmap(variable.worldx + 2, variable.worldz) - query.heightmap(variable.worldx - 2, variable.worldz)) <= 5 ? 1 : 0'
+        : 1;
+      features.set(placeRel, {
+        format_version: BEDROCK_FEATURE_FORMAT_VERSION,
+        'minecraft:scatter_feature': {
+          description: { identifier: placeFeatId },
+          iterations: groundIterations,
+          coordinate_eval_order: 'zyx',
+          x: ox,
+          y: oy,
+          z: oz,
+          project_input_to_floor: false,
+          places_feature: tplFeatId,
+        },
+      });
+    }
+    return placeFeatId;
+  };
+
+  const ensureProceduralStructureFeature = (
+    procId,
+    { groundCheck = true, featureIdOverride = null, filePathOverride = null } = {},
+  ) => {
+    const variants = resolvedStructures.proceduralVariants.get(procId) ?? [];
+    const featId = featureIdOverride ?? `betterend:proc_${procId}_feature`;
+    const relPath = filePathOverride ?? `features/proc_${procId}_feature.json`;
+    if (features.has(relPath)) return featId;
+
+    const weightedChoices = variants.map(meta => [
+      ensureStructureTemplateFeature(meta, { groundCheck }),
+      10,
+    ]);
+    features.set(relPath, {
+      format_version: BEDROCK_FEATURE_FORMAT_VERSION,
+      'minecraft:weighted_random_feature': {
+        description: { identifier: featId },
+        features: weightedChoices,
       },
-    },
+    });
+    return featId;
+  };
+
+  // Shared 1:1 BetterEnd .mcstructure features for Water Lakes, Big Aurora Crystals, and 3D Ice Stars
+  ensureProceduralStructureFeature('end_lake', {
+    groundCheck: true,
+    featureIdOverride: 'betterend:water_pond_patch_feature',
+    filePathOverride: 'features/water_pond_patch_feature.json',
   });
-  features.set('features/water_pond_patch_feature.json', {
-    format_version: BEDROCK_FEATURE_FORMAT_VERSION,
-    'minecraft:scatter_feature': {
-      description: { identifier: 'betterend:water_pond_patch_feature' },
-      iterations: 64,
-      coordinate_eval_order: 'zyx',
-      x: { distribution: 'fixed_grid', extent: [-3, 4] },
-      z: { distribution: 'fixed_grid', extent: [-3, 4] },
-      y: 0,
-      project_input_to_floor: false,
-      places_feature: 'betterend:water_basin_cell_feature',
-    },
+  ensureProceduralStructureFeature('desert_lake', {
+    groundCheck: true,
+    featureIdOverride: 'betterend:desert_lake_feature',
+    filePathOverride: 'features/desert_lake_feature.json',
+  });
+  ensureProceduralStructureFeature('sulphuric_lake', {
+    groundCheck: true,
+    featureIdOverride: 'betterend:sulphuric_lake_feature',
+    filePathOverride: 'features/sulphuric_lake_feature.json',
+  });
+  ensureProceduralStructureFeature('pond_with_waterfall', {
+    groundCheck: true,
+    featureIdOverride: 'betterend:pond_with_waterfall_feature',
+    filePathOverride: 'features/pond_with_waterfall_feature.json',
+  });
+  ensureProceduralStructureFeature('big_aurora_crystal', {
+    groundCheck: true,
+    featureIdOverride: 'betterend:big_aurora_crystal_cluster_feature',
+    filePathOverride: 'features/big_aurora_crystal_cluster_feature.json',
   });
 
-  features.set('features/aurora_crystal_block_feature.json', {
-    format_version: BEDROCK_FEATURE_FORMAT_VERSION,
-    'minecraft:single_block_feature': {
-      description: { identifier: 'betterend:aurora_crystal_block_feature' },
-      places_block: 'betterend:aurora_crystal',
-      enforce_placement_rules: false,
-      enforce_survivability_rules: false,
-      may_replace: ['minecraft:air', 'minecraft:chorus_plant', 'minecraft:chorus_flower', ...allSoilBlocks],
-    },
-  });
-  features.set('features/big_aurora_crystal_col_feature.json', {
-    format_version: BEDROCK_FEATURE_FORMAT_VERSION,
-    'minecraft:scatter_feature': {
-      description: { identifier: 'betterend:big_aurora_crystal_col_feature' },
-      iterations: 6,
-      coordinate_eval_order: 'zyx',
-      x: 0,
-      z: 0,
-      y: { distribution: 'fixed_grid', extent: [0, 5] },
-      project_input_to_floor: false,
-      places_feature: 'betterend:aurora_crystal_block_feature',
-    },
-  });
-  features.set('features/big_aurora_crystal_cluster_feature.json', {
-    format_version: BEDROCK_FEATURE_FORMAT_VERSION,
-    'minecraft:scatter_feature': {
-      description: { identifier: 'betterend:big_aurora_crystal_cluster_feature' },
-      iterations: 5,
-      coordinate_eval_order: 'zyx',
-      x: { distribution: 'uniform', extent: [-1, 1] },
-      z: { distribution: 'uniform', extent: [-1, 1] },
-      y: { distribution: 'uniform', extent: [-1, 2] },
-      project_input_to_floor: false,
-      places_feature: 'betterend:big_aurora_crystal_col_feature',
-    },
-  });
-
-  features.set('features/emerald_ice_block_feature.json', {
-    format_version: BEDROCK_FEATURE_FORMAT_VERSION,
-    'minecraft:single_block_feature': {
-      description: { identifier: 'betterend:emerald_ice_block_feature' },
-      places_block: 'betterend:emerald_ice',
-      enforce_placement_rules: false,
-      enforce_survivability_rules: false,
-      may_replace: ['minecraft:air', ...allSoilBlocks],
-    },
-  });
-  features.set('features/dense_emerald_ice_block_feature.json', {
-    format_version: BEDROCK_FEATURE_FORMAT_VERSION,
-    'minecraft:single_block_feature': {
-      description: { identifier: 'betterend:dense_emerald_ice_block_feature' },
-      places_block: 'betterend:dense_emerald_ice',
-      enforce_placement_rules: false,
-      enforce_survivability_rules: false,
-      may_replace: ['minecraft:air', 'betterend:emerald_ice', ...allSoilBlocks],
-    },
-  });
-  features.set('features/ancient_emerald_ice_block_feature.json', {
-    format_version: BEDROCK_FEATURE_FORMAT_VERSION,
-    'minecraft:single_block_feature': {
-      description: { identifier: 'betterend:ancient_emerald_ice_block_feature' },
-      places_block: 'betterend:ancient_emerald_ice',
-      enforce_placement_rules: false,
-      enforce_survivability_rules: false,
-      may_replace: ['minecraft:air', 'betterend:emerald_ice', 'betterend:dense_emerald_ice', ...allSoilBlocks],
-    },
-  });
-  features.set('features/ice_star_core_feature.json', {
-    format_version: BEDROCK_FEATURE_FORMAT_VERSION,
-    'minecraft:scatter_feature': {
-      description: { identifier: 'betterend:ice_star_core_feature' },
-      iterations: 27,
-      coordinate_eval_order: 'zyx',
-      x: { distribution: 'fixed_grid', extent: [-1, 1] },
-      y: { distribution: 'fixed_grid', extent: [-1, 1] },
-      z: { distribution: 'fixed_grid', extent: [-1, 1] },
-      project_input_to_floor: false,
-      places_feature: 'betterend:ancient_emerald_ice_block_feature',
-    },
-  });
-  features.set('features/ice_star_shell_feature.json', {
-    format_version: BEDROCK_FEATURE_FORMAT_VERSION,
-    'minecraft:scatter_feature': {
-      description: { identifier: 'betterend:ice_star_shell_feature' },
-      iterations: 36,
-      coordinate_eval_order: 'zyx',
-      x: { distribution: 'uniform', extent: [-2, 2] },
-      y: { distribution: 'uniform', extent: [-2, 2] },
-      z: { distribution: 'uniform', extent: [-2, 2] },
-      project_input_to_floor: false,
-      places_feature: 'betterend:dense_emerald_ice_block_feature',
-    },
-  });
-  features.set('features/ice_star_spike_x_feature.json', {
-    format_version: BEDROCK_FEATURE_FORMAT_VERSION,
-    'minecraft:scatter_feature': {
-      description: { identifier: 'betterend:ice_star_spike_x_feature' },
-      iterations: 11,
-      coordinate_eval_order: 'zyx',
-      x: { distribution: 'fixed_grid', extent: [-5, 5] },
-      y: 0,
-      z: 0,
-      project_input_to_floor: false,
-      places_feature: 'betterend:emerald_ice_block_feature',
-    },
-  });
-  features.set('features/ice_star_spike_y_feature.json', {
-    format_version: BEDROCK_FEATURE_FORMAT_VERSION,
-    'minecraft:scatter_feature': {
-      description: { identifier: 'betterend:ice_star_spike_y_feature' },
-      iterations: 11,
-      coordinate_eval_order: 'zyx',
-      x: 0,
-      y: { distribution: 'fixed_grid', extent: [-5, 5] },
-      z: 0,
-      project_input_to_floor: false,
-      places_feature: 'betterend:emerald_ice_block_feature',
-    },
-  });
-  features.set('features/ice_star_spike_z_feature.json', {
-    format_version: BEDROCK_FEATURE_FORMAT_VERSION,
-    'minecraft:scatter_feature': {
-      description: { identifier: 'betterend:ice_star_spike_z_feature' },
-      iterations: 11,
-      coordinate_eval_order: 'zyx',
-      x: 0,
-      y: 0,
-      z: { distribution: 'fixed_grid', extent: [-5, 5] },
-      project_input_to_floor: false,
-      places_feature: 'betterend:emerald_ice_block_feature',
-    },
-  });
+  const iceStarSmallFeat = ensureProceduralStructureFeature('ice_star_small', { groundCheck: false });
+  const iceStarMedFeat = ensureProceduralStructureFeature('ice_star', { groundCheck: false });
+  const iceStarGiantFeat = ensureProceduralStructureFeature('giant_ice_star', { groundCheck: false });
   features.set('features/ice_star_structure_feature.json', {
     format_version: BEDROCK_FEATURE_FORMAT_VERSION,
-    'minecraft:aggregate_feature': {
+    'minecraft:weighted_random_feature': {
       description: { identifier: 'betterend:ice_star_structure_feature' },
-      early_out: 'none',
       features: [
-        'betterend:ice_star_spike_x_feature',
-        'betterend:ice_star_spike_y_feature',
-        'betterend:ice_star_spike_z_feature',
-        'betterend:ice_star_shell_feature',
-        'betterend:ice_star_core_feature',
+        [iceStarSmallFeat, 60],
+        [iceStarMedFeat, 30],
+        [iceStarGiantFeat, 10],
       ],
     },
   });
 
-  // Emit native tree features for all 11 BetterEnd tree species
+  // Emit 1:1 BetterEnd SDF/Spline .mcstructure tree features for all 11 BetterEnd tree species + giant_mossy_glowshroom
   const treeFeatureIds = new Map();
   for (const treeDesc of FEATURES_BY_CATEGORY.trees ?? []) {
-    const palette = (treeDesc.palette ?? []).filter(b => knownBlockIds.has(b));
-    const trunkBlock =
-      palette.find(b => b.endsWith('_log') || b.endsWith('_stem') || b.endsWith('_bark')) ??
-      palette[0] ??
-      'betterend:mossy_glowshroom_log';
-    const leafBlock =
-      palette.find(
-        b =>
-          b.endsWith('_leaves') ||
-          b.endsWith('_cap') ||
-          b.endsWith('_cap_purple') ||
-          b.endsWith('_membrane'),
-      ) ??
-      palette[1] ??
-      trunkBlock;
-    const featId = `betterend:tree_${treeDesc.id}_feature`;
-    treeFeatureIds.set(treeDesc.id, featId);
-    features.set(`features/tree_${treeDesc.id}_feature.json`, {
-      format_version: BEDROCK_FEATURE_FORMAT_VERSION,
-      'minecraft:tree_feature': {
-        description: {
-          identifier: featId,
-        },
-        acacia_trunk: {
-          trunk_width: 1,
-          trunk_height: {
-            base: 9,
-            intervals: [4, 3],
-            min_height_for_canopy: 5,
-          },
-          trunk_block: trunkBlock,
-          trunk_lean: {
-            allow_diagonal_growth: true,
-            lean_height: { range_min: 3, range_max: 6 },
-            lean_steps: { range_min: 2, range_max: 4 },
-            lean_length: { range_min: 1, range_max: 3 },
-          },
-        },
-        random_spread_canopy: {
-          canopy_height: 4,
-          canopy_radius: 4,
-          leaf_placement_attempts: 90,
-          leaf_blocks: [[leafBlock, 4]],
-        },
-        base_block: [allSoilBlocks[1] ?? 'minecraft:end_stone'],
-        may_grow_on: allSoilBlocks,
-        may_replace: [
-          'minecraft:air',
-          'minecraft:chorus_plant',
-          'minecraft:chorus_flower',
-          leafBlock,
-        ],
-        may_grow_through: allSoilBlocks,
-      },
+    const featId = ensureProceduralStructureFeature(treeDesc.id, {
+      groundCheck: true,
+      featureIdOverride: `betterend:tree_${treeDesc.id}_feature`,
+      filePathOverride: `features/tree_${treeDesc.id}_feature.json`,
     });
+    treeFeatureIds.set(treeDesc.id, featId);
   }
+  const giantGlowshroomFeat = ensureProceduralStructureFeature('giant_mossy_glowshroom', {
+    groundCheck: true,
+  });
+  const largeAmaranitaFeat = ensureProceduralStructureFeature('large_amaranita', {
+    groundCheck: true,
+  });
+  treeFeatureIds.set('large_amaranita', largeAmaranitaFeat);
 
-  // Emit all 27 Native Biomes + Native Surface/Flora/Tree Features & Feature Rules
+  // Biome-specific multi-block plants, bushes, and terrain landmarks from original BetterEnd Java biome definitions
+  const BIOME_PROCEDURAL_SUBFEATURES = {
+    foggy_mushroomland: ['blue_vine', 'end_lily', 'end_lotus', 'end_lotus_leaf'],
+    chorus_forest: ['pythadendron_bush'],
+    megalake: ['end_lotus', 'end_lotus_leaf', 'end_lily', 'menger_sponge'],
+    megalake_grove: ['end_lotus', 'end_lotus_leaf', 'end_lily', 'hydralux', 'menger_sponge'],
+    shadow_forest: ['dragon_tree_bush'],
+    amber_land: ['lanceleaf', 'glow_pillar'],
+    blossoming_spires: ['tenanea_bush', 'silk_moth_nest', 'twisted_umbrella_moss_double'],
+    sulphur_springs: ['geyser', 'surface_vent', 'sulphur_hill', 'hydralux'],
+    umbrella_jungle: ['umbrella_moss_double', 'twisted_umbrella_moss_double', 'menger_sponge'],
+    glowing_grasslands: ['lumecorn', 'umbrella_moss_double'],
+    dragon_graveyards: ['large_amaranita', 'small_amaranita'],
+    lantern_woods: ['lucernia_bush', 'filalux'],
+    neon_oasis: ['neon_cactus'],
+    flower_islets: ['large_amaranita', 'small_amaranita'],
+    waterfall_ponds: ['lumecorn', 'umbrella_moss_double'],
+    lush_smaragdant_cave: ['cave_bush', 'smaragdant_crystal'],
+    empty_smaragdant_cave: ['smaragdant_crystal'],
+    lush_aurora_cave: ['cave_bush'],
+  };
+
+  const BIOME_LANDMARK_PROCEDURAL = {
+    blossoming_spires: ['spire', 'floating_spire'],
+    umbra_valley: ['umbralith_arch', 'thin_umbralith_arch'],
+    dragon_graveyards: ['obsidian_pillar_basement', 'fallen_pillar', 'obsidian_boulder'],
+    flower_islets: ['small_island'],
+    waterfall_ponds: ['small_island'],
+  };
+
+  // Emit all 27 Native Biomes + Native Surface/Flora/Tree/Structure Features & Feature Rules
   for (const [idx, region] of REGION_CATALOGUE.entries()) {
     // 1. Native Biome definition (format_version 1.26.30)
     biomes.set(`biomes/${region.id}.biome.json`, {
@@ -2332,7 +2392,7 @@ export function compileEntitiesAndFeatures(registrations, resources) {
         description: {
           identifier: colFeatId,
         },
-        iterations: 3,
+        iterations: 'query.heightmap(variable.worldx, variable.worldz) >= 16 ? 3 : 0',
         coordinate_eval_order: 'zyx',
         x: 0,
         z: 0,
@@ -2424,7 +2484,7 @@ export function compileEntitiesAndFeatures(registrations, resources) {
           ],
         },
         distribution: {
-          iterations: `${cellCond} ? ${floraDensity} : 0`,
+          iterations: `${cellCond} && query.heightmap(variable.originx + 8, variable.originz + 8) >= 48 ? ${floraDensity} : 0`,
           x: { distribution: 'uniform', extent: [0, 16] },
           y: 'query.heightmap(variable.worldx, variable.worldz)',
           z: { distribution: 'uniform', extent: [0, 16] },
@@ -2432,14 +2492,40 @@ export function compileEntitiesAndFeatures(registrations, resources) {
       },
     });
 
-    // 4. Native Tree / Giant Mushroom Scatter in after_surface_pass
+    // 4. Native 1:1 BetterEnd SDF/Spline Tree / Giant Mushroom Scatter in after_surface_pass
     if (regionTrees.length > 0) {
+      let targetTreeFeat = regionTrees[0];
+      if (region.id === 'foggy_mushroomland') {
+        const mixId = 'betterend:biome_foggy_mushroomland_tree_mix_feature';
+        features.set('features/biome_foggy_mushroomland_tree_mix_feature.json', {
+          format_version: BEDROCK_FEATURE_FORMAT_VERSION,
+          'minecraft:weighted_random_feature': {
+            description: { identifier: mixId },
+            features: [
+              [regionTrees[0], 80],
+              [giantGlowshroomFeat, 20],
+            ],
+          },
+        });
+        targetTreeFeat = mixId;
+      } else if (regionTrees.length > 1) {
+        const mixId = `betterend:biome_${region.id}_tree_mix_feature`;
+        features.set(`features/biome_${region.id}_tree_mix_feature.json`, {
+          format_version: BEDROCK_FEATURE_FORMAT_VERSION,
+          'minecraft:weighted_random_feature': {
+            description: { identifier: mixId },
+            features: regionTrees.map(t => [t, 10]),
+          },
+        });
+        targetTreeFeat = mixId;
+      }
+
       featureRules.set(`feature_rules/biome_${region.id}_tree_rule.json`, {
         format_version: BEDROCK_FEATURE_FORMAT_VERSION,
         'minecraft:feature_rules': {
           description: {
             identifier: `betterend:biome_${region.id}_tree_rule`,
-            places_feature: regionTrees[0],
+            places_feature: targetTreeFeat,
           },
           conditions: {
             placement_pass: 'after_surface_pass',
@@ -2448,16 +2534,55 @@ export function compileEntitiesAndFeatures(registrations, resources) {
             ],
           },
           distribution: {
-            iterations: `${cellCond} ? 8 : 0`,
-            x: { distribution: 'uniform', extent: [0, 16] },
+            iterations: `${cellCond} && query.heightmap(variable.originx + 8, variable.originz + 8) >= 48 ? 1 : 0`,
+            x: { distribution: 'uniform', extent: [3, 13] },
             y: 'query.heightmap(variable.worldx, variable.worldz)',
-            z: { distribution: 'uniform', extent: [0, 16] },
+            z: { distribution: 'uniform', extent: [3, 13] },
           },
         },
       });
     }
 
-    // 5. Native Water Lakes/Ponds in Megalake & Lake Biomes
+    // 5. Native 1:1 Multi-Block Plants & Bushes per Biome
+    const subFeatureList = BIOME_PROCEDURAL_SUBFEATURES[region.id] ?? [];
+    if (subFeatureList.length > 0) {
+      const subChoices = subFeatureList.map(procId => [
+        ensureProceduralStructureFeature(procId, { groundCheck: true }),
+        10,
+      ]);
+      const subMixId = `betterend:biome_${region.id}_subfeatures_feature`;
+      features.set(`features/biome_${region.id}_subfeatures_feature.json`, {
+        format_version: BEDROCK_FEATURE_FORMAT_VERSION,
+        'minecraft:weighted_random_feature': {
+          description: { identifier: subMixId },
+          features: subChoices,
+        },
+      });
+
+      featureRules.set(`feature_rules/biome_${region.id}_subfeatures_rule.json`, {
+        format_version: BEDROCK_FEATURE_FORMAT_VERSION,
+        'minecraft:feature_rules': {
+          description: {
+            identifier: `betterend:biome_${region.id}_subfeatures_rule`,
+            places_feature: subMixId,
+          },
+          conditions: {
+            placement_pass: 'after_surface_pass',
+            'minecraft:biome_filter': [
+              { test: 'has_biome_tag', operator: '==', value: 'the_end' },
+            ],
+          },
+          distribution: {
+            iterations: `${cellCond} && query.heightmap(variable.originx + 8, variable.originz + 8) >= 48 ? 2 : 0`,
+            x: { distribution: 'uniform', extent: [2, 14] },
+            y: 'query.heightmap(variable.worldx, variable.worldz)',
+            z: { distribution: 'uniform', extent: [2, 14] },
+          },
+        },
+      });
+    }
+
+    // 6. Native 1:1 Water Lakes/Ponds in Megalake & Lake Biomes
     if (
       [
         'megalake',
@@ -2468,13 +2593,20 @@ export function compileEntitiesAndFeatures(registrations, resources) {
         'waterfall_ponds',
       ].includes(region.id)
     ) {
-      const pondCount = region.id === 'megalake' || region.id === 'megalake_grove' ? 3 : 2;
+      const lakeFeatId =
+        region.id === 'neon_oasis'
+          ? 'betterend:desert_lake_feature'
+          : region.id === 'sulphur_springs'
+            ? 'betterend:sulphuric_lake_feature'
+            : region.id === 'waterfall_ponds'
+              ? 'betterend:pond_with_waterfall_feature'
+              : 'betterend:water_pond_patch_feature';
       featureRules.set(`feature_rules/biome_${region.id}_pond_rule.json`, {
         format_version: BEDROCK_FEATURE_FORMAT_VERSION,
         'minecraft:feature_rules': {
           description: {
             identifier: `betterend:biome_${region.id}_pond_rule`,
-            places_feature: 'betterend:water_pond_patch_feature',
+            places_feature: lakeFeatId,
           },
           conditions: {
             placement_pass: 'after_surface_pass',
@@ -2483,16 +2615,16 @@ export function compileEntitiesAndFeatures(registrations, resources) {
             ],
           },
           distribution: {
-            iterations: `${cellCond} ? ${pondCount} : 0`,
-            x: { distribution: 'uniform', extent: [4, 12] },
-            y: 'query.heightmap(variable.worldx, variable.worldz) - 1',
-            z: { distribution: 'uniform', extent: [4, 12] },
+            iterations: `${cellCond} && query.heightmap(variable.originx + 8, variable.originz + 8) >= 48 ? 1 : 0`,
+            x: 8,
+            y: 'query.heightmap(variable.worldx, variable.worldz)',
+            z: 8,
           },
         },
       });
     }
 
-    // 6. Native 3D Spiky Ice Stars in Ice Starfield
+    // 7. Native 3D Spiky Ice Stars in Ice Starfield
     if (region.id === 'ice_starfield') {
       featureRules.set(`feature_rules/biome_ice_starfield_star_rule.json`, {
         format_version: BEDROCK_FEATURE_FORMAT_VERSION,
@@ -2508,16 +2640,16 @@ export function compileEntitiesAndFeatures(registrations, resources) {
             ],
           },
           distribution: {
-            iterations: `${cellCond} ? 2 : 0`,
+            iterations: `${cellCond} && math.mod(math.abs(math.floor(variable.originx / 16) * 31 + math.floor(variable.originz / 16) * 17), 2) == 0 ? 1 : 0`,
             x: { distribution: 'uniform', extent: [4, 12] },
-            y: { distribution: 'uniform', extent: [58, 92] },
+            y: { distribution: 'uniform', extent: [58, 94] },
             z: { distribution: 'uniform', extent: [4, 12] },
           },
         },
       });
     }
 
-    // 7. Native 3D Big Aurora Crystal Pillars in Crystal Mountains & Aurora Caves
+    // 8. Native 3D Big Aurora Crystal Hexagonal Prisms in Crystal Mountains & Aurora Caves (strictly void-gated!)
     if (['crystal_mountains', 'empty_aurora_cave', 'lush_aurora_cave'].includes(region.id)) {
       featureRules.set(`feature_rules/biome_${region.id}_aurora_pillar_rule.json`, {
         format_version: BEDROCK_FEATURE_FORMAT_VERSION,
@@ -2533,10 +2665,89 @@ export function compileEntitiesAndFeatures(registrations, resources) {
             ],
           },
           distribution: {
-            iterations: `${cellCond} ? 2 : 0`,
+            iterations: `${cellCond} && query.heightmap(variable.originx + 8, variable.originz + 8) >= 48 ? 1 : 0`,
             x: { distribution: 'uniform', extent: [4, 12] },
             y: 'query.heightmap(variable.worldx, variable.worldz)',
             z: { distribution: 'uniform', extent: [4, 12] },
+          },
+        },
+      });
+    }
+
+    // 9. Original BetterEnd .nbt Biome Buildings & Ruins (structures.json)
+    const nbtStructs = resolvedStructures.biomeNbtStructures.get(region.id) ?? [];
+    if (nbtStructs.length > 0) {
+      const nbtChoices = nbtStructs.map(meta => [
+        ensureStructureTemplateFeature(meta, { groundCheck: true }),
+        10,
+      ]);
+      const nbtMixId = `betterend:biome_${region.id}_nbt_structures_feature`;
+      features.set(`features/biome_${region.id}_nbt_structures_feature.json`, {
+        format_version: BEDROCK_FEATURE_FORMAT_VERSION,
+        'minecraft:weighted_random_feature': {
+          description: { identifier: nbtMixId },
+          features: nbtChoices,
+        },
+      });
+      featureRules.set(`feature_rules/biome_${region.id}_nbt_structures_rule.json`, {
+        format_version: BEDROCK_FEATURE_FORMAT_VERSION,
+        'minecraft:feature_rules': {
+          description: {
+            identifier: `betterend:biome_${region.id}_nbt_structures_rule`,
+            places_feature: nbtMixId,
+          },
+          conditions: {
+            placement_pass: 'after_surface_pass',
+            'minecraft:biome_filter': [
+              { test: 'has_biome_tag', operator: '==', value: 'the_end' },
+            ],
+          },
+          distribution: {
+            iterations: `${cellCond} && query.heightmap(variable.originx + 8, variable.originz + 8) >= 48 && math.mod(math.abs(math.floor(variable.originx / 16) * 43 + math.floor(variable.originz / 16) * 89), 6) == 0 ? 1 : 0`,
+            x: 8,
+            y: 'query.heightmap(variable.worldx, variable.worldz)',
+            z: 8,
+          },
+        },
+      });
+    }
+
+    // 10. Massive Terrain Landmarks (Spires, Floating Spires, Arches, Obsidian Pillars, Floating Islands)
+    const landmarks = BIOME_LANDMARK_PROCEDURAL[region.id] ?? [];
+    if (landmarks.length > 0) {
+      const landmarkChoices = landmarks.map(procId => {
+        const isAerial = procId === 'floating_spire' || procId === 'small_island';
+        return [ensureProceduralStructureFeature(procId, { groundCheck: !isAerial }), 10];
+      });
+      const lmMixId = `betterend:biome_${region.id}_landmarks_feature`;
+      features.set(`features/biome_${region.id}_landmarks_feature.json`, {
+        format_version: BEDROCK_FEATURE_FORMAT_VERSION,
+        'minecraft:weighted_random_feature': {
+          description: { identifier: lmMixId },
+          features: landmarkChoices,
+        },
+      });
+      const isAerialBiome = region.id === 'flower_islets' || region.id === 'waterfall_ponds';
+      featureRules.set(`feature_rules/biome_${region.id}_landmarks_rule.json`, {
+        format_version: BEDROCK_FEATURE_FORMAT_VERSION,
+        'minecraft:feature_rules': {
+          description: {
+            identifier: `betterend:biome_${region.id}_landmarks_rule`,
+            places_feature: lmMixId,
+          },
+          conditions: {
+            placement_pass: 'after_surface_pass',
+            'minecraft:biome_filter': [
+              { test: 'has_biome_tag', operator: '==', value: 'the_end' },
+            ],
+          },
+          distribution: {
+            iterations: `${cellCond} && math.mod(math.abs(math.floor(variable.originx / 16) * 59 + math.floor(variable.originz / 16) * 97), 4) == 0 ? 1 : 0`,
+            x: 8,
+            y: isAerialBiome
+              ? { distribution: 'uniform', extent: [58, 86] }
+              : 'query.heightmap(variable.worldx, variable.worldz)',
+            z: 8,
           },
         },
       });
@@ -2553,6 +2764,7 @@ export function compileEntitiesAndFeatures(registrations, resources) {
     entityLootTables,
     features,
     featureRules,
+    structures: resolvedStructures.structureFiles,
   };
 }
 
@@ -2569,7 +2781,8 @@ export async function compileAllContent({ repoRoot = defaultRepoRoot } = {}) {
   const blocks = compileBlocks(registrations, modelAssets);
   const items = compileItems(registrations);
   const recipes = compileRecipes(resources, runtime);
-  const entitiesAndFeatures = compileEntitiesAndFeatures(registrations, resources);
+  const mcStructures = compileAllMcStructures({ repoRoot, blocks });
+  const entitiesAndFeatures = compileEntitiesAndFeatures(registrations, resources, mcStructures);
 
   return {
     counts: {
@@ -2587,11 +2800,13 @@ export async function compileAllContent({ repoRoot = defaultRepoRoot } = {}) {
       clientEntities: entitiesAndFeatures.clientEntities.size,
       features: entitiesAndFeatures.features.size,
       featureRules: entitiesAndFeatures.featureRules.size,
+      structures: entitiesAndFeatures.structures.size,
     },
     modelAssets,
     blocks,
     items,
     recipes,
     entitiesAndFeatures,
+    mcStructures,
   };
 }

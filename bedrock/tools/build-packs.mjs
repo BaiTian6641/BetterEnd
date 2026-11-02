@@ -9,10 +9,10 @@
  */
 
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { zipSync } from 'fflate';
+import { unzipSync, zipSync } from 'fflate';
 import {
   SOURCE_COMMIT,
   assertUniquePortablePaths,
@@ -398,6 +398,9 @@ function buildProfilePackMaps({
   for (const [rel, doc] of compiled.entitiesAndFeatures.featureRules) {
     bp.set(rel, jsonBytes(doc));
   }
+  for (const [rel, bytes] of compiled.entitiesAndFeatures.structures ?? []) {
+    bp.set(rel, bytes);
+  }
 
   // 3. Runtime ES Modules in `scripts/`
   for (const [rel, bytes] of runtimeModules) {
@@ -485,7 +488,15 @@ function buildProfilePackMaps({
       },
     }),
   );
-  rp.set('point_lights/global.json', jsonBytes(compiled.modelAssets.localLightingJson));
+  rp.set(
+    'point_lights/global.json',
+    jsonBytes({
+      format_version: '1.21.40',
+      'minecraft:point_light_settings': compiled.modelAssets.localLightingJson[
+        'minecraft:point_light_settings'
+      ] ?? { colors: [] },
+    }),
+  );
 
   for (const [rel, doc] of compiled.modelAssets.visualPresets.atmospherics) {
     rp.set(rel, jsonBytes(doc));
@@ -651,6 +662,30 @@ export async function buildPacks({
     }
     const bytes = await readFile(path.resolve(repoRoot, asset.source.path));
     binaryAssets.set(asset.proposedDestination, bytes);
+  }
+
+  // Extract recovered music tracks (ender_hollow.ogg & moonlit_undercurrents.ogg) from Modrinth archive
+  const musicDistPath = path.resolve(repoRoot, 'bedrock/upstream/music-distribution.json');
+  if (existsSync(musicDistPath)) {
+    const musicDist = JSON.parse(await readFile(musicDistPath, 'utf8'));
+    const jarPath = path.resolve(
+      repoRoot,
+      musicDist.sourceArchive?.localPath ?? 'bedrock/.work/downloads/better-end-26.301.2.jar',
+    );
+    if (existsSync(jarPath)) {
+      const jarBytes = await readFile(jarPath);
+      const wantedMembers = new Set((musicDist.tracks ?? []).map(t => t.member));
+      const unzipped = unzipSync(new Uint8Array(jarBytes), {
+        filter: file => wantedMembers.has(file.name),
+      });
+      for (const track of musicDist.tracks ?? []) {
+        const entryBytes = unzipped[track.member];
+        if (entryBytes) {
+          const destRel = track.member.replace(/^assets\/betterend\//u, '');
+          binaryAssets.set(destRel, Buffer.from(entryBytes));
+        }
+      }
+    }
   }
 
   const profilesResult = Object.create(null);

@@ -67,6 +67,7 @@ Start with:
 5. [Second-stage evidence index](../evidence/source/stage-002-summary.json).
 6. [Java exporter instructions](../java-exporter/README.md).
 7. [Native inventory/client-session instructions](../probes/inventory/README.md).
+8. [Bedrock 26.30+ / 26.40 API & Schema Reference](bedrock-26.30-26.40-api-reference.md).
 
 The earlier copied research plan contains 26.60 assumptions; it does not override the 26.40 specification.
 

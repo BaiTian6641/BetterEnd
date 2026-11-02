@@ -787,7 +787,7 @@ export function buildRegionVisualPresets(registrations) {
     });
 
     lighting.set(`lighting/${shortName}.json`, {
-      format_version: '1.26.20',
+      format_version: '1.21.40',
       'minecraft:lighting_settings': {
         description: { identifier: lightingId },
         ambient: {
@@ -802,7 +802,7 @@ export function buildRegionVisualPresets(registrations) {
     });
 
     atmospherics.set(`atmospherics/${shortName}.json`, {
-      format_version: '1.26.20',
+      format_version: '1.21.40',
       'minecraft:atmosphere_settings': {
         description: { identifier: atmoId },
         sky_zenith_color: skyColor,
@@ -814,7 +814,7 @@ export function buildRegionVisualPresets(registrations) {
     });
 
     colorGrading.set(`color_grading/${shortName}.json`, {
-      format_version: '1.26.20',
+      format_version: '1.21.40',
       'minecraft:color_grading_settings': {
         description: { identifier: gradingId },
         tone_mapping: {
@@ -879,8 +879,15 @@ export function buildLocalLightingJson(repoRoot = defaultRepoRoot) {
       .map(([blockId, color]) => [blockId, { light_color: color }]),
   );
 
+  const pointLightColors = Object.entries(blockLightColors)
+    .sort(([a], [b]) => compareText(a, b))
+    .map(([blockId, color]) => ({ block: blockId, color }));
+
   return {
-    format_version: '1.26.20',
+    format_version: '1.21.40',
+    'minecraft:point_light_settings': {
+      colors: pointLightColors,
+    },
     'minecraft:local_lighting': {
       static_block_lights: mappedLights,
     },

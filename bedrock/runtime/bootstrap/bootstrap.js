@@ -604,7 +604,7 @@ export class BetterEndRuntime {
                 airBlk.setType("minecraft:air");
               }
             }
-          } else if (distSq >= 9 && distSq <= (radius - 2) * (radius - 2) && rng.nextInt(7) === 0) {
+          } else if (dx === 6 && dz === 0) {
             const customFeatures = [...(region.structures ?? []), ...(region.features ?? [])].filter(
               (f) =>
                 ![
@@ -637,10 +637,9 @@ export class BetterEndRuntime {
                 this.regionService.effectiveSeed
               );
               for (const p of placements) {
-                if (p.role === "structure_base") continue;
                 const target = dimension.getBlock({ x: p.x, y: p.y, z: p.z });
-                if (target && target.typeId === "minecraft:air") {
-                  target.setType(p.blockId);
+                if (target && (target.typeId === "minecraft:air" || p.y <= cy + 1)) {
+                  this._applyBlockPlacement(target, p.blockId, p.props);
                 }
               }
             }
@@ -650,6 +649,35 @@ export class BetterEndRuntime {
         }
       }
     }
+  }
+
+  _applyBlockPlacement(targetBlock, blockId, props = null) {
+    if (!targetBlock || !blockId) return;
+    try {
+      const BlockPermutation = this.serverModule?.BlockPermutation;
+      if (
+        BlockPermutation &&
+        typeof BlockPermutation.resolve === "function" &&
+        props &&
+        blockId.startsWith("betterend:") &&
+        Object.keys(props).length > 0
+      ) {
+        const states = {};
+        for (const [k, v] of Object.entries(props)) {
+          const traitKey = k.startsWith("betterend:") ? k : `betterend:${k}`;
+          if (v === "true" || v === true) states[traitKey] = true;
+          else if (v === "false" || v === false) states[traitKey] = false;
+          else if (typeof v === "number") states[traitKey] = v;
+          else if (/^\d+$/.test(String(v))) states[traitKey] = Number(v);
+          else states[traitKey] = String(v);
+        }
+        try {
+          targetBlock.setPermutation(BlockPermutation.resolve(blockId, states));
+          return;
+        } catch {}
+      }
+      targetBlock.setType(blockId);
+    } catch {}
   }
 
   /**
@@ -802,13 +830,13 @@ export class BetterEndRuntime {
     });
     if (landmarkPool.length === 0) return;
 
-    if (rng.nextInt(2) !== 0) return;
+    if (rng.nextInt(6) !== 0) return;
 
     const ax = baseX + 4 + rng.nextInt(8);
     const az = baseZ + 4 + rng.nextInt(8);
     try {
       const topBlk = dimension.getTopmostBlock({ x: ax, z: az }, 120);
-      if (!topBlk || topBlk.location.y < 42) return;
+      if (!topBlk || topBlk.location.y < 48) return;
       const topY = topBlk.location.y;
       const featId = landmarkPool[rng.nextInt(landmarkPool.length)];
       const placements = synthesizeAnchorPlacements(
@@ -820,7 +848,6 @@ export class BetterEndRuntime {
         this.regionService.effectiveSeed
       );
       for (const p of placements) {
-        if (p.role === "structure_base") continue;
         const target = dimension.getBlock({ x: p.x, y: p.y, z: p.z });
         if (
           target &&
@@ -828,7 +855,7 @@ export class BetterEndRuntime {
             target.typeId === "minecraft:chorus_plant" ||
             target.typeId === "minecraft:chorus_flower")
         ) {
-          target.setType(p.blockId);
+          this._applyBlockPlacement(target, p.blockId, p.props);
         }
       }
     } catch {}

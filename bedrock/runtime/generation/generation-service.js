@@ -38,6 +38,7 @@ import {
 } from "../regions/region-catalogue.js";
 import { JavaRandom, MHelper } from "../regions/voronoi-hex.js";
 import { normalizeDimensionId } from "../persistence/store.js";
+import { generateBetterEndFeatureVoxels } from "./betterend-sdf.js";
 
 export const TICKING_AREA_PREFIX = "betterend:prep_";
 
@@ -91,23 +92,19 @@ export function synthesizeAnchorPlacements(anchor, worldSeedBigInt, clipBounds =
   const descriptor = FEATURES_BY_ID.get(anchor.featureId);
   if (!descriptor) return [];
 
-  const palette = descriptor.palette ?? [];
-  const isArr = Array.isArray(palette);
-  const primary = (isArr ? palette[0] : palette.primary) ?? "betterend:end_moss";
-  const secondary = (isArr ? palette[1] : palette.secondary) ?? primary;
-  const accent = (isArr ? palette[2] : palette.accent) ?? secondary;
-
   const placements = [];
   const ax = Math.trunc(anchor.position.x);
   const ay = Math.trunc(anchor.position.y);
   const az = Math.trunc(anchor.position.z);
   const seed = MHelper.getSeed3D(worldSeedBigInt, ax, ay, az);
-  const rng = new JavaRandom(seed);
 
-  const pushPlacement = (x, y, z, blockId, role) => {
+  const pushPlacement = (x, y, z, blockId, role, props = {}) => {
     const bx = Math.trunc(x);
     const by = Math.max(2, Math.min(254, Math.trunc(y)));
     const bz = Math.trunc(z);
+    if (Math.abs(bx) <= PROTECTED_END_RADIUS && Math.abs(bz) <= PROTECTED_END_RADIUS) {
+      return;
+    }
     if (clipBounds) {
       if (
         bx < clipBounds.minX ||
@@ -123,6 +120,7 @@ export function synthesizeAnchorPlacements(anchor, worldSeedBigInt, clipBounds =
       y: by,
       z: bz,
       blockId,
+      props,
       role,
       anchorId: anchor.anchorId,
       featureId: anchor.featureId,
@@ -130,154 +128,11 @@ export function synthesizeAnchorPlacements(anchor, worldSeedBigInt, clipBounds =
     });
   };
 
-  const category = descriptor.category;
   const fId = anchor.featureId;
-  if (fId === "giant_ice_star" || fId === "ice_star" || fId === "ice_star_small") {
-    // 3D multi-layered spiky Emerald Ice Star (ancient core + dense shell + 6 axial spikes + 8 diagonal rays)
-    const armLen = fId === "giant_ice_star" ? 6 : fId === "ice_star" ? 5 : 4;
-    const cy = ay + armLen + 2;
-    for (let dx = -2; dx <= 2; dx++) {
-      for (let dy = -2; dy <= 2; dy++) {
-        for (let dz = -2; dz <= 2; dz++) {
-          const manhattan = Math.abs(dx) + Math.abs(dy) + Math.abs(dz);
-          if (manhattan <= 2) {
-            pushPlacement(ax + dx, cy + dy, az + dz, "betterend:ancient_emerald_ice", "structure_core");
-          } else if (manhattan === 3) {
-            pushPlacement(ax + dx, cy + dy, az + dz, "betterend:dense_emerald_ice", "structure_canopy");
-          }
-        }
-      }
-    }
-    for (let s = -armLen; s <= armLen; s++) {
-      if (Math.abs(s) <= 1) continue;
-      const blk = Math.abs(s) === armLen ? "betterend:dense_snow" : "betterend:emerald_ice";
-      pushPlacement(ax + s, cy, az, blk, "structure_apex");
-      pushPlacement(ax, cy + s, az, blk, "structure_apex");
-      pushPlacement(ax, cy, az + s, blk, "structure_apex");
-    }
-    const diagLen = Math.max(2, armLen - 2);
-    for (const sx of [-1, 1]) {
-      for (const sy of [-1, 1]) {
-        for (const sz of [-1, 1]) {
-          for (let d = 2; d <= diagLen; d++) {
-            pushPlacement(
-              ax + sx * d,
-              cy + sy * d,
-              az + sz * d,
-              "betterend:emerald_ice",
-              "structure_apex"
-            );
-          }
-        }
-      }
-    }
-  } else if (fId === "big_aurora_crystal" || fId === "smaragdant_crystal") {
-    // Tall 3D hexagonal crystal cluster (central crystal spire + 4 staggered side crystal columns)
-    const crystalBlk =
-      fId === "big_aurora_crystal" ? "betterend:aurora_crystal" : "betterend:smaragdant_crystal";
-    const mainHeight = 6 + rng.nextInt(4);
-    for (let dy = 0; dy < mainHeight; dy++) {
-      pushPlacement(ax, ay + dy, az, crystalBlk, "formation_body");
-      if (dy < mainHeight - 2) {
-        pushPlacement(ax + 1, ay + dy, az, crystalBlk, "formation_buttress");
-        pushPlacement(ax - 1, ay + dy, az, crystalBlk, "formation_buttress");
-        pushPlacement(ax, ay + dy, az + 1, crystalBlk, "formation_buttress");
-        pushPlacement(ax, ay + dy, az - 1, crystalBlk, "formation_buttress");
-      }
-    }
-    pushPlacement(ax, ay + mainHeight, az, crystalBlk, "formation_cap");
-  } else if (fId === "umbralith_arch" || fId === "thin_umbralith_arch") {
-    // Parabolic stone arch spanning across the terrain
-    const span = fId === "umbralith_arch" ? 4 : 3;
-    const archHeight = fId === "umbralith_arch" ? 6 : 5;
-    for (let d = -span; d <= span; d++) {
-      const yOff = Math.max(0, Math.round(archHeight - (d * d * archHeight) / (span * span + 1)));
-      for (let t = 0; t <= (fId === "umbralith_arch" ? 1 : 0); t++) {
-        pushPlacement(ax + d, ay + yOff + t, az, "betterend:umbralith", "formation_body");
-      }
-      if (Math.abs(d) === span) {
-        for (let py = 0; py < yOff; py++) {
-          pushPlacement(ax + d, ay + py, az, "betterend:umbralith", "formation_buttress");
-        }
-      }
-    }
-  } else if (category === "structure" || category === "structures") {
-    // Multi-block landmark / spire / giant mushroom motif
-    const r = Math.min(5, Math.max(2, Math.floor((descriptor.radius ?? 12) / 4)));
-    for (let dx = -r; dx <= r; dx++) {
-      for (let dz = -r; dz <= r; dz++) {
-        if (dx * dx + dz * dz <= r * r) {
-          pushPlacement(ax + dx, ay - 1, az + dz, secondary, "structure_base");
-        }
-      }
-    }
-    const height = 6 + (rng.nextInt(5) & 3);
-    for (let dy = 0; dy < height; dy++) {
-      pushPlacement(ax, ay + dy, az, primary, "structure_core");
-    }
-    for (let dx = -2; dx <= 2; dx++) {
-      for (let dz = -2; dz <= 2; dz++) {
-        if (dx * dx + dz * dz <= 5) {
-          pushPlacement(ax + dx, ay + height, az + dz, secondary, "structure_canopy");
-        }
-      }
-    }
-    pushPlacement(ax, ay + height + 1, az, accent, "structure_apex");
-  } else if (category === "tree" || category === "trees") {
-    const trunkHeight = 6 + rng.nextInt(5);
-    for (let dy = 0; dy < trunkHeight; dy++) {
-      pushPlacement(ax, ay + dy, az, primary, "tree_trunk");
-    }
-    for (let dx = -2; dx <= 2; dx++) {
-      for (let dz = -2; dz <= 2; dz++) {
-        if (Math.abs(dx) + Math.abs(dz) <= 3) {
-          pushPlacement(ax + dx, ay + trunkHeight, az + dz, secondary, "tree_canopy");
-          if (Math.abs(dx) <= 1 && Math.abs(dz) <= 1) {
-            pushPlacement(ax + dx, ay + trunkHeight + 1, az + dz, secondary, "tree_canopy_upper");
-          }
-        }
-      }
-    }
-    pushPlacement(ax, ay + trunkHeight - 1, az + 1, accent, "tree_crown");
-  } else if (category === "bush" || category === "bushes") {
-    pushPlacement(ax, ay, az, primary, "bush_stem");
-    pushPlacement(ax + 1, ay, az, secondary, "bush_foliage");
-    pushPlacement(ax - 1, ay, az, secondary, "bush_foliage");
-    pushPlacement(ax, ay, az + 1, secondary, "bush_foliage");
-    pushPlacement(ax, ay, az - 1, secondary, "bush_foliage");
-    pushPlacement(ax, ay + 1, az, secondary, "bush_top");
-  } else if (category === "vine" || category === "sky_plant") {
-    const length = 2 + rng.nextInt(3);
-    for (let dy = 0; dy < length; dy++) {
-      const block = dy === length - 1 ? accent : primary;
-      pushPlacement(ax, ay - dy, az, block, "hanging_vine");
-    }
-  } else if (category === "ore" || category === "crystal_formation" || category === "ores_layers") {
-    pushPlacement(ax, ay, az, primary, "mineral_core");
-    pushPlacement(ax + 1, ay, az, secondary, "mineral_vein");
-    pushPlacement(ax, ay - 1, az, secondary, "mineral_vein");
-    pushPlacement(ax, ay + 1, az, accent, "mineral_tip");
-  } else if (
-    category === "column" ||
-    category === "lake_geyser" ||
-    category === "floating_island" ||
-    category === "terrain_features"
-  ) {
-    const height = 4 + rng.nextInt(5);
-    for (let dy = 0; dy < height; dy++) {
-      pushPlacement(ax, ay + dy, az, primary, "formation_body");
-      if (dy < 2) {
-        pushPlacement(ax + 1, ay + dy, az, primary, "formation_buttress");
-        pushPlacement(ax, ay + dy, az + 1, primary, "formation_buttress");
-      }
-    }
-    pushPlacement(ax, ay + height, az, accent, "formation_cap");
-  } else {
-    // Surface plant, water plant, cave decoration
-    pushPlacement(ax, ay, az, primary, "feature_primary");
-    if (accent && accent !== primary) {
-      pushPlacement(ax, ay + 1, az, accent, "feature_accent");
-    }
+  const voxels = generateBetterEndFeatureVoxels(fId, seed, 0, 0, 0, descriptor);
+  for (let i = 0; i < voxels.length; i++) {
+    const v = voxels[i];
+    pushPlacement(ax + v.x, ay + v.y, az + v.z, v.blockId, "sdf_voxel", v.props ?? {});
   }
 
   return placements;
