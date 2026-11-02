@@ -1,0 +1,43 @@
+{
+  "certifiesAllPlatforms": false,
+  "clientRenderingVerified": false,
+  "events": [
+    {
+      "phase": "startup"
+    },
+    {
+      "blockRegistered": true,
+      "itemRegistered": true,
+      "phase": "worldLoad",
+      "players": 0,
+      "seed": "2640",
+      "tick": 384
+    },
+    {
+      "error": "TypeError: Incorrect number of arguments to function. Expected 3, received 2",
+      "phase": "error",
+      "requestId": "a2bedc35-088a-49ee-ae3a-95b21368dd60"
+    }
+  ],
+  "executableSha256": "e7775e636b9fdcbc354823d92d0c22c12738a2141d12557d856744293d258372",
+  "exit": {
+    "code": 0,
+    "signal": null
+  },
+  "expectedBuild": "1.26.40.8",
+  "failure": "{\"phase\":\"error\",\"requestId\":\"a2bedc35-088a-49ee-ae3a-95b21368dd60\",\"error\":\"TypeError: Incorrect number of arguments to function. Expected 3, received 2\"}",
+  "forcedTermination": false,
+  "observedBuild": "1.26.40.8",
+  "packageSha256": "eff4f240be4800774c8f5ffa6ffaf77df0c09e8cd09b64b81a496fabacb8392a",
+  "request": {
+    "action": "cap-004-biomes",
+    "dimension": "the_end",
+    "gateId": "CAP-004",
+    "requestId": "a2bedc35-088a-49ee-ae3a-95b21368dd60",
+    "x": 2048,
+    "y": 64,
+    "z": 2048
+  },
+  "schemaVersion": 1,
+  "scope": "supporting-server-side-evidence-not-full-capability-certification"
+}

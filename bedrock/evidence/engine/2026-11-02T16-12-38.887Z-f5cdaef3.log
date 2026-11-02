@@ -1,0 +1,52 @@
+NO LOG FILE! - setting up server logging...
+[2026-11-03 00:12:38:944 INFO] Starting Server
+[2026-11-03 00:12:38:944 INFO] Version: 1.26.40.8
+[2026-11-03 00:12:38:944 INFO] Session ID: 151e65fb-f857-48a7-a5f6-4734edfe885b
+[2026-11-03 00:12:38:944 INFO] Build ID: 48609425
+[2026-11-03 00:12:38:944 INFO] Branch: r/26_u4
+[2026-11-03 00:12:38:944 INFO] Commit ID: 93e89c3199ffce33269d88e6fec322330c130ae3
+[2026-11-03 00:12:38:944 INFO] Configuration: Publish
+[2026-11-03 00:12:38:945 INFO] Contents of server.properties: {}
+[2026-11-03 00:12:38:945 INFO] Level Name: betterend-capability-2640
+[2026-11-03 00:12:38:945 INFO] Profiler config ('bootstrap.json') load result: success=1, errorMessage=(null)
+[2026-11-03 00:12:38:947 INFO] No CDN config file found at: cdn_config.json for dedicated server
+[2026-11-03 00:12:38:947 INFO] Game mode: 1 Creative
+[2026-11-03 00:12:38:947 INFO] Difficulty: 1 EASY
+[2026-11-03 00:12:38:947 INFO] Content logging to console is enabled.
+[2026-11-03 00:12:38:949 INFO] 
+
+#####################################################
+#                                                   #
+#               LOADING VANILLA WORLD               #
+#                                                   #
+#####################################################
+[2026-11-03 00:12:39:596 INFO] Opening level 'worlds/betterend-capability-2640/db'
+[2026-11-03 00:12:39:813 INFO] Pack Stack - [00] BetterEnd engine capability probes (id: d16a5a53-d15f-482e-bf74-26c4d256ed24, version: 0.1.2) @ behavior_packs/betterend_probe
+[2026-11-03 00:12:39:890 WARN] [Scripting] BETTEREND_PROBE {"phase":"startup"}
+
+[2026-11-03 00:12:41:013 INFO] IPv4 supported, port: 29140: Used for gameplay
+[2026-11-03 00:12:41:013 INFO] IPv6 supported, port: 29141: Used for gameplay
+[2026-11-03 00:12:41:044 INFO] Signed in to signaling service successfully
+[2026-11-03 00:12:41:055 INFO] Waiting for Minecraft services...
+[2026-11-03 00:12:41:170 INFO] Server started.
+[2026-11-03 00:12:41:170 WARN] ================ ALLOW LIST WARNING ===================
+[2026-11-03 00:12:41:170 WARN] Allow list is enabled but contains no entries. 
+[2026-11-03 00:12:41:170 WARN] Use allowlist add <playername> for you and your friends so that they can access the server, or modify allowlist.json manually.
+[2026-11-03 00:12:41:170 WARN] 
+Alternatively, the allow list can be turned off by typing allowlist off or manually toggled in the server.properties file.
+[2026-11-03 00:12:41:170 WARN] =======================================================
+[2026-11-03 00:12:41:171 INFO] ================ TELEMETRY MESSAGE ===================
+[2026-11-03 00:12:41:171 INFO] Server Telemetry is currently not enabled. 
+[2026-11-03 00:12:41:171 INFO] Enabling this telemetry helps us improve the game.
+[2026-11-03 00:12:41:171 INFO] 
+[2026-11-03 00:12:41:171 INFO] To enable this feature, add the line 'emit-server-telemetry=true'
+[2026-11-03 00:12:41:171 INFO] to the server.properties file in the handheld/src-server directory
+[2026-11-03 00:12:41:171 INFO] ======================================================
+[2026-11-03 00:12:41:192 WARN] [Scripting] BETTEREND_PROBE {"phase":"worldLoad","tick":484,"seed":"2640","players":0,"blockRegistered":true,"itemRegistered":true}
+
+[2026-11-03 00:12:41:352 INFO] Script event betterend_probe:run has been sent
+[2026-11-03 00:12:41:382 WARN] [Scripting] BETTEREND_PROBE {"phase":"result","requestId":"f5cdaef3-ed03-48a7-abb3-774fb3f510d2","gateId":"CAP-011","action":"cap-011-fog-audio","dimension":"minecraft:the_end","seed":"2640","startedTick":487,"completedTick":487,"players":0,"item":{"typeId":"betterend_probe:thallasium_ingot","amount":1},"observation":{"initialActivation":{"transitioned":true,"activeRegion":"amber_land","musicSoundId":"betterend.music.forest","ambientSoundId":"betterend.ambient.amber_land","fogStack":[{"fogId":"abyssal_ascent:custom_fog","userProvidedId":"abyssal_ascent:active_fog"},{"fogId":"betterend:fog_amber_land","userProvidedId":"betterend:region_fog_amber_land"}]},"hysteresisSuppression":{"transitioned":false,"hysteresisPending":true,"activeRegion":"amber_land","candidateRegion":"umbrella_jungle"},"biomeTransition":{"transitioned":true,"previousRegion":"amber_land","activeRegion":"umbrella_jungle","musicSoundId":"betterend.music.forest","priorMusicStopped":true,"fogStack":[{"fogId":"abyssal_ascent:custom_fog","userProvidedId":"abyssal_ascent:active_fog"},{"fogId":"betterend:fog_umbrella_jungle","userProvidedId":"betterend:region_fog_umbrella_jungle"}]},"caveTransition":{"transitioned":true,"activeRegion":"lush_aurora_cave","musicSoundId":"betterend.music.caves","priorMusicStopped":true,"fogStack":[{"fogId":"abyssal_ascent:custom_fog","userProvidedId":"abyssal_ascent:active_fog"},{"fogId":"betterend:fog_lush_aurora_cave","userProvidedId":"betterend:region_fog_lush_aurora_cave"}]},"dimensionExit":{"transitioned":true,"activeRegion":null,"priorMusicStopped":true,"remainingFogStack":[{"fogId":"abyssal_ascent:custom_fog","userProvidedId":"abyssal_ascent:active_fog"}],"foreignFogPreserved":true},"regionLookupCoupling":{"surfaceRegionId":"betterend_bedrock:foggy_mushroomland","caveRegionId":"betterend_bedrock:empty_end_cave"}}}
+
+[2026-11-03 00:12:41:417 INFO] Server stop requested.
+[2026-11-03 00:12:41:488 INFO] Stopping server...
+Quit correctly

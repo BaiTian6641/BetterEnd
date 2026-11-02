@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { gunzipSync } from 'node:zlib';
+import { buildRecipeHyperedgeGraph } from './recipes.mjs';
 import { assertRuntimeSource } from './reference-inputs.mjs';
 import { SOURCE_COMMIT, compareText, hashBytes, inside } from './source-files.mjs';
 
@@ -21,6 +22,14 @@ export function stateKey(values) {
   return Object.keys(values).sort(compareText).map(key => `${key}=${String(values[key])}`).join(',');
 }
 
+const defaultShapeAuditContext = Object.freeze({
+  producer: 'de.ambertation.wover.datagen.api.provider.WoverBlockShapesProvider',
+  getter: 'net.minecraft.world.level.EmptyBlockGetter.INSTANCE',
+  position: [0, 0, 0],
+  roundingDecimals: 4,
+  comparison: 'neutral-context-four-decimal-outline-and-collision-pair',
+});
+
 export function stateCoverage(snapshot, live) {
   const names = Object.keys(live.propertyDomains).sort(compareText);
   const domains = new Map(names.map(name => [name, new Set(live.propertyDomains[name].values.map(value => JSON.stringify(value)))]));
@@ -40,11 +49,82 @@ export function stateCoverage(snapshot, live) {
     states.add(key);
   }
   if (states.size !== combinations || !states.has(stateKey(live.defaultState))) throw new Error(`Incomplete state domain or absent default for ${live.id}`);
-  const audit = new Set(snapshot.records.map(record => stateKey(record.states)));
+  if (!snapshot || !Array.isArray(snapshot.records) || snapshot.records.length === 0) {
+    throw new Error(`Missing shape snapshot records for ${live.id}`);
+  }
+  const uniformRecords = [];
+  const explicitRecords = [];
+  for (const record of snapshot.records) {
+    if (!record || typeof record !== 'object') throw new Error(`Invalid shape audit record for ${live.id}`);
+    if (record.selection === 'unavailable' || record.collision === 'unavailable') {
+      throw new Error(`Unavailable shape audit geometry for ${live.id}`);
+    }
+    const isUniform = record.coverage === 'uniform-all-states' || record.states === null;
+    if (isUniform) {
+      if (record.coverage && record.coverage !== 'uniform-all-states') {
+        throw new Error(`Contradictory shape audit coverage marker for ${live.id}`);
+      }
+      if (record.states !== null && record.states !== undefined) {
+        throw new Error(`Uniform shape audit record must not specify explicit states for ${live.id}`);
+      }
+      uniformRecords.push(record);
+    } else {
+      if (record.coverage && record.coverage !== 'explicit-state') {
+        throw new Error(`Unrecognized shape audit coverage marker for ${live.id}`);
+      }
+      if (!record.states || typeof record.states !== 'object' || Array.isArray(record.states)) {
+        throw new Error(`Explicit shape audit record requires a state assignment object for ${live.id}`);
+      }
+      explicitRecords.push(record);
+    }
+  }
+  if ((uniformRecords.length > 0 && explicitRecords.length > 0)
+      || (snapshot.coverageMode === 'uniform-all-states' && explicitRecords.length > 0)
+      || (snapshot.coverageMode === 'explicit-states' && uniformRecords.length > 0)) {
+    throw new Error(`Contradictory mixed uniform and explicit shape audit records for ${live.id}`);
+  }
+  const auditContext = snapshot.auditContext ?? defaultShapeAuditContext;
+  if (uniformRecords.length > 0) {
+    if (uniformRecords.length !== 1) throw new Error(`Duplicate uniform shape audit records for ${live.id}`);
+    return {
+      id: live.id,
+      coverageMode: 'uniform-all-states',
+      compressedPropertyDomain: names.length > 0,
+      snapshotRows: 1,
+      snapshotStates: states.size,
+      liveStates: states.size,
+      coveredLiveStates: states.size,
+      missingShapeStates: [],
+      staleShapeStates: [],
+      auditContext,
+      shapesRuntimeVerified: false,
+    };
+  }
+  const audit = new Set();
+  let expectedPropertyKeys = null;
+  for (const record of explicitRecords) {
+    const recordKeys = Object.keys(record.states).sort(compareText);
+    if (expectedPropertyKeys === null) expectedPropertyKeys = recordKeys;
+    else if (JSON.stringify(recordKeys) !== JSON.stringify(expectedPropertyKeys)) {
+      throw new Error(`Inconsistent explicit shape audit property keys for ${live.id}`);
+    }
+    const key = stateKey(record.states);
+    if (audit.has(key)) throw new Error(`Duplicate explicit shape audit state for ${live.id}: ${key}`);
+    audit.add(key);
+  }
+  const missingShapeStates = [...states].filter(key => !audit.has(key)).sort(compareText);
+  const staleShapeStates = [...audit].filter(key => !states.has(key)).sort(compareText);
   return {
-    id: live.id, snapshotStates: audit.size, liveStates: states.size,
-    missingShapeStates: [...states].filter(key => !audit.has(key)).sort(compareText),
-    staleShapeStates: [...audit].filter(key => !states.has(key)).sort(compareText),
+    id: live.id,
+    coverageMode: 'explicit-states',
+    compressedPropertyDomain: false,
+    snapshotRows: explicitRecords.length,
+    snapshotStates: audit.size,
+    liveStates: states.size,
+    coveredLiveStates: states.size - missingShapeStates.length,
+    missingShapeStates,
+    staleShapeStates,
+    auditContext,
     shapesRuntimeVerified: false,
   };
 }
@@ -167,8 +247,20 @@ export function reconcileCatalogue(catalogue, runtime, lock) {
     if (!observed || observed.sha256 !== resource.source.sha256) resourceDifferences.push({ id, source: resource.source, runtime: resource.runtimeResource, resolution: resource.runtimeTag?.bound ? 'use-merged-runtime-tag-membership' : 'unresolved-raw-resource-difference' });
   }
   catalogue.unresolved = catalogue.unresolved.filter(issue => !['runtime-registry-not-exported', 'snapshot-flammability-disagreement'].includes(issue.code) && !(issue.code === 'nonregistry-blockstate-resource' && aliases.has(issue.id)));
+  const recipeGraph = buildRecipeHyperedgeGraph(catalogue.resources, runtime);
+  if (recipeGraph.unresolvedTags.length) {
+    catalogue.unresolved.push({
+      code: 'unbound-recipe-ingredient-tags',
+      severity: 'release-blocker',
+      count: recipeGraph.unresolvedTags.length,
+      detail: 'Every recipe ingredient or allowedTools tag must resolve to a bound non-empty merged item tag.',
+    });
+  }
   const missingShapes = coverage.reduce((sum, entry) => sum + entry.missingShapeStates.length, 0);
   const staleShapes = coverage.reduce((sum, entry) => sum + entry.staleShapeStates.length, 0);
+  const compressedPropertyShapeBlocks = coverage.filter(entry => entry.compressedPropertyDomain).length;
+  const compressedPropertyShapeStates = coverage.filter(entry => entry.compressedPropertyDomain).reduce((sum, entry) => sum + entry.coveredLiveStates, 0);
+  const expandedNeutralAuditShapeStates = coverage.reduce((sum, entry) => sum + entry.coveredLiveStates, 0);
   if (missingShapes || staleShapes) catalogue.unresolved.push({ code: 'shape-audit-domain-mismatch', severity: 'release-blocker', missingLiveStateShapes: missingShapes, staleAuditStateShapes: staleShapes, detail: 'Live domains are authoritative; neutral/context-dependent collision geometry is not invented for missing audit rows.' });
   const unresolvedResources = resourceDifferences.filter(entry => entry.resolution === 'unresolved-raw-resource-difference');
   if (unresolvedResources.length) catalogue.unresolved.push({ code: 'runtime-resource-differences', severity: 'review', count: unresolvedResources.length, detail: 'Inspect selected-pack/source-byte differences in reports/runtime-reconciliation.json; raw resource visibility does not prove recipe activation.' });
@@ -177,11 +269,45 @@ export function reconcileCatalogue(catalogue, runtime, lock) {
   if (new Set(catalogue.parity.map(entry => entry.key)).size !== catalogue.parity.length) throw new Error('Duplicate reconciled parity key');
   catalogue.evidenceScope = 'pinned-source-with-attested-production-registry-defaults-not-gameplay-parity';
   catalogue.reference = lock;
-  Object.assign(catalogue.counts, { liveBlockStates: coverage.reduce((sum, entry) => sum + entry.liveStates, 0), runtimeEntities: entityRows.length, vehicles: entityRows.filter(entry => entry.kind === 'vehicle').length, sharedHelpers: entityRows.filter(entry => entry.kind === 'shared-helper').length, seatingBlocks: furniture.length, effectiveRuntimeJsonResources: effective.size, parityEntries: catalogue.parity.length, unresolved: catalogue.unresolved.length });
+  Object.assign(catalogue.counts, {
+    compressedPropertyShapeBlocks,
+    compressedPropertyShapeStates,
+    expandedNeutralAuditShapeStates,
+    liveBlockStates: coverage.reduce((sum, entry) => sum + entry.liveStates, 0),
+    runtimeEntities: entityRows.length,
+    vehicles: entityRows.filter(entry => entry.kind === 'vehicle').length,
+    sharedHelpers: entityRows.filter(entry => entry.kind === 'shared-helper').length,
+    seatingBlocks: furniture.length,
+    effectiveRuntimeJsonResources: effective.size,
+    parityEntries: catalogue.parity.length,
+    unresolved: catalogue.unresolved.length,
+  });
   catalogue.reconciliation = {
     schemaVersion: 1, sourceCommit: SOURCE_COMMIT, reference: lock,
     scope: 'Registry/default-component and raw effective JSON reconciliation; physical interactions and target parity remain unproven.',
-    counts: catalogue.counts, blockStateCoverage: coverage, resourceDifferences, tagBindingIssues,
+    counts: catalogue.counts,
+    shapeAuditSummary: {
+      auditRows: catalogue.counts.blockStateSnapshotRows,
+      compressedPropertyBearingRows: compressedPropertyShapeBlocks,
+      compressedPropertyCoveredStates: compressedPropertyShapeStates,
+      explicitAuditStates: coverage.filter(entry => !entry.compressedPropertyDomain).reduce((sum, entry) => sum + entry.coveredLiveStates, 0),
+      expandedNeutralCoveredStates: expandedNeutralAuditShapeStates,
+      liveBlockStates: catalogue.counts.liveBlockStates,
+      missingLiveStateShapes: missingShapes,
+      staleAuditStateShapes: staleShapes,
+      unavailableAuditRows: 0,
+      auditContext: defaultShapeAuditContext,
+      shapesRuntimeVerified: false,
+    },
+    recipeHyperedgeSummary: {
+      counts: recipeGraph.counts,
+      serializerCounts: recipeGraph.serializerCounts,
+      ingredientTags: recipeGraph.ingredientTags,
+      allowedToolTags: recipeGraph.allowedToolTags,
+      unresolvedTags: recipeGraph.unresolvedTags,
+      liveRecipeManagerVerified: false,
+    },
+    blockStateCoverage: coverage, resourceDifferences, tagBindingIssues,
     flammability: { id: 'betterend:dragon_tree_planks', sourceRequest: { igniteOdds: 5, burnOdds: 20 }, runtime: blocks.get('betterend:dragon_tree_planks').flammability, resolution: 'Use observed production odds; do not silently rebalance the source request.' },
     entityGroups: { wildlife: entityRows.filter(entry => entry.kind === 'wildlife').map(entry => entry.id), vehicles: entityRows.filter(entry => entry.kind === 'vehicle').map(entry => entry.id), sharedHelpers: entityRows.filter(entry => entry.kind === 'shared-helper').map(entry => entry.id) },
   };

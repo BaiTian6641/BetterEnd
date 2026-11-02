@@ -1,0 +1,51 @@
+NO LOG FILE! - setting up server logging...
+[2026-11-03 00:08:51:091 INFO] Starting Server
+[2026-11-03 00:08:51:091 INFO] Version: 1.26.40.8
+[2026-11-03 00:08:51:091 INFO] Session ID: 969a42ba-7f50-4772-a12e-4f12d3e39a70
+[2026-11-03 00:08:51:091 INFO] Build ID: 48609425
+[2026-11-03 00:08:51:091 INFO] Branch: r/26_u4
+[2026-11-03 00:08:51:091 INFO] Commit ID: 93e89c3199ffce33269d88e6fec322330c130ae3
+[2026-11-03 00:08:51:091 INFO] Configuration: Publish
+[2026-11-03 00:08:51:091 INFO] Contents of server.properties: {}
+[2026-11-03 00:08:51:091 INFO] Level Name: betterend-capability-2640
+[2026-11-03 00:08:51:092 INFO] Profiler config ('bootstrap.json') load result: success=1, errorMessage=(null)
+[2026-11-03 00:08:51:093 INFO] No CDN config file found at: cdn_config.json for dedicated server
+[2026-11-03 00:08:51:093 INFO] Game mode: 1 Creative
+[2026-11-03 00:08:51:093 INFO] Difficulty: 1 EASY
+[2026-11-03 00:08:51:094 INFO] Content logging to console is enabled.
+[2026-11-03 00:08:51:096 INFO] 
+
+#####################################################
+#                                                   #
+#               LOADING VANILLA WORLD               #
+#                                                   #
+#####################################################
+[2026-11-03 00:08:51:787 INFO] Opening level 'worlds/betterend-capability-2640/db'
+[2026-11-03 00:08:52:068 INFO] Pack Stack - [00] BetterEnd engine capability probes (id: d16a5a53-d15f-482e-bf74-26c4d256ed24, version: 0.1.2) @ behavior_packs/betterend_probe
+[2026-11-03 00:08:52:150 WARN] [Scripting] BETTEREND_PROBE {"phase":"startup"}
+
+[2026-11-03 00:08:53:352 INFO] IPv4 supported, port: 29140: Used for gameplay
+[2026-11-03 00:08:53:352 INFO] IPv6 supported, port: 29141: Used for gameplay
+[2026-11-03 00:08:53:382 INFO] Signed in to signaling service successfully
+[2026-11-03 00:08:53:412 INFO] Server started.
+[2026-11-03 00:08:53:412 WARN] ================ ALLOW LIST WARNING ===================
+[2026-11-03 00:08:53:412 WARN] Allow list is enabled but contains no entries. 
+[2026-11-03 00:08:53:412 WARN] Use allowlist add <playername> for you and your friends so that they can access the server, or modify allowlist.json manually.
+[2026-11-03 00:08:53:412 WARN] 
+Alternatively, the allow list can be turned off by typing allowlist off or manually toggled in the server.properties file.
+[2026-11-03 00:08:53:412 WARN] =======================================================
+[2026-11-03 00:08:53:412 INFO] ================ TELEMETRY MESSAGE ===================
+[2026-11-03 00:08:53:412 INFO] Server Telemetry is currently not enabled. 
+[2026-11-03 00:08:53:412 INFO] Enabling this telemetry helps us improve the game.
+[2026-11-03 00:08:53:412 INFO] 
+[2026-11-03 00:08:53:412 INFO] To enable this feature, add the line 'emit-server-telemetry=true'
+[2026-11-03 00:08:53:412 INFO] to the server.properties file in the handheld/src-server directory
+[2026-11-03 00:08:53:412 INFO] ======================================================
+[2026-11-03 00:08:53:454 WARN] [Scripting] BETTEREND_PROBE {"phase":"worldLoad","tick":404,"seed":"2640","players":0,"blockRegistered":true,"itemRegistered":true}
+
+[2026-11-03 00:08:53:550 INFO] Script event betterend_probe:run has been sent
+[2026-11-03 00:08:54:190 WARN] [Scripting] BETTEREND_PROBE {"phase":"result","requestId":"7842bc2b-fa56-4cc8-a43e-728b89f180db","gateId":"CAP-004","action":"cap-004-biomes","dimension":"minecraft:the_end","seed":"2640","startedTick":406,"completedTick":419,"players":0,"item":{"typeId":"betterend_probe:thallasium_ingot","amount":1},"observation":{"vanillaEndBiomeRegistered":true,"customEndBiomeRegistered":true,"nativeEndBiomeReplacementActive":false,"fallbackArchitectureSelected":true,"containsTheEnd":true,"samples":[{"location":{"x":2056,"y":24,"z":2056},"nativeBiomeId":"minecraft:the_end","logicalRegionId":"betterend_bedrock:empty_end_cave","logicalLayer":"cave","logicalMusic":"betterend:betterend.music.caves","logicalTags":["the_end","betterend:cave","betterend:region/empty_end_cave","betterend:is_end_cave","betterend:land","betterend:cave/empty_end_cave"]},{"location":{"x":2056,"y":64,"z":2056},"nativeBiomeId":"minecraft:the_end","logicalRegionId":"betterend_bedrock:foggy_mushroomland","logicalLayer":"surface","logicalMusic":"betterend:betterend.music.forest","logicalTags":["the_end","betterend:surface","betterend:region/foggy_mushroomland","wover:is_end/land","betterend:land"]},{"location":{"x":2056,"y":148,"z":2056},"nativeBiomeId":"minecraft:the_end","logicalRegionId":"betterend_bedrock:foggy_mushroomland","logicalLayer":"surface","logicalMusic":"betterend:betterend.music.forest","logicalTags":["the_end","betterend:surface","betterend:region/foggy_mushroomland","wover:is_end/land","betterend:land"]},{"location":{"x":2072,"y":64,"z":2072},"nativeBiomeId":"minecraft:the_end","logicalRegionId":"betterend_bedrock:foggy_mushroomland","logicalLayer":"surface","logicalMusic":"betterend:betterend.music.forest","logicalTags":["the_end","betterend:surface","betterend:region/foggy_mushroomland","wover:is_end/land","betterend:land"]}]}}
+
+[2026-11-03 00:08:54:223 INFO] Server stop requested.
+[2026-11-03 00:08:54:328 INFO] Stopping server...
+Quit correctly

@@ -18,21 +18,21 @@ Implement the complete BetterEnd survival port described by [the execution contr
 
 Work on `experimental/bedrock-26.40`. Push verified stages only to `origin` (`git@github.com:BaiTian6641/BetterEnd.git`). Never force-push, rewrite history, push to upstream or silently switch branches. Stage only owned paths under this directory.
 
-## 2. First priority: confirmed shape-audit interpretation bug
+## 2. First priority: confirmed shape-audit interpretation bug (resolved)
 
-The current generated reconciliation reports **3,712 missing shape states and 179 stale rows**. That interpretation is wrong.
+The generated reconciliation previously reported **3,712 missing shape states and 179 stale rows**. That interpretation was a parser/reconciliation bug and is now fixed and regression-tested.
 
-The verified WorldWeaver `WoverBlockShapesProvider` emits one **unqualified row for all possible states** when their neutral-context, four-decimal formatted outline/collision pairs are uniform. Current `parseShapeSnapshot`/`stateCoverage` interpret that row as the explicit empty assignment `{}`.
+The verified WorldWeaver `WoverBlockShapesProvider` emits one **unqualified row for all possible states** when their neutral-context, four-decimal formatted outline/collision pairs are uniform. Previously, `parseShapeSnapshot`/`stateCoverage` interpreted that row as the explicit empty assignment `{}`.
 
-Confirmed arithmetic:
+Confirmed and verified arithmetic:
 
 ```text
 18,852 audit rows − 179 compressed property-bearing rows + 3,712 covered live states = 22,385 live states
 ```
 
-No audit row contains `unavailable`. Do not fabricate geometry to fill the reported gap. First fix the parser/reconciliation semantics and add a failing-before/passing-after regression. Preserve the distinction between explicit states and uniformly covered domains, preserve audit context/rounding metadata, and do not infer defaults from the first row.
+No audit row contains `unavailable`. `tools/catalogue.mjs` (`parseShapeSnapshot`) and `tools/runtime-reconciliation.mjs` (`stateCoverage`, `reconcileCatalogue`) now represent uniform-domain rows (`coverageMode: 'uniform-all-states'`, `records[0].coverage: 'uniform-all-states'`, `states: null`, `defaultState: null`) distinctly from explicit states (`coverageMode: 'explicit-states'`), preserve `auditContext` (`EmptyBlockGetter.INSTANCE`, `[0, 0, 0]`, `roundingDecimals: 4`), reject contradictory mixed/duplicate/inconsistent rows, and reconcile all 22,385 live states with `missingShapeStates: 0`, `staleShapeStates: 0`, and `shapesRuntimeVerified: false`.
 
-Read [the verified investigation](docs/research/geometry-oracle.md). All-state neutral audit coverage is **not** proof of neighbor-, block-entity-, entity-, fluid- or position-dependent physics. The feature fix was intentionally not started after the user requested handoff.
+Read [the verified investigation](docs/research/geometry-oracle.md). All-state neutral audit coverage is **not** proof of neighbor-, block-entity-, entity-, fluid- or position-dependent physics.
 
 ## 3. Source and evidence authority
 
@@ -68,12 +68,15 @@ npm --prefix bedrock ci --ignore-scripts --cache bedrock/.work/npm-cache
 npm --prefix bedrock run extract:source
 npm --prefix bedrock run verify:source
 npm --prefix bedrock run package:probe
+npm --prefix bedrock run package
+npm --prefix bedrock run verify:automated
+npm --prefix bedrock run verify
 npm --prefix bedrock run reference:build
 npm --prefix bedrock run reference:export
 npm --prefix bedrock run evidence -- status INV-001
 ```
 
-The final release commands **`verify` and `package` do not exist yet**. Do not alias them to source/probe checks and claim completion. They must eventually validate/package the complete gameplay and acceptance contract.
+`npm --prefix bedrock run package` builds the production Stable (`BetterEnd-26.40-Stable.mcaddon`) and Experimental VV (`BetterEnd-26.40-ExperimentalVV.mcaddon`) add-on distributions under `bedrock/dist/packs/` plus the compatibility probe pack (`bedrock/dist/industrial/`). `npm --prefix bedrock run verify:automated` executes all source, provenance, runtime purity, worldgen, pack-build, survival reachability, and server-side BDS capability gate checks (`ENG-001`, `JAVA-001`, `JAVA-002`, `INV-001:server-probes`, `CAP-003`, `CAP-004`, `CAP-005`, `CAP-007`, `CAP-008`, `CAP-011`, `CAP-012`, `CAP-013`, `CAP-014` across both `1.26.40.8` and `1.26.61.1`). `npm --prefix bedrock run verify` requires both all automated gates and all manual stock-client/console hardware gates (`INV-001:client-ui`, `CAP-008:client-elytra-glider-and-hud`, `CAP-009`, `CAP-010`, `CAP-015`, `CAP-016`, `CAP-017`) to pass before exiting zero.
 
 For nontrivial changes, run the actual changed path and retain observed results. Tests alone are insufficient. Use real BDS for native behavior and actual stock clients for UI/visual/device claims. Keep deterministic regression tests for plausible consumer-visible bugs; avoid wiring-only, source-text, mock-echo and incidental-wording tests.
 

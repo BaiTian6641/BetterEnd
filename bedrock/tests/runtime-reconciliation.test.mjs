@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import test from 'node:test';
 import { SOURCE_COMMIT, hashBytes } from '../tools/source-files.mjs';
+import { parseShapeSnapshot } from '../tools/catalogue.mjs';
 import { assertAssociatedEntityCoverage, loadLockedRuntime, stateCoverage, tagBindingIssue } from '../tools/runtime-reconciliation.mjs';
 
 function liveStates() {
@@ -26,7 +27,53 @@ test('live Cartesian state domains expose missing/stale audit shapes without inv
   assert.deepEqual(result.missingShapeStates, ['age=1,waterlogged=false', 'age=1,waterlogged=true']);
   assert.deepEqual(result.staleShapeStates, ['age=2,waterlogged=false']);
   assert.equal(result.liveStates, 4);
+  assert.equal(result.coveredLiveStates, 2);
+  assert.equal(result.coverageMode, 'explicit-states');
+  assert.equal(result.compressedPropertyDomain, false);
   assert.equal(result.shapesRuntimeVerified, false);
+});
+
+test('uniform neutral-context audit row covers all states of a property-bearing block without false missing or stale diagnostics', () => {
+  const parsed = parseShapeSnapshot(
+    'betterend:amaranita_hyphae  shape=[0,0,0|1,1,1] collision=[0,0,0|1,1,1]',
+    new Set(['betterend:amaranita_hyphae']),
+  );
+  const live = {
+    id: 'betterend:amaranita_hyphae',
+    defaultState: { axis: 'y' },
+    propertyDomains: { axis: { values: ['x', 'y', 'z'] } },
+    states: ['x', 'y', 'z'].map(axis => ({ values: { axis } })),
+  };
+  const result = stateCoverage(parsed.blocks.get('betterend:amaranita_hyphae'), live);
+  assert.equal(result.coverageMode, 'uniform-all-states');
+  assert.equal(result.compressedPropertyDomain, true);
+  assert.equal(result.snapshotRows, 1);
+  assert.equal(result.snapshotStates, 3);
+  assert.equal(result.liveStates, 3);
+  assert.equal(result.coveredLiveStates, 3);
+  assert.deepEqual(result.missingShapeStates, []);
+  assert.deepEqual(result.staleShapeStates, []);
+  assert.equal(result.auditContext.roundingDecimals, 4);
+  assert.equal(result.auditContext.getter, 'net.minecraft.world.level.EmptyBlockGetter.INSTANCE');
+  assert.equal(result.shapesRuntimeVerified, false);
+  assert.throws(
+    () => stateCoverage({
+      records: [
+        { coverage: 'uniform-all-states', states: null, selection: 'empty', collision: 'empty' },
+        { coverage: 'explicit-state', states: { axis: 'y' }, selection: 'empty', collision: 'empty' },
+      ],
+    }, live),
+    /Contradictory mixed uniform and explicit/,
+  );
+  assert.throws(
+    () => stateCoverage({
+      records: [
+        { coverage: 'uniform-all-states', states: null, selection: 'empty', collision: 'empty' },
+        { coverage: 'uniform-all-states', states: null, selection: 'empty', collision: 'empty' },
+      ],
+    }, live),
+    /Duplicate uniform shape audit/,
+  );
 });
 
 test('incomplete, duplicate or mistyped live states/defaults cannot certify a domain', () => {

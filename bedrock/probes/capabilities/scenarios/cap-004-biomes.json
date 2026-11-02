@@ -1,0 +1,8 @@
+{
+  "gateId": "CAP-004",
+  "action": "cap-004-biomes",
+  "dimension": "the_end",
+  "x": 2048,
+  "y": 64,
+  "z": 2048
+}

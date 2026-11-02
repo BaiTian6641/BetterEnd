@@ -1,0 +1,50 @@
+NO LOG FILE! - setting up server logging...
+[2026-11-03 00:31:34:581 INFO] Starting Server
+[2026-11-03 00:31:34:581 INFO] Version: 1.26.61.1
+[2026-11-03 00:31:34:581 INFO] Session ID: b9b2e544-a0a2-4fe7-a718-d80fa981bb1f
+[2026-11-03 00:31:34:581 INFO] Build ID: 53069369
+[2026-11-03 00:31:34:581 INFO] Branch: r/26_u6
+[2026-11-03 00:31:34:581 INFO] Commit ID: 86f7b32281709abd4444adb52887796af061c7bd
+[2026-11-03 00:31:34:581 INFO] Configuration: Publish
+[2026-11-03 00:31:34:582 INFO] Contents of server.properties: {"allow-cheats":"true","allow-inbound-script-debugging":"false","allow-list":"true","allow-outbound-script-debugging":"false","block-network-ids-are-hashes":"true","chat-restriction":"None","client-side-chunk-generation-enabled":"true","compression-algorithm":"zlib","compression-threshold":"1","content-log-console-output-enabled":"true","content-log-file-enabled":"false","content-log-level":"info","default-player-permission-level":"member","difficulty":"easy","disable-custom-skins":"false","disable-persona":"false","disable-player-interaction":"false","enable-lan-visibility":"false","force-gamemode":"false","gamemode":"creative","level-name":"betterend-capability-surface","level-seed":"2640","max-players":"2","max-threads":"8","online-mode":"true","persistent-ticking-area-max-chunks":"100","persistent-ticking-area-max-count":"10","player-idle-timeout":"30","player-movement-action-direction-threshold":"0.85","player-position-acceptance-threshold":"0.5","script-debugger-auto-attach":"disabled","server-authoritative-block-breaking-pick-range-scalar":"1.5","server-authoritative-dismount-strict":"false","server-authoritative-entity-attack-range-tolerance":"0.5","server-authoritative-entity-attack-range-validation":"disabled","server-authoritative-entity-attack-request-validation":"disabled","server-authoritative-entity-interactions-strict":"false","server-authoritative-movement-strict":"false","server-build-radius-ratio":"Disabled","server-ip":"127.0.0.1","server-name":"BetterEnd disposable capability probe","server-port":"29140","server-portv6":"29141","server-udp-ports":"29140","texturepack-required":"true","tick-distance":"4","transient-ticking-area-max-chunks":"300","transport":"nethernet","view-distance":"8"}
+[2026-11-03 00:31:34:582 INFO] Level Name: betterend-capability-surface
+[2026-11-03 00:31:34:582 INFO] Profiler config ('bootstrap.json') load result: success=1, errorMessage=(null)
+[2026-11-03 00:31:34:584 INFO] No CDN config file found at: cdn_config.json for dedicated server
+[2026-11-03 00:31:34:584 INFO] Game mode: 1 Creative
+[2026-11-03 00:31:34:584 INFO] Difficulty: 1 EASY
+[2026-11-03 00:31:34:585 INFO] Content logging to console is enabled.
+[2026-11-03 00:31:34:588 INFO] 
+
+#####################################################
+#                                                   #
+#               LOADING VANILLA WORLD               #
+#                                                   #
+#####################################################
+[2026-11-03 00:31:35:230 INFO] Opening level 'worlds/betterend-capability-surface/db'
+[2026-11-03 00:31:35:349 INFO] Accepting clients on 127.0.0.1:29140
+[2026-11-03 00:31:35:522 INFO] Pack Stack - [00] BetterEnd engine capability probes (id: d16a5a53-d15f-482e-bf74-26c4d256ed24, version: 0.1.2) @ behavior_packs/betterend_probe
+[2026-11-03 00:31:35:621 WARN] [Scripting] BETTEREND_PROBE {"phase":"startup"}
+
+[2026-11-03 00:31:35:904 INFO] Signed in to signaling service successfully
+[2026-11-03 00:31:36:923 INFO] Server started.
+[2026-11-03 00:31:36:923 WARN] ================ ALLOW LIST WARNING ===================
+[2026-11-03 00:31:36:923 WARN] Allow list is enabled but contains no entries. 
+[2026-11-03 00:31:36:923 WARN] Use allowlist add <playername> for you and your friends so that they can access the server, or modify allowlist.json manually.
+[2026-11-03 00:31:36:923 WARN] 
+Alternatively, the allow list can be turned off by typing allowlist off or manually toggled in the server.properties file.
+[2026-11-03 00:31:36:923 WARN] =======================================================
+[2026-11-03 00:31:36:923 INFO] ================ TELEMETRY MESSAGE ===================
+[2026-11-03 00:31:36:923 INFO] Server Telemetry is currently not enabled. 
+[2026-11-03 00:31:36:923 INFO] Enabling this telemetry helps us improve the game.
+[2026-11-03 00:31:36:923 INFO] 
+[2026-11-03 00:31:36:923 INFO] To enable this feature, add the line 'emit-server-telemetry=true'
+[2026-11-03 00:31:36:923 INFO] to the server.properties file in the handheld/src-server directory
+[2026-11-03 00:31:36:923 INFO] ======================================================
+[2026-11-03 00:31:36:975 WARN] [Scripting] BETTEREND_PROBE {"phase":"worldLoad","tick":377,"seed":"2640","players":0,"blockRegistered":true,"itemRegistered":true}
+
+[2026-11-03 00:31:37:097 INFO] Script event betterend_probe:run has been sent
+[2026-11-03 00:31:37:334 WARN] [Scripting] BETTEREND_PROBE {"phase":"result","requestId":"ec40418d-454f-4259-aae2-cd8018b5d3b3","gateId":"CAP-013","action":"cap-013-portals-obelisk","dimension":"minecraft:the_end","seed":"2640","startedTick":379,"completedTick":385,"players":0,"item":{"typeId":"betterend_probe:thallasium_ingot","amount":1},"observation":{"obelisk":{"activated":true,"intactRespawn":{"redirected":true,"fromDimension":"minecraft:overworld","targetDimension":"minecraft:the_end","landingPosition":{"x":4851.5,"y":80,"z":4850.5,"blockPos":{"x":4851,"y":80,"z":4850},"offset":[1,0]},"checkedOffsetsCount":1,"chargesRemaining":null,"chargesDepleted":false,"exploded":false},"obstructedRespawn":{"redirected":false,"obeliskObstructed":true,"reason":"obelisk_landing_obstructed","checkedOffsetsCount":8,"notificationMessage":"message.betterend.obelisk_missing_or_obstructed"},"brokenObeliskPartsCount":3,"destroyedRespawn":{"redirected":false,"obeliskDestroyed":true,"reason":"obelisk_destroyed","notificationMessage":"message.betterend.obelisk_missing_or_obstructed"}},"portal":{"invalidAttemptActivated":false,"invalidAttemptReason":"incomplete_eternal_pedestals","validActivated":true,"portalId":"betterend:eternal_portal@minecraft:the_end@4860,80,4850#gen_2_c1","firstTravel":{"teleported":true,"txId":"portal_tx_1","transaction":{"txId":"portal_tx_1","actor":"player-probe-portal","source":{"dimension":"minecraft:the_end","position":{"x":4860,"y":80,"z":4850}},"destination":{"dimension":"minecraft:overworld","position":{"x":128,"y":72,"z":128}},"pendingArrival":false,"completed":true,"abortedReason":null,"tick":500},"arrivalPosition":{"x":128.5,"y":72,"z":128.5},"targetDimension":"minecraft:overworld"},"cooldownBlockedTravel":{"teleported":false,"reason":"portal_cooldown_active","actor":"player-probe-portal","remainingCooldownTicks":60},"postCooldownTravel":{"teleported":true,"txId":"portal_tx_2","transaction":{"txId":"portal_tx_2","actor":"player-probe-portal","source":{"dimension":"minecraft:overworld","position":{"x":128,"y":72,"z":128}},"destination":{"dimension":"minecraft:the_end","position":{"x":4860,"y":80,"z":4850}},"pendingArrival":false,"completed":true,"abortedReason":null,"tick":600},"arrivalPosition":{"x":4860.5,"y":80,"z":4850.5},"targetDimension":"minecraft:the_end"},"unsafeDestinationTravel":{"teleported":false,"reason":"destination_missing_solid_support","transaction":{"txId":"portal_tx_3","actor":"player-probe-portal","source":{"dimension":"minecraft:the_end","position":{"x":4860,"y":80,"z":4850}},"destination":{"dimension":"minecraft:overworld","position":{"x":128,"y":72,"z":128}},"pendingArrival":false,"completed":false,"abortedReason":"destination_missing_solid_support","tick":700}}}}}
+
+[2026-11-03 00:31:37:358 INFO] Server stop requested.
+[2026-11-03 00:31:37:457 INFO] Stopping server...
+Quit correctly

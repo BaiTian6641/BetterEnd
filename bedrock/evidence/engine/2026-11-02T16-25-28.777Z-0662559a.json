@@ -1,0 +1,135 @@
+{
+  "certifiesAllPlatforms": false,
+  "clientRenderingVerified": false,
+  "events": [
+    {
+      "phase": "startup"
+    },
+    {
+      "blockRegistered": true,
+      "itemRegistered": true,
+      "phase": "worldLoad",
+      "players": 0,
+      "seed": "2640",
+      "tick": 297
+    },
+    {
+      "action": "cap-004-biomes",
+      "completedTick": 305,
+      "dimension": "minecraft:the_end",
+      "gateId": "CAP-004",
+      "item": {
+        "amount": 1,
+        "typeId": "betterend_probe:thallasium_ingot"
+      },
+      "observation": {
+        "containsTheEnd": true,
+        "customEndBiomeRegistered": true,
+        "fallbackArchitectureSelected": true,
+        "nativeEndBiomeReplacementActive": false,
+        "samples": [
+          {
+            "location": {
+              "x": 2056,
+              "y": 24,
+              "z": 2056
+            },
+            "logicalLayer": "cave",
+            "logicalMusic": "betterend:betterend.music.caves",
+            "logicalRegionId": "betterend_bedrock:empty_end_cave",
+            "logicalTags": [
+              "the_end",
+              "betterend:cave",
+              "betterend:region/empty_end_cave",
+              "betterend:is_end_cave",
+              "betterend:land",
+              "betterend:cave/empty_end_cave"
+            ],
+            "nativeBiomeId": "minecraft:the_end"
+          },
+          {
+            "location": {
+              "x": 2056,
+              "y": 64,
+              "z": 2056
+            },
+            "logicalLayer": "surface",
+            "logicalMusic": "betterend:betterend.music.forest",
+            "logicalRegionId": "betterend_bedrock:foggy_mushroomland",
+            "logicalTags": [
+              "the_end",
+              "betterend:surface",
+              "betterend:region/foggy_mushroomland",
+              "wover:is_end/land",
+              "betterend:land"
+            ],
+            "nativeBiomeId": "minecraft:the_end"
+          },
+          {
+            "location": {
+              "x": 2056,
+              "y": 148,
+              "z": 2056
+            },
+            "logicalLayer": "surface",
+            "logicalMusic": "betterend:betterend.music.forest",
+            "logicalRegionId": "betterend_bedrock:foggy_mushroomland",
+            "logicalTags": [
+              "the_end",
+              "betterend:surface",
+              "betterend:region/foggy_mushroomland",
+              "wover:is_end/land",
+              "betterend:land"
+            ],
+            "nativeBiomeId": "minecraft:the_end"
+          },
+          {
+            "location": {
+              "x": 2072,
+              "y": 64,
+              "z": 2072
+            },
+            "logicalLayer": "surface",
+            "logicalMusic": "betterend:betterend.music.forest",
+            "logicalRegionId": "betterend_bedrock:foggy_mushroomland",
+            "logicalTags": [
+              "the_end",
+              "betterend:surface",
+              "betterend:region/foggy_mushroomland",
+              "wover:is_end/land",
+              "betterend:land"
+            ],
+            "nativeBiomeId": "minecraft:the_end"
+          }
+        ],
+        "vanillaEndBiomeRegistered": true
+      },
+      "phase": "result",
+      "players": 0,
+      "requestId": "0662559a-07e4-42e6-be23-bab20d6d0a8e",
+      "seed": "2640",
+      "startedTick": 299
+    }
+  ],
+  "executableSha256": "2443400aa2fb41eb85e0c3d93762d8031b9d229049e77a2132778fad7dced1eb",
+  "exit": {
+    "code": 0,
+    "signal": null
+  },
+  "expectedBuild": "1.26.61.1",
+  "failure": null,
+  "forcedTermination": false,
+  "observedBuild": "1.26.61.1",
+  "packageSha256": "f0a8310d7cdffbe3c0b3121c1b6f27f8883f70f7851eae20564b5a75d0fe419e",
+  "request": {
+    "action": "cap-004-biomes",
+    "dimension": "the_end",
+    "gateId": "CAP-004",
+    "requestId": "0662559a-07e4-42e6-be23-bab20d6d0a8e",
+    "x": 2048,
+    "y": 64,
+    "z": 2048
+  },
+  "schemaVersion": 1,
+  "scope": "supporting-server-side-evidence-not-full-capability-certification"
+}

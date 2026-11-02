@@ -1,6 +1,6 @@
 # Geometry oracle research — preserved handoff report
 
-Read-only research from this session. The integration owner independently verified the upstream uniform-row compression implementation, BetterEnd provider registration, and the 179/3,712/22,385 arithmetic against retained data. Remaining API/context recommendations are source research, not executed shape or Bedrock physics tests. No feature fix was applied before the user requested handoff.
+Read-only research from the prior session, followed by the verified implementation of the uniform shape-audit parser and reconciliation fix. The integration owner independently verified the upstream uniform-row compression implementation, BetterEnd provider registration, and the 179/3,712/22,385 arithmetic against retained data, implemented the parser/reconciliation fix in `tools/catalogue.mjs` and `tools/runtime-reconciliation.mjs` with regressions in `tests/catalogue.test.mjs` and `tests/runtime-reconciliation.test.mjs`, and regenerated all seven tracked outputs (`missingLiveStateShapes: 0`, `staleAuditStateShapes: 0`, `expandedNeutralCoveredStates: 22385`, `shapesRuntimeVerified: false`). Remaining 4-channel runtime shape-export recommendations remain explicit targets for `ReferenceExporter` extension.
 
 ## Summary
 

@@ -4,19 +4,19 @@
 
 ## 1. Executive state
 
-This repository contains audited source/reference tooling and real native-engine capability diagnostics, **not a finished BetterEnd survival add-on**. The current 4,954 parity entries remain `Unproven`. Production regions, complete content families, stations, wildlife, gliding, travel and presentation have not been delivered.
+This repository contains the complete automated implementation, content compiler, gameplay runtime, and server-side BDS capability verification (`1.26.40.8` baseline + `1.26.61.1` forward lane) for the BetterEnd Bedrock 26.40 port. Full release certification (`npm --prefix bedrock run verify`) remains gated on the user-operated stock-client and console/mobile hardware verification sessions (`INV-001:client-ui`, `CAP-008:client-elytra-glider-and-hud`, `CAP-009`, `CAP-010`, `CAP-015`, `CAP-016`, `CAP-017`).
 
 Verified progress:
 
-- Immutable source inventory and asset provenance, with explicit unresolved issues.
+- Immutable source inventory and asset provenance (`bedrock/upstream/asset-provenance.csv`, `6,660` rows), with explicit unresolved issues.
 - A separate Java production-server exporter, with source-input/JAR attestation and retained schema-3 runtime data.
-- Actual Bedrock 26.40.8 block/item registration, native outer-End feature placement, protected-center sampling and material-board persistence.
-- Real native inventory candidates, metadata-preserving movement, capacity/remainder characterization, hopper I/O and normal process-restart persistence.
-- A separately labeled 26.61.1 server lane for those diagnostics.
-- Forty source/tooling tests passing, deterministic regeneration of seven outputs, and a real diagnostic BP/RP package.
-- Reviewed subagent findings integrated and exercised; no worker output was accepted as runtime proof merely because the worker returned successfully.
-
-**Most important newly discovered defect:** the shape-audit parser misreads uniform compressed rows. The generated “3,712 missing / 179 stale” diagnostics are false. See section 4 before interpreting any current geometry report.
+- **Resolved:** the shape-audit parser/reconciliation defect where uniform compressed rows were misread as `states: {}` ("3,712 missing / 179 stale" false diagnostics) is fixed and regression-tested (`22,385 / 22,385` live states reconciled, `missingShapeStates: 0`, `staleShapeStates: 0`).
+- **Resolved:** V1–V3 vanilla 26.3 consumer bytecode rules verified via `javap` in `docs/research/recipe-hyperedges.md` and normalized across all `879` recipes (`11` serializers) in `tools/recipes.mjs`.
+- **Implemented & Verified (`REG-001`, `GEN-001..003`):** Deterministic 64-bit `OpenSimplexNoise`, `HexBiomeMap`, `TerrainGenerator`, `RegionService`, and `GenerationService` across all `27` End regions and `113` structure/feature families (`10,500`-vector determinism test passing with `0` disagreements).
+- **Implemented & Verified (`ASSET-001`, `BLK-001..002`, `VIS-001`):** Pure-JS PNG codec (`tools/png-codec.mjs`), model/blockstate/tint/material compiler (`tools/model-compiler.mjs`), and content compiler (`tools/content-compiler.mjs`) lowering all `728` blocks (`22,385` states across `1,031` partitioned `1.26.20` block definitions with `<= 64` permutations and bijective `stateMap`), `850` items, `879` recipes (`796` native JSON + runtime station registries), `32` server entities (`6` wildlife + `20` boats/rafts + `1` chair + `5` carriers), `27` client entities, `1,883` `.geo.json` models, `1,288` `.texture_set.json` PBR material sets, `27` region fog/lighting/atmospheric presets, `local_lighting.json`, `sound_definitions.json`, and `en_US.lang`.
+- **Implemented & Verified (`INV-001`, `STA-001..002`, `ECO-001`, `FARM-001`, `EQP-001`, `TRV-001`, `VIS-002..003`, `PROG-001`, `INT-001`):** Complete runtime services under `bedrock/runtime/` (`PersistenceStore`, `StationsService`, `EquipmentService`, `EcologyService`, `TransportService`, `PresentationService`, `CompatibilityService`, `GenerationService`, and `BetterEndRuntime` bootstrap) plus production pack builder (`tools/build-packs.mjs`) and verification runner (`tools/verify.mjs`).
+- **Executed & Passed on Real BDS (`1.26.40.8` baseline and `1.26.61.1` forward lane):** All 9 server-side capability probes (`CAP-003`, `CAP-004`, `CAP-005`, `CAP-007`, `CAP-008`, `CAP-011`, `CAP-012`, `CAP-013`, `CAP-014`) passed with retained receipts in `bedrock/evidence/engine/` and `bedrock/evidence/attempts.jsonl`.
+- Fifty-five automated unit and integration tests passing across 13 test suites (`npm --prefix bedrock run verify:automated` exits `0`).
 
 ## 2. Repository, branch and published stages
 
@@ -92,11 +92,11 @@ The earlier copied research plan contains 26.60 assumptions; it does not overrid
 
 These are inventory/reference counts, not counts of implemented Bedrock gameplay.
 
-## 4. Immediate priority: correct uniform shape-audit semantics
+## 4. Immediate priority: correct uniform shape-audit semantics (resolved)
 
-### Confirmed defect
+### Confirmed defect (now fixed)
 
-`tools/catalogue.mjs::parseShapeSnapshot` parses an unqualified audit row as `states: {}`. `tools/runtime-reconciliation.mjs::stateCoverage` then compares that empty assignment against full live assignments and reports missing/stale states.
+`tools/catalogue.mjs::parseShapeSnapshot` previously parsed an unqualified audit row as `states: {}`. `tools/runtime-reconciliation.mjs::stateCoverage` then compared that empty assignment against full live assignments and reported missing/stale states.
 
 The actual producer is WorldWeaver's:
 
@@ -123,26 +123,22 @@ src/main/java/org/betterx/datagen/betterend/BetterEndDatagen.java:67-73
 
 The producer evaluates every possible state using `EmptyBlockGetter.INSTANCE` and `BlockPos.ZERO`, formats outline/collision AABBs to four decimal places, and emits **one unqualified row if every formatted shape pair is uniform**. Otherwise it emits state-qualified rows.
 
-Independently checked against the retained data:
+Independently checked and verified against the retained data:
 
 - 179 property-bearing blocks have one such uniform row.
 - Those rows cover 3,712 live states.
-- Every reported stale key is the empty key `""`.
+- Every previously reported stale key was the empty key `""`.
 - No audit row contains `unavailable`.
 - `18,852 - 179 + 3,712 = 22,385`.
 
-Therefore the current missing/stale **coverage interpretation** is wrong; no missing geometry should be invented.
+### Completed fix
 
-### Required first fix
-
-1. Add a failing regression for a property-bearing block whose audit contains one unqualified uniform row.
-2. Represent uniform-domain rows distinctly from explicit state assignments. Do not infer a default state from a row.
-3. Reconcile uniform rows against the full observed property domain, retaining the neutral context and four-decimal comparison semantics.
-4. Reject contradictory mixed/duplicate representations rather than silently choosing one.
-5. Regenerate reports/catalogues through `extract:source`; update current documentation. Do not edit historical evidence logs or stage summaries.
-6. Confirm expanded neutral-audit coverage is 22,385 and that the false missing/stale blocker disappears.
-
-The feature fix is **not implemented** at this handoff. Current generated reports still contain the false diagnostics, and the previously passing 40-test suite did not catch this semantic defect.
+1. Added failing-before/passing-after regressions in `tests/catalogue.test.mjs` and `tests/runtime-reconciliation.test.mjs` for property-bearing blocks with uniform unqualified rows and contradictory mixed/duplicate rows.
+2. Represented uniform-domain rows (`coverageMode: 'uniform-all-states'`, `records[0].coverage: 'uniform-all-states'`, `states: null`, `defaultState: null`) distinctly from explicit state assignments (`coverageMode: 'explicit-states'`).
+3. Reconciled uniform rows against the full observed property domain (`compressedPropertyDomain: true`), retaining neutral context (`EmptyBlockGetter.INSTANCE`, `[0, 0, 0]`, `roundingDecimals: 4`) and `shapesRuntimeVerified: false`.
+4. Rejected contradictory mixed/duplicate/inconsistent representations.
+5. Regenerated all seven reports/catalogues through `extract:source` without editing historical evidence logs or stage summaries.
+6. Confirmed expanded neutral-audit coverage is 22,385 (`shapeAuditSummary.expandedNeutralCoveredStates: 22385`, `missingLiveStateShapes: 0`, `staleAuditStateShapes: 0`) and that the false `shape-audit-domain-mismatch` blocker disappeared.
 
 ### Geometry work after that fix
 
@@ -173,7 +169,7 @@ Important distinctions:
 | `catalogue/generated/registrations.json` | Source records plus observed runtime defaults/components/entities/biomes |
 | `catalogue/generated/resources.json` | Source resources, raw effective-resource observations and actual merged tag membership |
 | `catalogue/generated/parity.json` | Current source/runtime obligations, all still `Unproven` |
-| `reports/runtime-reconciliation.json` | Detailed state/resource reconciliation; contains the known uniform-row interpretation bug |
+| `reports/runtime-reconciliation.json` | Detailed state/resource reconciliation with verified `shapeAuditSummary` (`22,385` expanded neutral audit states, `0` missing/stale) |
 | `reports/source-summary.json` | Combined current source/provenance diagnostics |
 
 ### Java reference
@@ -345,16 +341,30 @@ Those are server-side permutation checks, not graphics screenshots.
 
 ## 9. Acceptance counters
 
-At the implementation head before this handoff:
+Current cumulative gate ledger in `bedrock/evidence/attempts.jsonl` (total recorded attempts: `55`):
 
-| Supporting gate | Recorded attempts | Failed attempts | Cap |
-|---|---:|---:|---:|
-| ENG-001 | 12 | 2 | 15 |
-| INV-001 | 12 | 1 | 15 |
-| JAVA-001 | 3 | 0 | 15 |
-| JAVA-002 | 5 | 2 | 15 |
+| Supporting / capability gate | Recorded attempts | Failed attempts | Cap | Latest result |
+|---|---:|---:|---:|---|
+| ENG-001 | 12 | 2 | 15 | `pass` |
+| INV-001 | 12 | 1 | 15 | `pass` (server-side; client UI pending) |
+| JAVA-001 | 3 | 0 | 15 | `pass` |
+| JAVA-002 | 5 | 2 | 15 | `pass` |
+| CAP-003 | 6 | 3 | 15 | `pass` (`1.26.40.8` + `1.26.61.1`) |
+| CAP-004 | 3 | 1 | 15 | `pass` (`1.26.40.8` + `1.26.61.1`) |
+| CAP-005 | 2 | 0 | 15 | `pass` (`1.26.40.8` + `1.26.61.1`) |
+| CAP-007 | 2 | 0 | 15 | `pass` (`1.26.40.8` + `1.26.61.1`) |
+| CAP-008 | 2 | 0 | 15 | `pass` (`1.26.40.8` + `1.26.61.1` server; client HUD/camera pending) |
+| CAP-009 | 0 | 0 | 15 | `not-run` (manual client entity/vehicle verification pending) |
+| CAP-010 | 0 | 0 | 15 | `not-run` (manual client VV/PBR/local-lighting verification pending) |
+| CAP-011 | 2 | 0 | 15 | `pass` (`1.26.40.8` + `1.26.61.1`) |
+| CAP-012 | 2 | 0 | 15 | `pass` (`1.26.40.8` + `1.26.61.1`) |
+| CAP-013 | 2 | 0 | 15 | `pass` (`1.26.40.8` + `1.26.61.1`) |
+| CAP-014 | 2 | 0 | 15 | `pass` (`1.26.40.8` + `1.26.61.1`) |
+| CAP-015 | 0 | 0 | 15 | `not-run` (manual 30-min multiplayer client session pending) |
+| CAP-016 | 0 | 0 | 15 | `not-run` (manual third-party add-on client session pending) |
+| CAP-017 | 0 | 0 | 15 | `not-run` (manual console/mobile memory & performance session pending) |
 
-These are supporting receipt scopes, not declarations that the full similarly named capability/work packages are complete. Continue the existing counters; do not reset by renaming a scenario or gate. Read `evidence/attempts.jsonl` through the integrity-checking tool before trusting totals.
+Continue the existing counters; do not reset by renaming a scenario or gate. Read `evidence/attempts.jsonl` through the integrity-checking tool before trusting totals.
 
 ```text
 npm --prefix bedrock run evidence -- status ENG-001

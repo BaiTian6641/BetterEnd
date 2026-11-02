@@ -1,0 +1,50 @@
+NO LOG FILE! - setting up server logging...
+[2026-11-03 00:32:32:569 INFO] Starting Server
+[2026-11-03 00:32:32:569 INFO] Version: 1.26.61.1
+[2026-11-03 00:32:32:569 INFO] Session ID: deed8c50-2f25-4ea5-b27c-45444b114a7c
+[2026-11-03 00:32:32:569 INFO] Build ID: 53069369
+[2026-11-03 00:32:32:569 INFO] Branch: r/26_u6
+[2026-11-03 00:32:32:569 INFO] Commit ID: 86f7b32281709abd4444adb52887796af061c7bd
+[2026-11-03 00:32:32:569 INFO] Configuration: Publish
+[2026-11-03 00:32:32:570 INFO] Contents of server.properties: {"allow-cheats":"true","allow-inbound-script-debugging":"false","allow-list":"true","allow-outbound-script-debugging":"false","block-network-ids-are-hashes":"true","chat-restriction":"None","client-side-chunk-generation-enabled":"true","compression-algorithm":"zlib","compression-threshold":"1","content-log-console-output-enabled":"true","content-log-file-enabled":"false","content-log-level":"info","default-player-permission-level":"member","difficulty":"easy","disable-custom-skins":"false","disable-persona":"false","disable-player-interaction":"false","enable-lan-visibility":"false","force-gamemode":"false","gamemode":"creative","level-name":"betterend-capability-surface","level-seed":"2640","max-players":"2","max-threads":"8","online-mode":"true","persistent-ticking-area-max-chunks":"100","persistent-ticking-area-max-count":"10","player-idle-timeout":"30","player-movement-action-direction-threshold":"0.85","player-position-acceptance-threshold":"0.5","script-debugger-auto-attach":"disabled","server-authoritative-block-breaking-pick-range-scalar":"1.5","server-authoritative-dismount-strict":"false","server-authoritative-entity-attack-range-tolerance":"0.5","server-authoritative-entity-attack-range-validation":"disabled","server-authoritative-entity-attack-request-validation":"disabled","server-authoritative-entity-interactions-strict":"false","server-authoritative-movement-strict":"false","server-build-radius-ratio":"Disabled","server-ip":"127.0.0.1","server-name":"BetterEnd disposable capability probe","server-port":"29140","server-portv6":"29141","server-udp-ports":"29140","texturepack-required":"true","tick-distance":"4","transient-ticking-area-max-chunks":"300","transport":"nethernet","view-distance":"8"}
+[2026-11-03 00:32:32:570 INFO] Level Name: betterend-capability-surface
+[2026-11-03 00:32:32:570 INFO] Profiler config ('bootstrap.json') load result: success=1, errorMessage=(null)
+[2026-11-03 00:32:32:572 INFO] No CDN config file found at: cdn_config.json for dedicated server
+[2026-11-03 00:32:32:572 INFO] Game mode: 1 Creative
+[2026-11-03 00:32:32:573 INFO] Difficulty: 1 EASY
+[2026-11-03 00:32:32:574 INFO] Content logging to console is enabled.
+[2026-11-03 00:32:32:576 INFO] 
+
+#####################################################
+#                                                   #
+#               LOADING VANILLA WORLD               #
+#                                                   #
+#####################################################
+[2026-11-03 00:32:33:133 INFO] Opening level 'worlds/betterend-capability-surface/db'
+[2026-11-03 00:32:33:197 INFO] Accepting clients on 127.0.0.1:29140
+[2026-11-03 00:32:33:319 INFO] Pack Stack - [00] BetterEnd engine capability probes (id: d16a5a53-d15f-482e-bf74-26c4d256ed24, version: 0.1.2) @ behavior_packs/betterend_probe
+[2026-11-03 00:32:33:394 WARN] [Scripting] BETTEREND_PROBE {"phase":"startup"}
+
+[2026-11-03 00:32:33:627 INFO] Signed in to signaling service successfully
+[2026-11-03 00:32:34:441 INFO] Server started.
+[2026-11-03 00:32:34:441 WARN] ================ ALLOW LIST WARNING ===================
+[2026-11-03 00:32:34:441 WARN] Allow list is enabled but contains no entries. 
+[2026-11-03 00:32:34:441 WARN] Use allowlist add <playername> for you and your friends so that they can access the server, or modify allowlist.json manually.
+[2026-11-03 00:32:34:441 WARN] 
+Alternatively, the allow list can be turned off by typing allowlist off or manually toggled in the server.properties file.
+[2026-11-03 00:32:34:441 WARN] =======================================================
+[2026-11-03 00:32:34:442 INFO] ================ TELEMETRY MESSAGE ===================
+[2026-11-03 00:32:34:442 INFO] Server Telemetry is currently not enabled. 
+[2026-11-03 00:32:34:442 INFO] Enabling this telemetry helps us improve the game.
+[2026-11-03 00:32:34:442 INFO] 
+[2026-11-03 00:32:34:442 INFO] To enable this feature, add the line 'emit-server-telemetry=true'
+[2026-11-03 00:32:34:442 INFO] to the server.properties file in the handheld/src-server directory
+[2026-11-03 00:32:34:442 INFO] ======================================================
+[2026-11-03 00:32:34:480 WARN] [Scripting] BETTEREND_PROBE {"phase":"worldLoad","tick":388,"seed":"2640","players":0,"blockRegistered":true,"itemRegistered":true}
+
+[2026-11-03 00:32:34:573 INFO] Script event betterend_probe:run has been sent
+[2026-11-03 00:32:34:969 WARN] [Scripting] BETTEREND_PROBE {"phase":"result","requestId":"a25ee354-e546-4770-bdfa-f7a85130b637","gateId":"CAP-014","action":"cap-014-concurrent-prep","dimension":"minecraft:the_end","seed":"2640","startedTick":390,"completedTick":395,"players":0,"item":{"typeId":"betterend_probe:thallasium_ingot","amount":1},"observation":{"cellKey":"77,77","concurrentPlanning":{"ownedAnchorCount":8,"deterministicAnchorMatch":true,"committedOk":true,"committedState":"Committed","markerBlock":{"typeId":"betterend_probe:flavolite","states":{"betterend_probe:finish":"metal"},"isWaterlogged":false}},"interruptionQuarantine":{"ok":false,"state":"Quarantined","reason":"interrupted_preparation_step","reloadedState":"Quarantined"},"playerBuildProtection":{"ok":false,"state":"Quarantined","reason":"refusing_to_overwrite_existing_player_build","reloadedState":"Quarantined"}}}
+
+[2026-11-03 00:32:34:998 INFO] Server stop requested.
+[2026-11-03 00:32:35:070 INFO] Stopping server...
+Quit correctly

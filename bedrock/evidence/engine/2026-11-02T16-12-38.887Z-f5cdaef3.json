@@ -1,0 +1,126 @@
+{
+  "certifiesAllPlatforms": false,
+  "clientRenderingVerified": false,
+  "events": [
+    {
+      "phase": "startup"
+    },
+    {
+      "blockRegistered": true,
+      "itemRegistered": true,
+      "phase": "worldLoad",
+      "players": 0,
+      "seed": "2640",
+      "tick": 484
+    },
+    {
+      "action": "cap-011-fog-audio",
+      "completedTick": 487,
+      "dimension": "minecraft:the_end",
+      "gateId": "CAP-011",
+      "item": {
+        "amount": 1,
+        "typeId": "betterend_probe:thallasium_ingot"
+      },
+      "observation": {
+        "biomeTransition": {
+          "activeRegion": "umbrella_jungle",
+          "fogStack": [
+            {
+              "fogId": "abyssal_ascent:custom_fog",
+              "userProvidedId": "abyssal_ascent:active_fog"
+            },
+            {
+              "fogId": "betterend:fog_umbrella_jungle",
+              "userProvidedId": "betterend:region_fog_umbrella_jungle"
+            }
+          ],
+          "musicSoundId": "betterend.music.forest",
+          "previousRegion": "amber_land",
+          "priorMusicStopped": true,
+          "transitioned": true
+        },
+        "caveTransition": {
+          "activeRegion": "lush_aurora_cave",
+          "fogStack": [
+            {
+              "fogId": "abyssal_ascent:custom_fog",
+              "userProvidedId": "abyssal_ascent:active_fog"
+            },
+            {
+              "fogId": "betterend:fog_lush_aurora_cave",
+              "userProvidedId": "betterend:region_fog_lush_aurora_cave"
+            }
+          ],
+          "musicSoundId": "betterend.music.caves",
+          "priorMusicStopped": true,
+          "transitioned": true
+        },
+        "dimensionExit": {
+          "activeRegion": null,
+          "foreignFogPreserved": true,
+          "priorMusicStopped": true,
+          "remainingFogStack": [
+            {
+              "fogId": "abyssal_ascent:custom_fog",
+              "userProvidedId": "abyssal_ascent:active_fog"
+            }
+          ],
+          "transitioned": true
+        },
+        "hysteresisSuppression": {
+          "activeRegion": "amber_land",
+          "candidateRegion": "umbrella_jungle",
+          "hysteresisPending": true,
+          "transitioned": false
+        },
+        "initialActivation": {
+          "activeRegion": "amber_land",
+          "ambientSoundId": "betterend.ambient.amber_land",
+          "fogStack": [
+            {
+              "fogId": "abyssal_ascent:custom_fog",
+              "userProvidedId": "abyssal_ascent:active_fog"
+            },
+            {
+              "fogId": "betterend:fog_amber_land",
+              "userProvidedId": "betterend:region_fog_amber_land"
+            }
+          ],
+          "musicSoundId": "betterend.music.forest",
+          "transitioned": true
+        },
+        "regionLookupCoupling": {
+          "caveRegionId": "betterend_bedrock:empty_end_cave",
+          "surfaceRegionId": "betterend_bedrock:foggy_mushroomland"
+        }
+      },
+      "phase": "result",
+      "players": 0,
+      "requestId": "f5cdaef3-ed03-48a7-abb3-774fb3f510d2",
+      "seed": "2640",
+      "startedTick": 487
+    }
+  ],
+  "executableSha256": "e7775e636b9fdcbc354823d92d0c22c12738a2141d12557d856744293d258372",
+  "exit": {
+    "code": 0,
+    "signal": null
+  },
+  "expectedBuild": "1.26.40.8",
+  "failure": null,
+  "forcedTermination": false,
+  "observedBuild": "1.26.40.8",
+  "packageSha256": "91c396229d1e93aa6a784f8f9ae4d30efa2f7a9a4b6331ab8b587b1425990f6c",
+  "request": {
+    "action": "cap-011-fog-audio",
+    "dimension": "the_end",
+    "gateId": "CAP-011",
+    "requestId": "f5cdaef3-ed03-48a7-abb3-774fb3f510d2",
+    "x": 2048,
+    "y": 64,
+    "z": 2048
+  },
+  "schemaVersion": 1,
+  "scope": "supporting-server-side-evidence-not-full-capability-certification"
+}

@@ -1,0 +1,52 @@
+NO LOG FILE! - setting up server logging...
+[2026-11-03 00:14:36:224 INFO] Starting Server
+[2026-11-03 00:14:36:224 INFO] Version: 1.26.40.8
+[2026-11-03 00:14:36:224 INFO] Session ID: 4ce688d9-7512-46e6-85ea-b2017c1c63e2
+[2026-11-03 00:14:36:224 INFO] Build ID: 48609425
+[2026-11-03 00:14:36:224 INFO] Branch: r/26_u4
+[2026-11-03 00:14:36:224 INFO] Commit ID: 93e89c3199ffce33269d88e6fec322330c130ae3
+[2026-11-03 00:14:36:224 INFO] Configuration: Publish
+[2026-11-03 00:14:36:225 INFO] Contents of server.properties: {}
+[2026-11-03 00:14:36:225 INFO] Level Name: betterend-capability-2640
+[2026-11-03 00:14:36:225 INFO] Profiler config ('bootstrap.json') load result: success=1, errorMessage=(null)
+[2026-11-03 00:14:36:226 INFO] No CDN config file found at: cdn_config.json for dedicated server
+[2026-11-03 00:14:36:226 INFO] Game mode: 1 Creative
+[2026-11-03 00:14:36:226 INFO] Difficulty: 1 EASY
+[2026-11-03 00:14:36:227 INFO] Content logging to console is enabled.
+[2026-11-03 00:14:36:228 INFO] 
+
+#####################################################
+#                                                   #
+#               LOADING VANILLA WORLD               #
+#                                                   #
+#####################################################
+[2026-11-03 00:14:36:861 INFO] Opening level 'worlds/betterend-capability-2640/db'
+[2026-11-03 00:14:37:047 INFO] Pack Stack - [00] BetterEnd engine capability probes (id: d16a5a53-d15f-482e-bf74-26c4d256ed24, version: 0.1.2) @ behavior_packs/betterend_probe
+[2026-11-03 00:14:37:121 WARN] [Scripting] BETTEREND_PROBE {"phase":"startup"}
+
+[2026-11-03 00:14:38:221 INFO] IPv4 supported, port: 29140: Used for gameplay
+[2026-11-03 00:14:38:221 INFO] IPv6 supported, port: 29141: Used for gameplay
+[2026-11-03 00:14:38:251 INFO] Signed in to signaling service successfully
+[2026-11-03 00:14:38:279 INFO] Waiting for Minecraft services...
+[2026-11-03 00:14:38:391 INFO] Server started.
+[2026-11-03 00:14:38:391 WARN] ================ ALLOW LIST WARNING ===================
+[2026-11-03 00:14:38:391 WARN] Allow list is enabled but contains no entries. 
+[2026-11-03 00:14:38:391 WARN] Use allowlist add <playername> for you and your friends so that they can access the server, or modify allowlist.json manually.
+[2026-11-03 00:14:38:391 WARN] 
+Alternatively, the allow list can be turned off by typing allowlist off or manually toggled in the server.properties file.
+[2026-11-03 00:14:38:391 WARN] =======================================================
+[2026-11-03 00:14:38:391 INFO] ================ TELEMETRY MESSAGE ===================
+[2026-11-03 00:14:38:391 INFO] Server Telemetry is currently not enabled. 
+[2026-11-03 00:14:38:391 INFO] Enabling this telemetry helps us improve the game.
+[2026-11-03 00:14:38:391 INFO] 
+[2026-11-03 00:14:38:391 INFO] To enable this feature, add the line 'emit-server-telemetry=true'
+[2026-11-03 00:14:38:391 INFO] to the server.properties file in the handheld/src-server directory
+[2026-11-03 00:14:38:391 INFO] ======================================================
+[2026-11-03 00:14:38:432 WARN] [Scripting] BETTEREND_PROBE {"phase":"worldLoad","tick":508,"seed":"2640","players":0,"blockRegistered":true,"itemRegistered":true}
+
+[2026-11-03 00:14:38:529 INFO] Script event betterend_probe:run has been sent
+[2026-11-03 00:14:38:941 WARN] [Scripting] BETTEREND_PROBE {"phase":"result","requestId":"b5ad0efc-a7ca-4c47-8a6f-368b9acec716","gateId":"CAP-013","action":"cap-013-portals-obelisk","dimension":"minecraft:the_end","seed":"2640","startedTick":510,"completedTick":519,"players":0,"item":{"typeId":"betterend_probe:thallasium_ingot","amount":1},"observation":{"obelisk":{"activated":true,"intactRespawn":{"redirected":true,"fromDimension":"minecraft:overworld","targetDimension":"minecraft:the_end","landingPosition":{"x":4851.5,"y":80,"z":4850.5,"blockPos":{"x":4851,"y":80,"z":4850},"offset":[1,0]},"checkedOffsetsCount":1,"chargesRemaining":null,"chargesDepleted":false,"exploded":false},"obstructedRespawn":{"redirected":false,"obeliskObstructed":true,"reason":"obelisk_landing_obstructed","checkedOffsetsCount":8,"notificationMessage":"message.betterend.obelisk_missing_or_obstructed"},"brokenObeliskPartsCount":3,"destroyedRespawn":{"redirected":false,"obeliskDestroyed":true,"reason":"obelisk_destroyed","notificationMessage":"message.betterend.obelisk_missing_or_obstructed"}},"portal":{"invalidAttemptActivated":false,"invalidAttemptReason":"incomplete_eternal_pedestals","validActivated":true,"portalId":"betterend:eternal_portal@minecraft:the_end@4860,80,4850#gen_2_c1","firstTravel":{"teleported":true,"txId":"portal_tx_1","transaction":{"txId":"portal_tx_1","actor":"player-probe-portal","source":{"dimension":"minecraft:the_end","position":{"x":4860,"y":80,"z":4850}},"destination":{"dimension":"minecraft:overworld","position":{"x":128,"y":72,"z":128}},"pendingArrival":false,"completed":true,"abortedReason":null,"tick":500},"arrivalPosition":{"x":128.5,"y":72,"z":128.5},"targetDimension":"minecraft:overworld"},"cooldownBlockedTravel":{"teleported":false,"reason":"portal_cooldown_active","actor":"player-probe-portal","remainingCooldownTicks":60},"postCooldownTravel":{"teleported":true,"txId":"portal_tx_2","transaction":{"txId":"portal_tx_2","actor":"player-probe-portal","source":{"dimension":"minecraft:overworld","position":{"x":128,"y":72,"z":128}},"destination":{"dimension":"minecraft:the_end","position":{"x":4860,"y":80,"z":4850}},"pendingArrival":false,"completed":true,"abortedReason":null,"tick":600},"arrivalPosition":{"x":4860.5,"y":80,"z":4850.5},"targetDimension":"minecraft:the_end"},"unsafeDestinationTravel":{"teleported":false,"reason":"destination_missing_solid_support","transaction":{"txId":"portal_tx_3","actor":"player-probe-portal","source":{"dimension":"minecraft:the_end","position":{"x":4860,"y":80,"z":4850}},"destination":{"dimension":"minecraft:overworld","position":{"x":128,"y":72,"z":128}},"pendingArrival":false,"completed":false,"abortedReason":"destination_missing_solid_support","tick":700}}}}}
+
+[2026-11-03 00:14:38:952 INFO] Server stop requested.
+[2026-11-03 00:14:39:052 INFO] Stopping server...
+Quit correctly

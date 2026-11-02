@@ -1,0 +1,8 @@
+{
+  "gateId": "CAP-003",
+  "action": "cap-003-regions",
+  "dimension": "the_end",
+  "x": 2048,
+  "y": 64,
+  "z": 2048
+}

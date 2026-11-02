@@ -1,0 +1,51 @@
+NO LOG FILE! - setting up server logging...
+[2026-11-03 00:10:42:290 INFO] Starting Server
+[2026-11-03 00:10:42:290 INFO] Version: 1.26.40.8
+[2026-11-03 00:10:42:290 INFO] Session ID: 96fde475-f365-4297-85e1-387a183db81f
+[2026-11-03 00:10:42:290 INFO] Build ID: 48609425
+[2026-11-03 00:10:42:290 INFO] Branch: r/26_u4
+[2026-11-03 00:10:42:290 INFO] Commit ID: 93e89c3199ffce33269d88e6fec322330c130ae3
+[2026-11-03 00:10:42:290 INFO] Configuration: Publish
+[2026-11-03 00:10:42:291 INFO] Contents of server.properties: {}
+[2026-11-03 00:10:42:291 INFO] Level Name: betterend-capability-2640
+[2026-11-03 00:10:42:291 INFO] Profiler config ('bootstrap.json') load result: success=1, errorMessage=(null)
+[2026-11-03 00:10:42:295 INFO] No CDN config file found at: cdn_config.json for dedicated server
+[2026-11-03 00:10:42:295 INFO] Game mode: 1 Creative
+[2026-11-03 00:10:42:295 INFO] Difficulty: 1 EASY
+[2026-11-03 00:10:42:295 INFO] Content logging to console is enabled.
+[2026-11-03 00:10:42:299 INFO] 
+
+#####################################################
+#                                                   #
+#               LOADING VANILLA WORLD               #
+#                                                   #
+#####################################################
+[2026-11-03 00:10:43:427 INFO] Opening level 'worlds/betterend-capability-2640/db'
+[2026-11-03 00:10:44:053 INFO] Pack Stack - [00] BetterEnd engine capability probes (id: d16a5a53-d15f-482e-bf74-26c4d256ed24, version: 0.1.2) @ behavior_packs/betterend_probe
+[2026-11-03 00:10:44:278 WARN] [Scripting] BETTEREND_PROBE {"phase":"startup"}
+
+[2026-11-03 00:10:46:716 INFO] IPv4 supported, port: 29140: Used for gameplay
+[2026-11-03 00:10:46:716 INFO] IPv6 supported, port: 29141: Used for gameplay
+[2026-11-03 00:10:46:782 INFO] Signed in to signaling service successfully
+[2026-11-03 00:10:46:849 INFO] Server started.
+[2026-11-03 00:10:46:849 WARN] ================ ALLOW LIST WARNING ===================
+[2026-11-03 00:10:46:849 WARN] Allow list is enabled but contains no entries. 
+[2026-11-03 00:10:46:849 WARN] Use allowlist add <playername> for you and your friends so that they can access the server, or modify allowlist.json manually.
+[2026-11-03 00:10:46:849 WARN] 
+Alternatively, the allow list can be turned off by typing allowlist off or manually toggled in the server.properties file.
+[2026-11-03 00:10:46:849 WARN] =======================================================
+[2026-11-03 00:10:46:849 INFO] ================ TELEMETRY MESSAGE ===================
+[2026-11-03 00:10:46:849 INFO] Server Telemetry is currently not enabled. 
+[2026-11-03 00:10:46:849 INFO] Enabling this telemetry helps us improve the game.
+[2026-11-03 00:10:46:849 INFO] 
+[2026-11-03 00:10:46:849 INFO] To enable this feature, add the line 'emit-server-telemetry=true'
+[2026-11-03 00:10:46:849 INFO] to the server.properties file in the handheld/src-server directory
+[2026-11-03 00:10:46:849 INFO] ======================================================
+[2026-11-03 00:10:46:906 WARN] [Scripting] BETTEREND_PROBE {"phase":"worldLoad","tick":440,"seed":"2640","players":0,"blockRegistered":true,"itemRegistered":true}
+
+[2026-11-03 00:10:47:120 INFO] Script event betterend_probe:run has been sent
+[2026-11-03 00:10:47:951 WARN] [Scripting] BETTEREND_PROBE {"phase":"result","requestId":"9acc350f-fe6d-40d8-b958-c90c9dcc3dd1","gateId":"CAP-007","action":"cap-007-infusion","dimension":"minecraft:the_end","seed":"2640","startedTick":443,"completedTick":456,"players":0,"item":{"typeId":"betterend_probe:thallasium_ingot","amount":1},"observation":{"completedRitual":{"txId":"tx_1_gen_1_c1","recipeId":"betterend:aqua_affinity_book","completed":true,"outputItem":{"itemId":"minecraft:enchanted_book","count":1,"maxStackSize":64,"components":{"minecraft:stored_enchantments":{"minecraft:aqua_affinity":1}}},"receiptState":"completed","physicalOutputsAfterCompletion":1},"contentionRejections":{"hopperAllowed":false,"hopperReason":"pedestal_locked_by_ritual","playerAllowed":false,"playerReason":"pedestal_locked_by_ritual"},"brokenPedestalQuarantine":{"txId":"tx_2_gen_10_c1","quarantined":true,"receiptState":"quarantined","quarantineReason":"pedestal_broken:minecraft:the_end@4708,80,4697","droppedCountFromBrokenPedestal":1,"survivingPedestalItemCount":8,"conservedInputCount":9}}}
+
+[2026-11-03 00:10:47:975 INFO] Server stop requested.
+[2026-11-03 00:10:48:059 INFO] Stopping server...
+Quit correctly

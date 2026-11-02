@@ -1,0 +1,81 @@
+{
+  "certifiesAllPlatforms": false,
+  "clientRenderingVerified": false,
+  "events": [
+    {
+      "phase": "startup"
+    },
+    {
+      "blockRegistered": true,
+      "itemRegistered": true,
+      "phase": "worldLoad",
+      "players": 0,
+      "seed": "2640",
+      "tick": 522
+    },
+    {
+      "action": "cap-014-concurrent-prep",
+      "completedTick": 533,
+      "dimension": "minecraft:the_end",
+      "gateId": "CAP-014",
+      "item": {
+        "amount": 1,
+        "typeId": "betterend_probe:thallasium_ingot"
+      },
+      "observation": {
+        "cellKey": "77,77",
+        "concurrentPlanning": {
+          "committedOk": true,
+          "committedState": "Committed",
+          "deterministicAnchorMatch": true,
+          "markerBlock": {
+            "isWaterlogged": false,
+            "states": {
+              "betterend_probe:finish": "metal"
+            },
+            "typeId": "betterend_probe:flavolite"
+          },
+          "ownedAnchorCount": 8
+        },
+        "interruptionQuarantine": {
+          "ok": false,
+          "reason": "interrupted_preparation_step",
+          "reloadedState": "Quarantined",
+          "state": "Quarantined"
+        },
+        "playerBuildProtection": {
+          "ok": false,
+          "reason": "refusing_to_overwrite_existing_player_build",
+          "reloadedState": "Quarantined",
+          "state": "Quarantined"
+        }
+      },
+      "phase": "result",
+      "players": 0,
+      "requestId": "bd1dbc0a-62f4-4bde-97cc-9cb7be0436ae",
+      "seed": "2640",
+      "startedTick": 524
+    }
+  ],
+  "executableSha256": "e7775e636b9fdcbc354823d92d0c22c12738a2141d12557d856744293d258372",
+  "exit": {
+    "code": 0,
+    "signal": null
+  },
+  "expectedBuild": "1.26.40.8",
+  "failure": null,
+  "forcedTermination": false,
+  "observedBuild": "1.26.40.8",
+  "packageSha256": "91c396229d1e93aa6a784f8f9ae4d30efa2f7a9a4b6331ab8b587b1425990f6c",
+  "request": {
+    "action": "cap-014-concurrent-prep",
+    "dimension": "the_end",
+    "gateId": "CAP-014",
+    "requestId": "bd1dbc0a-62f4-4bde-97cc-9cb7be0436ae",
+    "x": 4928,
+    "y": 80,
+    "z": 4928
+  },
+  "schemaVersion": 1,
+  "scope": "supporting-server-side-evidence-not-full-capability-certification"
+}

@@ -1,0 +1,51 @@
+NO LOG FILE! - setting up server logging...
+[2026-11-03 00:13:37:232 INFO] Starting Server
+[2026-11-03 00:13:37:232 INFO] Version: 1.26.40.8
+[2026-11-03 00:13:37:232 INFO] Session ID: 35ef6a39-5fd4-4fbf-bcb4-e8b1772b5a10
+[2026-11-03 00:13:37:232 INFO] Build ID: 48609425
+[2026-11-03 00:13:37:232 INFO] Branch: r/26_u4
+[2026-11-03 00:13:37:232 INFO] Commit ID: 93e89c3199ffce33269d88e6fec322330c130ae3
+[2026-11-03 00:13:37:232 INFO] Configuration: Publish
+[2026-11-03 00:13:37:233 INFO] Contents of server.properties: {}
+[2026-11-03 00:13:37:233 INFO] Level Name: betterend-capability-2640
+[2026-11-03 00:13:37:233 INFO] Profiler config ('bootstrap.json') load result: success=1, errorMessage=(null)
+[2026-11-03 00:13:37:237 INFO] No CDN config file found at: cdn_config.json for dedicated server
+[2026-11-03 00:13:37:237 INFO] Game mode: 1 Creative
+[2026-11-03 00:13:37:237 INFO] Difficulty: 1 EASY
+[2026-11-03 00:13:37:237 INFO] Content logging to console is enabled.
+[2026-11-03 00:13:37:241 INFO] 
+
+#####################################################
+#                                                   #
+#               LOADING VANILLA WORLD               #
+#                                                   #
+#####################################################
+[2026-11-03 00:13:38:140 INFO] Opening level 'worlds/betterend-capability-2640/db'
+[2026-11-03 00:13:38:373 INFO] Pack Stack - [00] BetterEnd engine capability probes (id: d16a5a53-d15f-482e-bf74-26c4d256ed24, version: 0.1.2) @ behavior_packs/betterend_probe
+[2026-11-03 00:13:38:460 WARN] [Scripting] BETTEREND_PROBE {"phase":"startup"}
+
+[2026-11-03 00:13:39:834 INFO] IPv4 supported, port: 29140: Used for gameplay
+[2026-11-03 00:13:39:834 INFO] IPv6 supported, port: 29141: Used for gameplay
+[2026-11-03 00:13:39:870 INFO] Signed in to signaling service successfully
+[2026-11-03 00:13:39:892 INFO] Server started.
+[2026-11-03 00:13:39:893 WARN] ================ ALLOW LIST WARNING ===================
+[2026-11-03 00:13:39:893 WARN] Allow list is enabled but contains no entries. 
+[2026-11-03 00:13:39:893 WARN] Use allowlist add <playername> for you and your friends so that they can access the server, or modify allowlist.json manually.
+[2026-11-03 00:13:39:893 WARN] 
+Alternatively, the allow list can be turned off by typing allowlist off or manually toggled in the server.properties file.
+[2026-11-03 00:13:39:893 WARN] =======================================================
+[2026-11-03 00:13:39:893 INFO] ================ TELEMETRY MESSAGE ===================
+[2026-11-03 00:13:39:893 INFO] Server Telemetry is currently not enabled. 
+[2026-11-03 00:13:39:893 INFO] Enabling this telemetry helps us improve the game.
+[2026-11-03 00:13:39:893 INFO] 
+[2026-11-03 00:13:39:893 INFO] To enable this feature, add the line 'emit-server-telemetry=true'
+[2026-11-03 00:13:39:893 INFO] to the server.properties file in the handheld/src-server directory
+[2026-11-03 00:13:39:893 INFO] ======================================================
+[2026-11-03 00:13:39:917 WARN] [Scripting] BETTEREND_PROBE {"phase":"worldLoad","tick":492,"seed":"2640","players":0,"blockRegistered":true,"itemRegistered":true}
+
+[2026-11-03 00:13:40:033 INFO] Script event betterend_probe:run has been sent
+[2026-11-03 00:13:40:516 WARN] [Scripting] BETTEREND_PROBE {"phase":"result","requestId":"d286a205-d785-4306-a504-1d359483070b","gateId":"CAP-012","action":"cap-012-functional-blocks","dimension":"minecraft:the_end","seed":"2640","startedTick":494,"completedTick":505,"players":0,"item":{"typeId":"betterend_probe:thallasium_ingot","amount":1},"observation":{"customEntitiesRegistered":{"chair":true,"boat":true},"door":{"lower":{"typeId":"betterend_probe:tenanea_door","states":{"betterend_probe:open":true,"betterend_probe:half":"lower","betterend_probe:facing":"north"},"isWaterlogged":false},"upper":{"typeId":"betterend_probe:tenanea_door","states":{"betterend_probe:open":true,"betterend_probe:half":"upper","betterend_probe:facing":"north"},"isWaterlogged":false}},"chair":{"blockState":{"typeId":"betterend_probe:tenanea_chair","states":{"betterend_probe:facing":"east"},"isWaterlogged":false},"seatCount":1,"mounted":true,"cleanedUpOnBreak":true},"boat":{"seatCount":2,"spawned":true,"isRaft":true,"maxPassengers":2},"multiBlockFlora":{"mossLower":{"typeId":"betterend_probe:umbrella_moss","states":{"betterend_probe:half":"lower"},"isWaterlogged":false},"mossUpper":{"typeId":"betterend_probe:umbrella_moss","states":{"betterend_probe:half":"upper"},"isWaterlogged":false},"lotusBottom":{"typeId":"betterend_probe:end_lotus_stem","states":{"betterend_probe:shape":"bottom","betterend_probe:waterlogged":true},"isWaterlogged":false},"lotusTop":{"typeId":"betterend_probe:end_lotus_stem","states":{"betterend_probe:shape":"top","betterend_probe:waterlogged":false},"isWaterlogged":false}},"potAndPedestal":{"potPlacedPlant":"betterend:amber_grass","potReturnedItem":"betterend:amber_grass","pedestalDisplayedItem":"betterend:eternal_crystal","pedestalLightEmission":12,"pedestalReturnedItem":"betterend:eternal_crystal"}}}
+
+[2026-11-03 00:13:40:563 INFO] Server stop requested.
+[2026-11-03 00:13:40:628 INFO] Stopping server...
+Quit correctly

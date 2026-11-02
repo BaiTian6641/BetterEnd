@@ -1,0 +1,89 @@
+{
+  "certifiesAllPlatforms": false,
+  "clientRenderingVerified": false,
+  "events": [
+    {
+      "phase": "startup"
+    },
+    {
+      "blockRegistered": true,
+      "itemRegistered": true,
+      "phase": "worldLoad",
+      "players": 0,
+      "seed": "2640",
+      "tick": 309
+    },
+    {
+      "action": "cap-005-world-import",
+      "completedTick": 320,
+      "dimension": "minecraft:the_end",
+      "gateId": "CAP-005",
+      "item": {
+        "amount": 1,
+        "typeId": "betterend_probe:thallasium_ingot"
+      },
+      "observation": {
+        "blockCount": 66,
+        "blockMismatches": 0,
+        "checksumMatch": true,
+        "containerMetadataPreserved": true,
+        "expectedChecksum": "d73a097f",
+        "observedChecksum": "d73a097f",
+        "observedContainer": {
+          "slot0": {
+            "damage": 19,
+            "lore": [
+              "betterend:crystalite_elytra",
+              "imported:cap-005"
+            ],
+            "nameTag": "BetterEnd Imported Crystalite Elytra",
+            "typeId": "minecraft:elytra",
+            "uid": "cap005-elytra-1",
+            "unbreaking": 3,
+            "variant": "crystalite"
+          },
+          "slot4": {
+            "amount": 16,
+            "lore": [
+              "betterend:thallasium_ingot",
+              "batch:42"
+            ],
+            "typeId": "betterend_probe:thallasium_ingot"
+          }
+        },
+        "origin": {
+          "x": 4608,
+          "y": 80,
+          "z": 4608
+        },
+        "preExistingFixture": false
+      },
+      "phase": "result",
+      "players": 0,
+      "requestId": "8e2b3627-1fe1-43bd-9a64-4ef76c5ccb0e",
+      "seed": "2640",
+      "startedTick": 311
+    }
+  ],
+  "executableSha256": "2443400aa2fb41eb85e0c3d93762d8031b9d229049e77a2132778fad7dced1eb",
+  "exit": {
+    "code": 0,
+    "signal": null
+  },
+  "expectedBuild": "1.26.61.1",
+  "failure": null,
+  "forcedTermination": false,
+  "observedBuild": "1.26.61.1",
+  "packageSha256": "f0a8310d7cdffbe3c0b3121c1b6f27f8883f70f7851eae20564b5a75d0fe419e",
+  "request": {
+    "action": "cap-005-world-import",
+    "dimension": "the_end",
+    "gateId": "CAP-005",
+    "requestId": "8e2b3627-1fe1-43bd-9a64-4ef76c5ccb0e",
+    "x": 4608,
+    "y": 80,
+    "z": 4608
+  },
+  "schemaVersion": 1,
+  "scope": "supporting-server-side-evidence-not-full-capability-certification"
+}

@@ -1,0 +1,51 @@
+NO LOG FILE! - setting up server logging...
+[2026-11-03 00:24:22:064 INFO] Starting Server
+[2026-11-03 00:24:22:064 INFO] Version: 1.26.40.8
+[2026-11-03 00:24:22:064 INFO] Session ID: e3b97c0b-95b3-4b64-a2b4-4a9141cf125a
+[2026-11-03 00:24:22:064 INFO] Build ID: 48609425
+[2026-11-03 00:24:22:064 INFO] Branch: r/26_u4
+[2026-11-03 00:24:22:064 INFO] Commit ID: 93e89c3199ffce33269d88e6fec322330c130ae3
+[2026-11-03 00:24:22:064 INFO] Configuration: Publish
+[2026-11-03 00:24:22:064 INFO] Contents of server.properties: {}
+[2026-11-03 00:24:22:064 INFO] Level Name: betterend-capability-2640
+[2026-11-03 00:24:22:065 INFO] Profiler config ('bootstrap.json') load result: success=1, errorMessage=(null)
+[2026-11-03 00:24:22:067 INFO] No CDN config file found at: cdn_config.json for dedicated server
+[2026-11-03 00:24:22:067 INFO] Game mode: 1 Creative
+[2026-11-03 00:24:22:067 INFO] Difficulty: 1 EASY
+[2026-11-03 00:24:22:068 INFO] Content logging to console is enabled.
+[2026-11-03 00:24:22:071 INFO] 
+
+#####################################################
+#                                                   #
+#               LOADING VANILLA WORLD               #
+#                                                   #
+#####################################################
+[2026-11-03 00:24:22:967 INFO] Opening level 'worlds/betterend-capability-2640/db'
+[2026-11-03 00:24:23:275 INFO] Pack Stack - [00] BetterEnd engine capability probes (id: d16a5a53-d15f-482e-bf74-26c4d256ed24, version: 0.1.2) @ behavior_packs/betterend_probe
+[2026-11-03 00:24:23:385 WARN] [Scripting] BETTEREND_PROBE {"phase":"startup"}
+
+[2026-11-03 00:24:24:832 INFO] IPv4 supported, port: 29140: Used for gameplay
+[2026-11-03 00:24:24:832 INFO] IPv6 supported, port: 29141: Used for gameplay
+[2026-11-03 00:24:24:867 INFO] Signed in to signaling service successfully
+[2026-11-03 00:24:24:903 INFO] Server started.
+[2026-11-03 00:24:24:903 WARN] ================ ALLOW LIST WARNING ===================
+[2026-11-03 00:24:24:903 WARN] Allow list is enabled but contains no entries. 
+[2026-11-03 00:24:24:904 WARN] Use allowlist add <playername> for you and your friends so that they can access the server, or modify allowlist.json manually.
+[2026-11-03 00:24:24:904 WARN] 
+Alternatively, the allow list can be turned off by typing allowlist off or manually toggled in the server.properties file.
+[2026-11-03 00:24:24:904 WARN] =======================================================
+[2026-11-03 00:24:24:904 INFO] ================ TELEMETRY MESSAGE ===================
+[2026-11-03 00:24:24:904 INFO] Server Telemetry is currently not enabled. 
+[2026-11-03 00:24:24:904 INFO] Enabling this telemetry helps us improve the game.
+[2026-11-03 00:24:24:904 INFO] 
+[2026-11-03 00:24:24:904 INFO] To enable this feature, add the line 'emit-server-telemetry=true'
+[2026-11-03 00:24:24:904 INFO] to the server.properties file in the handheld/src-server directory
+[2026-11-03 00:24:24:904 INFO] ======================================================
+[2026-11-03 00:24:24:950 WARN] [Scripting] BETTEREND_PROBE {"phase":"worldLoad","tick":538,"seed":"2640","players":0,"blockRegistered":true,"itemRegistered":true}
+
+[2026-11-03 00:24:25:064 INFO] Script event betterend_probe:run has been sent
+[2026-11-03 00:24:32:831 WARN] [Scripting] BETTEREND_PROBE {"phase":"result","requestId":"d64b10fc-02a2-4dec-9d91-7622554461ab","gateId":"CAP-003","action":"cap-003-regions","dimension":"minecraft:the_end","seed":"2640","startedTick":540,"completedTick":580,"players":0,"item":{"typeId":"betterend_probe:thallasium_ingot","amount":1},"observation":{"vectorCount":500,"disagreements":0,"layerCounts":{"protected_center":5,"surface":323,"cave":153,"sub_region":15,"aerial":4},"distinctRegions":27,"regionDistribution":{"minecraft:the_end":5,"betterend_bedrock:shadow_forest":22,"betterend_bedrock:amber_land":22,"betterend_bedrock:megalake":18,"betterend_bedrock:dry_shrubland":26,"betterend_bedrock:sulphur_springs":26,"betterend_bedrock:crystal_mountains":25,"betterend_bedrock:foggy_mushroomland":27,"betterend_bedrock:empty_end_cave":26,"betterend_bedrock:empty_smaragdant_cave":29,"betterend_bedrock:chorus_forest":19,"betterend_bedrock:jade_cave":19,"betterend_bedrock:lush_smaragdant_cave":24,"betterend_bedrock:dust_wastelands":21,"betterend_bedrock:lantern_woods":17,"betterend_bedrock:empty_aurora_cave":34,"betterend_bedrock:blossoming_spires":18,"betterend_bedrock:dragon_graveyards":6,"betterend_bedrock:umbrella_jungle":31,"betterend_bedrock:painted_mountains":3,"betterend_bedrock:glowing_grasslands":27,"betterend_bedrock:umbra_valley":18,"betterend_bedrock:lush_aurora_cave":21,"betterend_bedrock:megalake_grove":9,"betterend_bedrock:neon_oasis":3,"betterend_bedrock:ice_starfield":2,"betterend_bedrock:waterfall_ponds":2},"determinismPassed":true,"negativeCheckPassed":true,"centralEndProtected":true,"centralScan":{"flavoliteCount":0,"protectedCenter":true,"centerRegionId":"minecraft:the_end"},"outerScan":{"flavoliteCount":12,"columnSamples":[{"x":2056,"z":2056,"surfaceY":58,"matchedY":58,"regionId":"betterend_bedrock:foggy_mushroomland","layer":"surface"},{"x":2056,"z":2072,"surfaceY":null,"matchedY":null,"regionId":"betterend_bedrock:foggy_mushroomland","layer":"surface"},{"x":2056,"z":2088,"surfaceY":null,"matchedY":null,"regionId":"betterend_bedrock:foggy_mushroomland","layer":"surface"},{"x":2056,"z":2104,"surfaceY":null,"matchedY":null,"regionId":"betterend_bedrock:foggy_mushroomland","layer":"surface"},{"x":2072,"z":2056,"surfaceY":57,"matchedY":57,"regionId":"betterend_bedrock:foggy_mushroomland","layer":"surface"},{"x":2072,"z":2072,"surfaceY":50,"matchedY":50,"regionId":"betterend_bedrock:empty_end_cave","layer":"cave"},{"x":2072,"z":2088,"surfaceY":null,"matchedY":null,"regionId":"betterend_bedrock:foggy_mushroomland","layer":"surface"},{"x":2072,"z":2104,"surfaceY":28,"matchedY":28,"regionId":"betterend_bedrock:empty_end_cave","layer":"cave"},{"x":2088,"z":2056,"surfaceY":56,"matchedY":56,"regionId":"betterend_bedrock:foggy_mushroomland","layer":"surface"},{"x":2088,"z":2072,"surfaceY":57,"matchedY":57,"regionId":"betterend_bedrock:foggy_mushroomland","layer":"surface"},{"x":2088,"z":2088,"surfaceY":57,"matchedY":57,"regionId":"betterend_bedrock:foggy_mushroomland","layer":"surface"},{"x":2088,"z":2104,"surfaceY":59,"matchedY":59,"regionId":"betterend_bedrock:foggy_mushroomland","layer":"surface"},{"x":2104,"z":2056,"surfaceY":57,"matchedY":57,"regionId":"betterend_bedrock:foggy_mushroomland","layer":"surface"},{"x":2104,"z":2072,"surfaceY":58,"matchedY":58,"regionId":"betterend_bedrock:foggy_mushroomland","layer":"surface"},{"x":2104,"z":2088,"surfaceY":60,"matchedY":60,"regionId":"betterend_bedrock:foggy_mushroomland","layer":"surface"},{"x":2104,"z":2104,"surfaceY":61,"matchedY":61,"regionId":"betterend_bedrock:foggy_mushroomland","layer":"surface"}]}}}
+
+[2026-11-03 00:24:32:883 INFO] Server stop requested.
+[2026-11-03 00:24:32:954 INFO] Stopping server...
+Quit correctly

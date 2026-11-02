@@ -1,0 +1,235 @@
+{
+  "certifiesAllPlatforms": false,
+  "clientRenderingVerified": false,
+  "events": [
+    {
+      "phase": "startup"
+    },
+    {
+      "blockRegistered": true,
+      "itemRegistered": true,
+      "phase": "worldLoad",
+      "players": 0,
+      "seed": "2640",
+      "tick": 272
+    },
+    {
+      "action": "cap-003-regions",
+      "completedTick": 293,
+      "dimension": "minecraft:the_end",
+      "gateId": "CAP-003",
+      "item": {
+        "amount": 1,
+        "typeId": "betterend_probe:thallasium_ingot"
+      },
+      "observation": {
+        "centralEndProtected": true,
+        "centralScan": {
+          "centerRegionId": "minecraft:the_end",
+          "flavoliteCount": 0,
+          "protectedCenter": true
+        },
+        "determinismPassed": true,
+        "disagreements": 0,
+        "distinctRegions": 27,
+        "layerCounts": {
+          "aerial": 4,
+          "cave": 153,
+          "protected_center": 5,
+          "sub_region": 15,
+          "surface": 323
+        },
+        "negativeCheckPassed": true,
+        "outerScan": {
+          "columnSamples": [
+            {
+              "layer": "surface",
+              "matchedY": 58,
+              "regionId": "betterend_bedrock:foggy_mushroomland",
+              "surfaceY": 58,
+              "x": 2056,
+              "z": 2056
+            },
+            {
+              "layer": "surface",
+              "matchedY": null,
+              "regionId": "betterend_bedrock:foggy_mushroomland",
+              "surfaceY": null,
+              "x": 2056,
+              "z": 2072
+            },
+            {
+              "layer": "surface",
+              "matchedY": null,
+              "regionId": "betterend_bedrock:foggy_mushroomland",
+              "surfaceY": null,
+              "x": 2056,
+              "z": 2088
+            },
+            {
+              "layer": "surface",
+              "matchedY": null,
+              "regionId": "betterend_bedrock:foggy_mushroomland",
+              "surfaceY": null,
+              "x": 2056,
+              "z": 2104
+            },
+            {
+              "layer": "surface",
+              "matchedY": 57,
+              "regionId": "betterend_bedrock:foggy_mushroomland",
+              "surfaceY": 57,
+              "x": 2072,
+              "z": 2056
+            },
+            {
+              "layer": "cave",
+              "matchedY": 50,
+              "regionId": "betterend_bedrock:empty_end_cave",
+              "surfaceY": 50,
+              "x": 2072,
+              "z": 2072
+            },
+            {
+              "layer": "surface",
+              "matchedY": null,
+              "regionId": "betterend_bedrock:foggy_mushroomland",
+              "surfaceY": null,
+              "x": 2072,
+              "z": 2088
+            },
+            {
+              "layer": "cave",
+              "matchedY": 28,
+              "regionId": "betterend_bedrock:empty_end_cave",
+              "surfaceY": 28,
+              "x": 2072,
+              "z": 2104
+            },
+            {
+              "layer": "surface",
+              "matchedY": 56,
+              "regionId": "betterend_bedrock:foggy_mushroomland",
+              "surfaceY": 56,
+              "x": 2088,
+              "z": 2056
+            },
+            {
+              "layer": "surface",
+              "matchedY": 57,
+              "regionId": "betterend_bedrock:foggy_mushroomland",
+              "surfaceY": 57,
+              "x": 2088,
+              "z": 2072
+            },
+            {
+              "layer": "surface",
+              "matchedY": 57,
+              "regionId": "betterend_bedrock:foggy_mushroomland",
+              "surfaceY": 57,
+              "x": 2088,
+              "z": 2088
+            },
+            {
+              "layer": "surface",
+              "matchedY": 59,
+              "regionId": "betterend_bedrock:foggy_mushroomland",
+              "surfaceY": 59,
+              "x": 2088,
+              "z": 2104
+            },
+            {
+              "layer": "surface",
+              "matchedY": 57,
+              "regionId": "betterend_bedrock:foggy_mushroomland",
+              "surfaceY": 57,
+              "x": 2104,
+              "z": 2056
+            },
+            {
+              "layer": "surface",
+              "matchedY": 58,
+              "regionId": "betterend_bedrock:foggy_mushroomland",
+              "surfaceY": 58,
+              "x": 2104,
+              "z": 2072
+            },
+            {
+              "layer": "surface",
+              "matchedY": 60,
+              "regionId": "betterend_bedrock:foggy_mushroomland",
+              "surfaceY": 60,
+              "x": 2104,
+              "z": 2088
+            },
+            {
+              "layer": "surface",
+              "matchedY": 61,
+              "regionId": "betterend_bedrock:foggy_mushroomland",
+              "surfaceY": 61,
+              "x": 2104,
+              "z": 2104
+            }
+          ],
+          "flavoliteCount": 12
+        },
+        "regionDistribution": {
+          "betterend_bedrock:amber_land": 22,
+          "betterend_bedrock:blossoming_spires": 18,
+          "betterend_bedrock:chorus_forest": 19,
+          "betterend_bedrock:crystal_mountains": 25,
+          "betterend_bedrock:dragon_graveyards": 6,
+          "betterend_bedrock:dry_shrubland": 26,
+          "betterend_bedrock:dust_wastelands": 21,
+          "betterend_bedrock:empty_aurora_cave": 34,
+          "betterend_bedrock:empty_end_cave": 26,
+          "betterend_bedrock:empty_smaragdant_cave": 29,
+          "betterend_bedrock:foggy_mushroomland": 27,
+          "betterend_bedrock:glowing_grasslands": 27,
+          "betterend_bedrock:ice_starfield": 2,
+          "betterend_bedrock:jade_cave": 19,
+          "betterend_bedrock:lantern_woods": 17,
+          "betterend_bedrock:lush_aurora_cave": 21,
+          "betterend_bedrock:lush_smaragdant_cave": 24,
+          "betterend_bedrock:megalake": 18,
+          "betterend_bedrock:megalake_grove": 9,
+          "betterend_bedrock:neon_oasis": 3,
+          "betterend_bedrock:painted_mountains": 3,
+          "betterend_bedrock:shadow_forest": 22,
+          "betterend_bedrock:sulphur_springs": 26,
+          "betterend_bedrock:umbra_valley": 18,
+          "betterend_bedrock:umbrella_jungle": 31,
+          "betterend_bedrock:waterfall_ponds": 2,
+          "minecraft:the_end": 5
+        },
+        "vectorCount": 500
+      },
+      "phase": "result",
+      "players": 0,
+      "requestId": "76532237-2e25-405d-82b3-8b90a20b9bdd",
+      "seed": "2640",
+      "startedTick": 274
+    }
+  ],
+  "executableSha256": "2443400aa2fb41eb85e0c3d93762d8031b9d229049e77a2132778fad7dced1eb",
+  "exit": {
+    "code": 0,
+    "signal": null
+  },
+  "expectedBuild": "1.26.61.1",
+  "failure": null,
+  "forcedTermination": false,
+  "observedBuild": "1.26.61.1",
+  "packageSha256": "f0a8310d7cdffbe3c0b3121c1b6f27f8883f70f7851eae20564b5a75d0fe419e",
+  "request": {
+    "action": "cap-003-regions",
+    "dimension": "the_end",
+    "gateId": "CAP-003",
+    "requestId": "76532237-2e25-405d-82b3-8b90a20b9bdd",
+    "x": 2048,
+    "y": 64,
+    "z": 2048
+  },
+  "schemaVersion": 1,
+  "scope": "supporting-server-side-evidence-not-full-capability-certification"
+}

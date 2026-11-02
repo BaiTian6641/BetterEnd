@@ -1,0 +1,203 @@
+{
+  "certifiesAllPlatforms": false,
+  "clientRenderingVerified": false,
+  "events": [
+    {
+      "phase": "startup"
+    },
+    {
+      "blockRegistered": true,
+      "itemRegistered": true,
+      "phase": "worldLoad",
+      "players": 0,
+      "seed": "2640",
+      "tick": 508
+    },
+    {
+      "action": "cap-013-portals-obelisk",
+      "completedTick": 519,
+      "dimension": "minecraft:the_end",
+      "gateId": "CAP-013",
+      "item": {
+        "amount": 1,
+        "typeId": "betterend_probe:thallasium_ingot"
+      },
+      "observation": {
+        "obelisk": {
+          "activated": true,
+          "brokenObeliskPartsCount": 3,
+          "destroyedRespawn": {
+            "notificationMessage": "message.betterend.obelisk_missing_or_obstructed",
+            "obeliskDestroyed": true,
+            "reason": "obelisk_destroyed",
+            "redirected": false
+          },
+          "intactRespawn": {
+            "chargesDepleted": false,
+            "chargesRemaining": null,
+            "checkedOffsetsCount": 1,
+            "exploded": false,
+            "fromDimension": "minecraft:overworld",
+            "landingPosition": {
+              "blockPos": {
+                "x": 4851,
+                "y": 80,
+                "z": 4850
+              },
+              "offset": [
+                1,
+                0
+              ],
+              "x": 4851.5,
+              "y": 80,
+              "z": 4850.5
+            },
+            "redirected": true,
+            "targetDimension": "minecraft:the_end"
+          },
+          "obstructedRespawn": {
+            "checkedOffsetsCount": 8,
+            "notificationMessage": "message.betterend.obelisk_missing_or_obstructed",
+            "obeliskObstructed": true,
+            "reason": "obelisk_landing_obstructed",
+            "redirected": false
+          }
+        },
+        "portal": {
+          "cooldownBlockedTravel": {
+            "actor": "player-probe-portal",
+            "reason": "portal_cooldown_active",
+            "remainingCooldownTicks": 60,
+            "teleported": false
+          },
+          "firstTravel": {
+            "arrivalPosition": {
+              "x": 128.5,
+              "y": 72,
+              "z": 128.5
+            },
+            "targetDimension": "minecraft:overworld",
+            "teleported": true,
+            "transaction": {
+              "abortedReason": null,
+              "actor": "player-probe-portal",
+              "completed": true,
+              "destination": {
+                "dimension": "minecraft:overworld",
+                "position": {
+                  "x": 128,
+                  "y": 72,
+                  "z": 128
+                }
+              },
+              "pendingArrival": false,
+              "source": {
+                "dimension": "minecraft:the_end",
+                "position": {
+                  "x": 4860,
+                  "y": 80,
+                  "z": 4850
+                }
+              },
+              "tick": 500,
+              "txId": "portal_tx_1"
+            },
+            "txId": "portal_tx_1"
+          },
+          "invalidAttemptActivated": false,
+          "invalidAttemptReason": "incomplete_eternal_pedestals",
+          "portalId": "betterend:eternal_portal@minecraft:the_end@4860,80,4850#gen_2_c1",
+          "postCooldownTravel": {
+            "arrivalPosition": {
+              "x": 4860.5,
+              "y": 80,
+              "z": 4850.5
+            },
+            "targetDimension": "minecraft:the_end",
+            "teleported": true,
+            "transaction": {
+              "abortedReason": null,
+              "actor": "player-probe-portal",
+              "completed": true,
+              "destination": {
+                "dimension": "minecraft:the_end",
+                "position": {
+                  "x": 4860,
+                  "y": 80,
+                  "z": 4850
+                }
+              },
+              "pendingArrival": false,
+              "source": {
+                "dimension": "minecraft:overworld",
+                "position": {
+                  "x": 128,
+                  "y": 72,
+                  "z": 128
+                }
+              },
+              "tick": 600,
+              "txId": "portal_tx_2"
+            },
+            "txId": "portal_tx_2"
+          },
+          "unsafeDestinationTravel": {
+            "reason": "destination_missing_solid_support",
+            "teleported": false,
+            "transaction": {
+              "abortedReason": "destination_missing_solid_support",
+              "actor": "player-probe-portal",
+              "completed": false,
+              "destination": {
+                "dimension": "minecraft:overworld",
+                "position": {
+                  "x": 128,
+                  "y": 72,
+                  "z": 128
+                }
+              },
+              "pendingArrival": false,
+              "source": {
+                "dimension": "minecraft:the_end",
+                "position": {
+                  "x": 4860,
+                  "y": 80,
+                  "z": 4850
+                }
+              },
+              "tick": 700,
+              "txId": "portal_tx_3"
+            }
+          },
+          "validActivated": true
+        }
+      },
+      "phase": "result",
+      "players": 0,
+      "requestId": "b5ad0efc-a7ca-4c47-8a6f-368b9acec716",
+      "seed": "2640",
+      "startedTick": 510
+    }
+  ],
+  "executableSha256": "e7775e636b9fdcbc354823d92d0c22c12738a2141d12557d856744293d258372",
+  "exit": {
+    "code": 0,
+    "signal": null
+  },
+  "expectedBuild": "1.26.40.8",
+  "failure": null,
+  "forcedTermination": false,
+  "observedBuild": "1.26.40.8",
+  "packageSha256": "91c396229d1e93aa6a784f8f9ae4d30efa2f7a9a4b6331ab8b587b1425990f6c",
+  "request": {
+    "action": "cap-013-portals-obelisk",
+    "dimension": "the_end",
+    "gateId": "CAP-013",
+    "requestId": "b5ad0efc-a7ca-4c47-8a6f-368b9acec716",
+    "x": 4850,
+    "y": 80,
+    "z": 4850
+  },
+  "schemaVersion": 1,
+  "scope": "supporting-server-side-evidence-not-full-capability-certification"
+}

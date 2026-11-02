@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { buildProbe } from './build-probe.mjs';
 import { readAttempts, recordAttempt, summarizeAttempts } from './evidence.mjs';
 import { hashFile, inside, stableJson } from './source-files.mjs';
+import { assertCapabilityObservation } from '../probes/capabilities/verify.mjs';
 import { assertInventoryObservation } from '../probes/inventory/verify.mjs';
 
 const bedrockRoot = fileURLToPath(new URL('../', import.meta.url));
@@ -24,6 +25,7 @@ function argumentsFor(args) {
 }
 
 export function assertObservation(request, result) {
+  if (request.action.startsWith('cap-')) return assertCapabilityObservation(request, result);
   if (request.action.startsWith('inventory-')) return assertInventoryObservation(request, result);
   const id = 'betterend_probe:flavolite';
   if (result.players !== 0 || result.item?.typeId !== 'betterend_probe:thallasium_ingot' || result.item.amount !== 1) throw new Error('Incorrect headless/item readback');
@@ -112,7 +114,7 @@ async function main(args) {
   if (marker.existingPlayerWorld !== false || marker.expectedBuild !== expectedBuild || typeof marker.worldName !== 'string') throw new Error('Engine ownership marker does not authorize this disposable run');
   const request = JSON.parse(await readFile(inside(bedrockRoot, options['--request']), 'utf8'));
   request.requestId = randomUUID();
-  const gateId = request.action.startsWith('inventory-') ? 'INV-001' : 'ENG-001';
+  const gateId = request.action.startsWith('cap-') ? request.gateId : request.action.startsWith('inventory-') ? 'INV-001' : 'ENG-001';
   const prior = summarizeAttempts(await readAttempts(bedrockRoot), gateId);
   if (prior.requiresUserDecision) throw new Error(`${gateId} requires user intervention before another runtime probe`);
   const { outputRoot, manifest } = await buildProbe();

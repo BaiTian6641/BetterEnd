@@ -21,7 +21,10 @@
     "biomes": 27,
     "blockStateSnapshotRows": 18852,
     "blocks": 728,
+    "compressedPropertyShapeBlocks": 179,
+    "compressedPropertyShapeStates": 3712,
     "effectiveRuntimeJsonResources": 12060,
+    "expandedNeutralAuditShapeStates": 22385,
     "explicitMobs": 6,
     "items": 850,
     "liveBlockStates": 22385,
@@ -33,7 +36,7 @@
     "runtimeEntities": 27,
     "seatingBlocks": 33,
     "sharedHelpers": 1,
-    "unresolved": 4,
+    "unresolved": 3,
     "vehicles": 20
   },
   "recipeTypes": {
@@ -69,13 +72,6 @@
       "id": "betterend:ivis_vine",
       "severity": "review",
       "source": "src/main/resources/assets/betterend/blockstates/ivis_vine.json"
-    },
-    {
-      "code": "shape-audit-domain-mismatch",
-      "detail": "Live domains are authoritative; neutral/context-dependent collision geometry is not invented for missing audit rows.",
-      "missingLiveStateShapes": 3712,
-      "severity": "release-blocker",
-      "staleAuditStateShapes": 179
     },
     {
       "code": "invalid-source-asset-json",

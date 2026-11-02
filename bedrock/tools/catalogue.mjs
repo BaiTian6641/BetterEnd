@@ -68,6 +68,15 @@ export function resolveResourceLayers(layers) {
   };
 }
 
+const shapeBoxListPattern = /^(?:empty|(?:\[-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?\|-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?\])+)$/u;
+const shapeAuditContext = Object.freeze({
+  producer: 'de.ambertation.wover.datagen.api.provider.WoverBlockShapesProvider',
+  getter: 'net.minecraft.world.level.EmptyBlockGetter.INSTANCE',
+  position: [0, 0, 0],
+  roundingDecimals: 4,
+  comparison: 'neutral-context-four-decimal-outline-and-collision-pair',
+});
+
 export function parseShapeSnapshot(text, registeredIds) {
   const blocks = new Map();
   const stateKeys = new Set();
@@ -78,24 +87,65 @@ export function parseShapeSnapshot(text, registeredIds) {
     if (!match) throw new Error(`Unrecognized block shape snapshot at line ${index + 1}`);
     const [, id, rawStates, selection, collision] = match;
     if (!registeredIds.has(id)) throw new Error(`Shape snapshot references unregistered block ${id}`);
+    if (selection === 'unavailable' || collision === 'unavailable') {
+      throw new Error(`Unavailable block shape snapshot at line ${index + 1}`);
+    }
+    if (!shapeBoxListPattern.test(selection) || !shapeBoxListPattern.test(collision)) {
+      throw new Error(`Malformed block shape geometry at line ${index + 1}`);
+    }
+    const isUniform = rawStates === undefined;
+    const coverageMode = isUniform ? 'uniform-all-states' : 'explicit-states';
+    const existing = blocks.get(id);
+    if (existing && existing.coverageMode !== coverageMode) {
+      throw new Error(`Contradictory mixed uniform and explicit block-state snapshot for ${id} at line ${index + 1}`);
+    }
+    if (isUniform) {
+      if (existing) throw new Error(`Duplicate block-state snapshot ${id}`);
+      blocks.set(id, {
+        auditContext: shapeAuditContext,
+        coverageMode,
+        observedCount: 1,
+        properties: Object.create(null),
+        records: [{ coverage: 'uniform-all-states', states: null, selection, collision, sourceLine: index + 1 }],
+        defaultState: null,
+        runtimeVerified: false,
+      });
+      totalStates += 1;
+      continue;
+    }
     const states = Object.create(null);
-    for (const assignment of rawStates?.split(',') ?? []) {
+    for (const assignment of rawStates.split(',')) {
       const equals = assignment.indexOf('=');
       if (equals <= 0 || equals === assignment.length - 1) throw new Error(`Invalid state assignment at line ${index + 1}`);
       const key = assignment.slice(0, equals);
       if (Object.hasOwn(states, key)) throw new Error(`Duplicate state property at line ${index + 1}`);
       states[key] = assignment.slice(equals + 1);
     }
-    const stateKey = `${id}[${Object.keys(states).sort(compareText).map(key => `${key}=${states[key]}`).join(',')}]`;
+    const sortedKeys = Object.keys(states).sort(compareText);
+    const stateKey = `${id}[${sortedKeys.map(key => `${key}=${states[key]}`).join(',')}]`;
     if (stateKeys.has(stateKey)) throw new Error(`Duplicate block-state snapshot ${stateKey}`);
     stateKeys.add(stateKey);
-    const snapshot = blocks.get(id) ?? { observedCount: 0, properties: Object.create(null), records: [], defaultState: null, runtimeVerified: false };
+    const snapshot = existing ?? {
+      auditContext: shapeAuditContext,
+      coverageMode,
+      observedCount: 0,
+      properties: Object.create(null),
+      records: [],
+      defaultState: null,
+      runtimeVerified: false,
+    };
+    if (snapshot.records.length > 0) {
+      const expectedKeys = Object.keys(snapshot.properties).sort(compareText);
+      if (JSON.stringify(sortedKeys) !== JSON.stringify(expectedKeys)) {
+        throw new Error(`Inconsistent state property keys for ${id} at line ${index + 1}`);
+      }
+    }
     for (const [key, value] of Object.entries(states)) {
       const values = snapshot.properties[key] ?? [];
       if (!values.includes(value)) values.push(value);
       snapshot.properties[key] = values;
     }
-    snapshot.records.push({ states, selection, collision, sourceLine: index + 1 });
+    snapshot.records.push({ coverage: 'explicit-state', states, selection, collision, sourceLine: index + 1 });
     snapshot.observedCount += 1;
     blocks.set(id, snapshot);
     totalStates += 1;

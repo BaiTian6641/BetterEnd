@@ -1,0 +1,51 @@
+NO LOG FILE! - setting up server logging...
+[2026-11-03 00:09:43:336 INFO] Starting Server
+[2026-11-03 00:09:43:336 INFO] Version: 1.26.40.8
+[2026-11-03 00:09:43:336 INFO] Session ID: 387d4731-1b69-4af1-a603-dc00742a7761
+[2026-11-03 00:09:43:336 INFO] Build ID: 48609425
+[2026-11-03 00:09:43:336 INFO] Branch: r/26_u4
+[2026-11-03 00:09:43:336 INFO] Commit ID: 93e89c3199ffce33269d88e6fec322330c130ae3
+[2026-11-03 00:09:43:336 INFO] Configuration: Publish
+[2026-11-03 00:09:43:336 INFO] Contents of server.properties: {}
+[2026-11-03 00:09:43:336 INFO] Level Name: betterend-capability-2640
+[2026-11-03 00:09:43:336 INFO] Profiler config ('bootstrap.json') load result: success=1, errorMessage=(null)
+[2026-11-03 00:09:43:338 INFO] No CDN config file found at: cdn_config.json for dedicated server
+[2026-11-03 00:09:43:338 INFO] Game mode: 1 Creative
+[2026-11-03 00:09:43:338 INFO] Difficulty: 1 EASY
+[2026-11-03 00:09:43:338 INFO] Content logging to console is enabled.
+[2026-11-03 00:09:43:340 INFO] 
+
+#####################################################
+#                                                   #
+#               LOADING VANILLA WORLD               #
+#                                                   #
+#####################################################
+[2026-11-03 00:09:44:038 INFO] Opening level 'worlds/betterend-capability-2640/db'
+[2026-11-03 00:09:44:283 INFO] Pack Stack - [00] BetterEnd engine capability probes (id: d16a5a53-d15f-482e-bf74-26c4d256ed24, version: 0.1.2) @ behavior_packs/betterend_probe
+[2026-11-03 00:09:44:360 WARN] [Scripting] BETTEREND_PROBE {"phase":"startup"}
+
+[2026-11-03 00:09:45:477 INFO] IPv4 supported, port: 29140: Used for gameplay
+[2026-11-03 00:09:45:478 INFO] IPv6 supported, port: 29141: Used for gameplay
+[2026-11-03 00:09:45:507 INFO] Signed in to signaling service successfully
+[2026-11-03 00:09:45:539 INFO] Server started.
+[2026-11-03 00:09:45:539 WARN] ================ ALLOW LIST WARNING ===================
+[2026-11-03 00:09:45:539 WARN] Allow list is enabled but contains no entries. 
+[2026-11-03 00:09:45:539 WARN] Use allowlist add <playername> for you and your friends so that they can access the server, or modify allowlist.json manually.
+[2026-11-03 00:09:45:539 WARN] 
+Alternatively, the allow list can be turned off by typing allowlist off or manually toggled in the server.properties file.
+[2026-11-03 00:09:45:539 WARN] =======================================================
+[2026-11-03 00:09:45:539 INFO] ================ TELEMETRY MESSAGE ===================
+[2026-11-03 00:09:45:539 INFO] Server Telemetry is currently not enabled. 
+[2026-11-03 00:09:45:539 INFO] Enabling this telemetry helps us improve the game.
+[2026-11-03 00:09:45:539 INFO] 
+[2026-11-03 00:09:45:539 INFO] To enable this feature, add the line 'emit-server-telemetry=true'
+[2026-11-03 00:09:45:539 INFO] to the server.properties file in the handheld/src-server directory
+[2026-11-03 00:09:45:539 INFO] ======================================================
+[2026-11-03 00:09:45:580 WARN] [Scripting] BETTEREND_PROBE {"phase":"worldLoad","tick":423,"seed":"2640","players":0,"blockRegistered":true,"itemRegistered":true}
+
+[2026-11-03 00:09:45:688 INFO] Script event betterend_probe:run has been sent
+[2026-11-03 00:09:46:232 WARN] [Scripting] BETTEREND_PROBE {"phase":"result","requestId":"781209d4-c18e-407d-af7f-53fe223ebc70","gateId":"CAP-005","action":"cap-005-world-import","dimension":"minecraft:the_end","seed":"2640","startedTick":425,"completedTick":437,"players":0,"item":{"typeId":"betterend_probe:thallasium_ingot","amount":1},"observation":{"origin":{"x":4608,"y":80,"z":4608},"preExistingFixture":false,"blockCount":66,"blockMismatches":0,"expectedChecksum":"d73a097f","observedChecksum":"d73a097f","checksumMatch":true,"containerMetadataPreserved":true,"observedContainer":{"slot0":{"typeId":"minecraft:elytra","nameTag":"BetterEnd Imported Crystalite Elytra","lore":["betterend:crystalite_elytra","imported:cap-005"],"variant":"crystalite","uid":"cap005-elytra-1","damage":19,"unbreaking":3},"slot4":{"typeId":"betterend_probe:thallasium_ingot","amount":16,"lore":["betterend:thallasium_ingot","batch:42"]}}}}
+
+[2026-11-03 00:09:46:290 INFO] Server stop requested.
+[2026-11-03 00:09:46:361 INFO] Stopping server...
+Quit correctly

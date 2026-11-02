@@ -23,7 +23,7 @@ Key findings:
    - BetterEnd contributes runtime brewing mixes.
    - Runtime contributions can replace datapack recipes with the same ID.
 4. Preserve declared result components separately from effective assembled stack components and input-dependent inheritance.
-5. **Unresolved:** exact Minecraft 26.3 vanilla consumer bodies. The reader rejects `.class` entries, and the assigned tool inventory did not include process execution for the supplied `javap`. Vanilla smithing inheritance, crafting remainders, and precise fuel-adjusted cooking behavior therefore remain explicit evidence gaps—not older-version assumptions.
+5. **Resolved via local 26.3 bytecode disassembly (`javap -p -c` on `minecraft-merged-91c6283978-26.3.jar`):** exact Minecraft 26.3 vanilla consumer bodies for crafting/stonecutting (V1), smithing transform (V2), and furnace/campfire cooking (V3) have now been inspected directly from the compiled 26.3 JAR and are recorded in §7 below. Live runtime recipe-manager export and station execution remain separate implementation steps.
 
 ## Evidence boundaries
 
@@ -528,88 +528,62 @@ These are observation implementation targets, not executed results.
 
 ---
 
-### 7. Unresolved semantics and exact static-inspection targets
+### 7. Verified 26.3 vanilla consumer semantics (`javap -p -c` on `minecraft-merged-91c6283978-26.3.jar`)
 
-#### V1 — Vanilla crafting and stonecutting
+Executed using `bedrock/.work/java-reference/jdk/jdk-25.0.5+8/bin/javap.exe -p -c` against `bedrock/.work/java-reference/project-cache/loom-cache/minecraftMaven/net/minecraft/minecraft-merged-91c6283978/26.3/minecraft-merged-91c6283978-26.3.jar`.
 
-Not established from exact Minecraft 26.3 consumer bodies:
+#### V1 — Vanilla crafting and stonecutting (verified from `ResultSlot`, `CraftingRecipe`, `StonecutterMenu`, `StonecutterMenu$2`)
 
-- Result-slot consumption.
-- Remaining-item computation and destination.
-- Bucket/bottle behavior.
-- Input-component effects.
-- Exact shaped mirroring/offset behavior.
-- Automated-crafting differences.
-- Stonecutter take/materialization behavior.
+- **Crafting remainders (`CraftingRecipe.defaultCraftingReminder(CraftingInput)`):**
+  - Iterates `0 .. input.size() - 1`; for each slot item, checks `Item.getCraftingRemainder()` (returns nullable `ItemStackTemplate`).
+  - If non-null, populates that slot of the returned `NonNullList<ItemStack>` with `remainderTemplate.create()`.
+- **Crafting result take (`ResultSlot.onTake(Player, ItemStack)`):**
+  - Calls `stack.onCraftedBy(player, stack.getCount())` and `checkTakeAchievements(stack)`.
+  - Positions input via `craftSlots.asPositionedCraftInput()` and queries `getRemainingItems(positionedInput, player.level())` (which calls `RecipeManager.getRecipeFor(RecipeType.CRAFTING, input, level)` and invokes `recipe.getRemainingItems(input)`, falling back to `craftSlots.filloon/default`).
+  - For each `(y, x)` in the positioned input grid:
+    - Removes 1 item from `craftSlots` at `slotIndex = x + left + (y + top) * craftSlots.getWidth()`.
+    - If the remainder `ItemStack` at `x + y * positionedInput.width()` is non-empty:
+      - If the crafting slot is now empty, sets the remainder into that crafting slot;
+      - Else if `ItemStack.isSameItemSameComponents(slotItem, remainder)`, grows `remainder` by `slotItem.getCount()` and sets it into the crafting slot;
+      - Else attempts `player.getInventory().add(remainder)`, or drops it via `player.drop(remainder, false, Prediction.PREDICTED)`.
+- **Stonecutting (`StonecutterMenu` and `StonecutterMenu$2.onTake`):**
+  - `setupResultSlot(int)` calls `StonecutterRecipe.assemble(new SingleRecipeInput(container.getItem(0)))` (which delegates to `SingleItemRecipe.assemble` -> `this.result.create()`, creating a fresh `ItemStack` with no input component inheritance).
+  - `StonecutterMenu$2.onTake` calls `inputSlot.remove(1)` directly without consulting `Item.getCraftingRemainder()`, re-runs `setupResultSlot` if input remains non-empty, and plays `SoundEvents.UI_STONECUTTER_TAKE_RESULT`.
 
-#### V2 — Vanilla smithing transform
+#### V2 — Vanilla smithing transform (verified from `SmithingTransformRecipe`, `TransmuteRecipe`, `ItemStackTemplate`, `SmithingMenu`)
 
-Not established:
+- **Result assembly and component inheritance (`SmithingTransformRecipe.assemble(SmithingRecipeInput)`):**
+  - Calls `TransmuteRecipe.createWithOriginalComponents(this.result, input.base())`.
+  - `TransmuteRecipe.createWithOriginalComponents(ItemStackTemplate result, ItemStack base, int extraCount)` calls `result.apply(result.count() + extraCount, base.getComponentsPatch())`.
+  - `ItemStackTemplate.apply(int count, DataComponentPatch basePatch)` constructs `new ItemStack(this.item, count, basePatch)` (inheriting the base item's entire `DataComponentPatch`, including damage, custom name, enchantments, anvil repair cost, and custom components), then calls `stack.applyComponents(this.components)` (applying the recipe result template's own component patch on top), and validates via `ItemStack.validateStrict(stack)`.
+  - WorldWeaver's `SmithingTransformRecipeMixin` runs `ItemStackHelper.setupItemStack` on the assembled result afterward.
+- **Consumption (`SmithingMenu.onTake(Player, ItemStack)`):**
+  - Shrinks slot 0 (`template`), slot 1 (`base`), and slot 2 (`addition`) by 1 each via `shrinkStackInSlot(0..2)` (`slot.remove(1)`). Does not consult `Item.getCraftingRemainder()`.
 
-- Which base components are inherited.
-- Override/removal precedence.
-- Damage handling.
-- Custom anvil-wear component inheritance.
-- Template/base/addition consumption.
+#### V3 — Vanilla cooking (verified from `AbstractFurnaceBlockEntity` and `CampfireBlockEntity`)
 
-A result consisting only of `{"id":...}` does not answer these questions.
+- **Fuel duration and speed multiplier (`AbstractFurnaceBlockEntity`):**
+  - `getBurnDuration(ServerLevel, ItemStack)` resolves `DataComponents.COOKING_FUEL` via `ResolvableInt.getFromItem(stack, DataComponents.COOKING_FUEL, CookingFuel::burnDuration, getLootContext(serverLevel), 0)`.
+  - `getSpeedMultiplier(ServerLevel, ItemStack)` resolves `DataComponents.COOKING_FUEL` via `ResolvableFloat.getFromItem(stack, DataComponents.COOKING_FUEL, CookingFuel::speedMultiplier, getLootContext(serverLevel), 1.0f)`.
+  - `getTotalCookTime(RecipeHolder, AbstractFurnaceBlockEntity)` computes `int cookTime = recipe.cookingTime(); return speedMultiplier > 0.0f ? (int) Math.ceil(cookTime / speedMultiplier) : cookTime;`.
+  - When a new fuel item is consumed while `cookingTimer > 0 && cookingTimer < cookingTotalTime`, `serverTick` rescales `cookingTimer = (int) Math.ceil((cookingTimer / (float) cookingTotalTime) * newCookingTotalTime)` so progress fraction is preserved across fuel speed changes.
+- **Fuel consumption and remainder (`AbstractFurnaceBlockEntity.consumeFuel`):**
+  - Reads `ItemStackTemplate remainder = fuelStack.getItem().getCraftingRemainder()`, then calls `fuelStack.shrink(1)`.
+  - If `remainder != null`: if `fuelStack.isEmpty()`, replaces slot 1 (`SLOT_FUEL`) with `remainder.create()`; otherwise drops `remainder.create()` in world at the furnace `BlockPos` via `Containers.dropItemStack` and keeps the remaining `fuelStack` in slot 1.
+- **Input smelting and wet-sponge special case (`AbstractFurnaceBlockEntity.burn`):**
+  - Places/grows `assembledResult` in slot 2 (`SLOT_RESULT`).
+  - If `input.is(Items.WET_SPONGE)` and slot 1 (`SLOT_FUEL`) is non-empty and `is(Items.BUCKET)`, replaces slot 1 with `new ItemStack(Items.WATER_BUCKET)`.
+  - Calls `input.shrink(1)` with no `getCraftingRemainder()` check on the smelted input.
+  - When unlit with `cookingTimer > 0`, `cookingTimer` decays by 2 per tick (`Mth.clamp(cookingTimer - 2, 0, cookingTotalTime)`).
+- **Campfire (`CampfireBlockEntity.placeFood`, `cookTick`, `cooldownTick`):**
+  - `placeFood` checks `RecipeType.CAMPFIRE_COOKING`, sets `cookingTime[slot] = recipe.cookingTime()`, `cookingProgress[slot] = 0`, and consumes 1 item via `stack.consumeAndReturn(1, entity)`.
+  - `cookTick` (when lit) increments `cookingProgress[slot]` by 1 per tick; when `cookingProgress[slot] >= cookingTime[slot]`, assembles result via `recipe.assemble(new SingleRecipeInput(slotStack))`, drops it at the campfire `BlockPos` via `Containers.dropItemStack`, and sets the slot to `ItemStack.EMPTY` (no `getCraftingRemainder()` check).
+  - `cooldownTick` (when unlit) decays `cookingProgress[slot]` by 2 per tick (`Mth.clamp(cookingProgress[slot] - 2, 0, cookingTime[slot])`).
 
-#### V3 — Vanilla cooking
+#### Remaining runtime/gameplay evidence steps
 
-Not established:
-
-- Exact use of cooking-fuel `speed_multiplier`.
-- Burn-time provider interaction and duration rounding.
-- Progress persistence/interruption.
-- Container remainder handling.
-- Furnace XP payout behavior.
-- Campfire lit-state progress and ejection behavior.
-
-The runtime export contains contextual fuel providers and the fast-cooking predicate, so old hardcoded timing assumptions are especially unsafe.
-
-#### Other open evidence
-
-- Live activation of the 878 effective main recipe resources.
-- Exact runtime brewing expansion.
-- Artifact/source byte-for-byte correspondence for dependencies.
-- Production station behavior and both Bedrock client lanes.
-
-#### Why the remaining static inspection was unavailable
-
-The supplied Minecraft JAR was located and its recipe classes enumerated. Direct reads of both `SmithingTransformRecipe.class` and `Ingredient.class` returned “Cannot read binary archive entry.” No process-execution tool was available to invoke the supplied JDK’s `javap`.
-
-The next static inspection is **`javap -p -c`** against:
-
-```text
-bedrock/.work/java-reference/project-cache/loom-cache/minecraftMaven/
-net/minecraft/minecraft-merged-91c6283978/26.3/
-minecraft-merged-91c6283978-26.3.jar
-```
-
-Relevant classes:
-
-```text
-net.minecraft.world.item.crafting.Ingredient
-net.minecraft.world.item.crafting.ShapedRecipePattern
-net.minecraft.world.item.crafting.ShapedRecipe
-net.minecraft.world.item.crafting.ShapelessRecipe
-net.minecraft.world.item.crafting.CraftingRecipe
-net.minecraft.world.item.crafting.NormalCraftingRecipe
-net.minecraft.world.item.crafting.SmithingTransformRecipe
-net.minecraft.world.item.crafting.SimpleSmithingRecipe
-net.minecraft.world.item.crafting.TransmuteResult
-net.minecraft.world.item.crafting.AbstractCookingRecipe
-net.minecraft.world.item.crafting.SingleItemRecipe
-net.minecraft.world.item.crafting.StonecutterRecipe
-net.minecraft.world.item.crafting.BrewingRecipe
-net.minecraft.world.item.crafting.PotionIngredient
-net.minecraft.world.item.crafting.RecipeSerializer
-net.minecraft.world.item.crafting.RecipeSerializers
-```
-
-Also inspect their corresponding menus/result slots and furnace/campfire/brewing block entities, plus `ItemStackTemplate`.
-
-The enumerated 26.3 class layout includes `RecipeSerializers`; do not assume the old per-vanilla-recipe `$Serializer` layout.
+- Live activation and extraction of the 878 effective main recipe resources and runtime-injected recipes/brewing mixes via `ReferenceExporter`.
+- Artifact/source correspondence and production station/client lane verification.
 
 ---
 

@@ -1,0 +1,32 @@
+NO LOG FILE! - setting up server logging...
+NO LOG FILE! - [2026-11-03 00:16:03:009 INFO] Starting Server
+NO LOG FILE! - [2026-11-03 00:16:03:009 INFO] Version: 1.26.61.1
+NO LOG FILE! - [2026-11-03 00:16:03:009 INFO] Session ID: b9567566-952c-45b4-8180-ae168583ba3f
+NO LOG FILE! - [2026-11-03 00:16:03:009 INFO] Build ID: 53069369
+NO LOG FILE! - [2026-11-03 00:16:03:009 INFO] Branch: r/26_u6
+NO LOG FILE! - [2026-11-03 00:16:03:009 INFO] Commit ID: 86f7b32281709abd4444adb52887796af061c7bd
+NO LOG FILE! - [2026-11-03 00:16:03:009 INFO] Configuration: Publish
+NO LOG FILE! - [2026-11-03 00:16:03:010 INFO] Contents of server.properties: {"allow-cheats":"true","allow-inbound-script-debugging":"false","allow-list":"true","allow-outbound-script-debugging":"false","block-network-ids-are-hashes":"true","chat-restriction":"None","client-side-chunk-generation-enabled":"true","compression-algorithm":"zlib","compression-threshold":"1","content-log-console-output-enabled":"true","content-log-file-enabled":"false","content-log-level":"info","default-player-permission-level":"member","difficulty":"easy","disable-custom-skins":"false","disable-persona":"false","disable-player-interaction":"false","enable-lan-visibility":"false","force-gamemode":"false","gamemode":"creative","level-name":"betterend-capability-surface","level-seed":"2640","max-players":"2","max-threads":"8","online-mode":"true","persistent-ticking-area-max-chunks":"100","persistent-ticking-area-max-count":"10","player-idle-timeout":"30","player-movement-action-direction-threshold":"0.85","player-position-acceptance-threshold":"0.5","script-debugger-auto-attach":"disabled","server-authoritative-block-breaking-pick-range-scalar":"1.5","server-authoritative-dismount-strict":"false","server-authoritative-entity-attack-range-tolerance":"0.5","server-authoritative-entity-attack-range-validation":"disabled","server-authoritative-entity-attack-request-validation":"disabled","server-authoritative-entity-interactions-strict":"false","server-authoritative-movement-strict":"false","server-build-radius-ratio":"Disabled","server-ip":"127.0.0.1","server-name":"BetterEnd disposable capability probe","server-port":"29140","server-portv6":"29141","server-udp-ports":"29140","texturepack-required":"true","tick-distance":"4","transient-ticking-area-max-chunks":"300","transport":"nethernet","view-distance":"8"}
+NO LOG FILE! - [2026-11-03 00:16:03:010 INFO] Level Name: betterend-capability-surface
+NO LOG FILE! - [2026-11-03 00:16:03:011 INFO] Profiler config ('bootstrap.json') load result: success=1, errorMessage=(null)
+NO LOG FILE! - [2026-11-03 00:16:03:014 INFO] No CDN config file found at: cdn_config.json for dedicated server
+NO LOG FILE! - [2026-11-03 00:16:03:014 INFO] Game mode: 1 Creative
+NO LOG FILE! - [2026-11-03 00:16:03:014 INFO] Difficulty: 1 EASY
+NO LOG FILE! - [2026-11-03 00:16:03:016 INFO] Content logging to console is enabled.
+NO LOG FILE! - [2026-11-03 00:16:03:020 INFO] 
+
+#####################################################
+#                                                   #
+#               LOADING VANILLA WORLD               #
+#                                                   #
+#####################################################
+NO LOG FILE! - [2026-11-03 00:16:03:983 INFO] Opening level 'worlds/betterend-capability-surface/db'
+NO LOG FILE! - [2026-11-03 00:16:04:014 INFO] Accepting clients on 127.0.0.1:29140
+NO LOG FILE! - [2026-11-03 00:16:04:376 INFO] Pack Stack - [00] BetterEnd engine capability probes (id: d16a5a53-d15f-482e-bf74-26c4d256ed24, version: 0.1.2) @ behavior_packs/betterend_probe
+NO LOG FILE! - [2026-11-03 00:16:04:470 WARN] [Scripting] BETTEREND_PROBE {"phase":"startup"}
+
+NO LOG FILE! - [2026-11-03 00:16:04:796 INFO] Signed in to signaling service successfully
+NO LOG FILE! - [2026-11-03 00:16:06:071 INFO] Waiting for Minecraft services...
+NO LOG FILE! - [2026-11-03 00:17:11:728 ERROR] Could not connect to Minecraft services. This is required to accept connections in online mode.
+NO LOG FILE! - [2026-11-03 00:17:11:728 INFO] Server stop requested.
+Quit correctly

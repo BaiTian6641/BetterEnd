@@ -1,0 +1,30 @@
+{
+  "certifiesAllPlatforms": false,
+  "clientRenderingVerified": false,
+  "events": [
+    {
+      "phase": "startup"
+    }
+  ],
+  "executableSha256": "2443400aa2fb41eb85e0c3d93762d8031b9d229049e77a2132778fad7dced1eb",
+  "exit": {
+    "code": 3,
+    "signal": null
+  },
+  "expectedBuild": "1.26.61.1",
+  "failure": "Engine/content error: NO LOG FILE! - [2026-11-03 00:17:11:728 ERROR] Could not connect to Minecraft services. This is required to accept connections in online mode.",
+  "forcedTermination": false,
+  "observedBuild": "1.26.61.1",
+  "packageSha256": "91c396229d1e93aa6a784f8f9ae4d30efa2f7a9a4b6331ab8b587b1425990f6c",
+  "request": {
+    "action": "cap-003-regions",
+    "dimension": "the_end",
+    "gateId": "CAP-003",
+    "requestId": "3a982475-ed23-4470-a610-7f9e28d0c89c",
+    "x": 2048,
+    "y": 64,
+    "z": 2048
+  },
+  "schemaVersion": 1,
+  "scope": "supporting-server-side-evidence-not-full-capability-certification"
+}

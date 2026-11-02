@@ -1,0 +1,43 @@
+{
+  "certifiesAllPlatforms": false,
+  "clientRenderingVerified": false,
+  "events": [
+    {
+      "phase": "startup"
+    },
+    {
+      "blockRegistered": true,
+      "itemRegistered": true,
+      "phase": "worldLoad",
+      "players": 0,
+      "seed": "2640",
+      "tick": 265
+    },
+    {
+      "error": "InternalError: interrupted",
+      "phase": "error",
+      "requestId": "6b1cdff6-c21e-47ac-a5ab-07e1c9aea88e"
+    }
+  ],
+  "executableSha256": "2443400aa2fb41eb85e0c3d93762d8031b9d229049e77a2132778fad7dced1eb",
+  "exit": {
+    "code": 6,
+    "signal": null
+  },
+  "expectedBuild": "1.26.61.1",
+  "failure": "Engine/content error: [2026-11-03 00:18:19:839 ERROR] [Scripting] [BetterEnd engine capability probes] Unhandled promise rejection: InternalError: interrupted    at HexBiomeChunk (runtime/regions/voronoi-hex.js:388)",
+  "forcedTermination": false,
+  "observedBuild": "1.26.61.1",
+  "packageSha256": "91c396229d1e93aa6a784f8f9ae4d30efa2f7a9a4b6331ab8b587b1425990f6c",
+  "request": {
+    "action": "cap-003-regions",
+    "dimension": "the_end",
+    "gateId": "CAP-003",
+    "requestId": "6b1cdff6-c21e-47ac-a5ab-07e1c9aea88e",
+    "x": 2048,
+    "y": 64,
+    "z": 2048
+  },
+  "schemaVersion": 1,
+  "scope": "supporting-server-side-evidence-not-full-capability-certification"
+}

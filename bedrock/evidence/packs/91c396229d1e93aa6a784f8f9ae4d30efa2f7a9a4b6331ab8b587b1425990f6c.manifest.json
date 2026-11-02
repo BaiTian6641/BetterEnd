@@ -1,0 +1,321 @@
+{
+  "archive": {
+    "bytes": 117656,
+    "path": "BetterEnd-Probes.mcaddon",
+    "sha256": "91c396229d1e93aa6a784f8f9ae4d30efa2f7a9a4b6331ab8b587b1425990f6c"
+  },
+  "calibrationNote": "MER extremes are diagnostic controls, not claimed upstream material properties. All block states retain gameplay light level zero.",
+  "files": [
+    {
+      "pack": "behavior",
+      "path": "manifest.json",
+      "sha256": "86e45653e9236daa4224efc6a321813d07fe040254b10274c3b59e7b52498cb7"
+    },
+    {
+      "pack": "behavior",
+      "path": "blocks/flavolite.json",
+      "sha256": "a1c460b6ce3eb0d1c977528d826a4a4cc5bd1509ed9aef8b7a3bac7fbcf6d0cd"
+    },
+    {
+      "pack": "behavior",
+      "path": "items/thallasium_ingot.json",
+      "sha256": "4abb6294a72c2ab10ded6897e12783207356a45f515b1da1161f4a36c9c0dea1"
+    },
+    {
+      "pack": "behavior",
+      "path": "features/flavolite_feature.json",
+      "sha256": "0e2a7fa162cc92449afb9468783e56b085ff08dbde76bcf41fcd9a29579454f5"
+    },
+    {
+      "pack": "behavior",
+      "path": "feature_rules/outer_end_rule.json",
+      "sha256": "994604234bdaae1eb89705d42dedf70cf9d555e564b4e7650beaed84a0c9ce82"
+    },
+    {
+      "pack": "behavior",
+      "path": "scripts/main.js",
+      "sha256": "b41be1edc95af70482fad34cf2070cf6cfa4cf0c2fa01b8dae62dcb161724f18"
+    },
+    {
+      "pack": "behavior",
+      "path": "entities/runtime_inventory_carrier.json",
+      "sha256": "87dd0ffa55801c2d4168212d9b34e4cc37b29cf52b185aa34ee78d18ed1cf933"
+    },
+    {
+      "pack": "behavior",
+      "path": "entities/generic_inventory_carrier.json",
+      "sha256": "9c195e781cda6446ba1ee1e606c4e1cf6a20f6926491c1bf48adab05f5b308ea"
+    },
+    {
+      "pack": "behavior",
+      "path": "scripts/inventory.js",
+      "sha256": "4ae1c0cbd66af2ddccbac53ca53e94d721667c0f7d41404fda267126444b3ec9"
+    },
+    {
+      "pack": "behavior",
+      "path": "scripts/inventory-constants.js",
+      "sha256": "06a6005c35440e2501c10dcbaa1ce1dd448269dd5e8d455f76c4612addd1ee07"
+    },
+    {
+      "pack": "behavior",
+      "path": "blocks/infusion_pedestal.json",
+      "sha256": "64e096845dfbcc6c7bab1818f2bbf1cab23376c86b2311cbbd21a623ffdc180a"
+    },
+    {
+      "pack": "behavior",
+      "path": "blocks/eternal_pedestal.json",
+      "sha256": "0d043624b4bfdd1553c553c5249ec44fc1fe39a75f35cc3197c610bd2694a863"
+    },
+    {
+      "pack": "behavior",
+      "path": "blocks/respawn_obelisk.json",
+      "sha256": "7176fd3e279762ab32615cb97d700ebdf2506cc1d1aa516df1017ef6ca853a93"
+    },
+    {
+      "pack": "behavior",
+      "path": "blocks/tenanea_door.json",
+      "sha256": "2760c95a936db20d35649ca9dfa343eee2f7accfd849a366be164925beaf0f25"
+    },
+    {
+      "pack": "behavior",
+      "path": "blocks/tenanea_chair.json",
+      "sha256": "10e42c96dd017cdd043c43e817940f44b6bc508eb42c2d55855957b02a515cae"
+    },
+    {
+      "pack": "behavior",
+      "path": "blocks/end_lotus_stem.json",
+      "sha256": "022a37275862d78f7d0ccfaf6be481eb1447dac59496010af92b44cc35ba5af9"
+    },
+    {
+      "pack": "behavior",
+      "path": "blocks/umbrella_moss.json",
+      "sha256": "7accb352067f615178b17cfa607c9805ac4c9db23de33a0e6a427e58095c932a"
+    },
+    {
+      "pack": "behavior",
+      "path": "entities/chair.json",
+      "sha256": "6e2471ce8c7f1a5d9074d969815d22dc8ae70108742ac1f80330989dfb9dadf7"
+    },
+    {
+      "pack": "behavior",
+      "path": "entities/end_lotus_boat.json",
+      "sha256": "72f0671a2dfcd2697126a1a8537d51375c669acf5f5122a6d7f76a36fa8a0458"
+    },
+    {
+      "pack": "behavior",
+      "path": "biomes/amber_land.biome.json",
+      "sha256": "88b2f702e9eac55a4c81da4e006664b56acb7cb1939b28ce42e63a88b135d97d"
+    },
+    {
+      "pack": "behavior",
+      "path": "scripts/capabilities.js",
+      "sha256": "993921a04ac66ba351b2ff76fe346542f301ba6080463fe94505e4ea4458bdfc"
+    },
+    {
+      "pack": "behavior",
+      "path": "scripts/capabilities-core.js",
+      "sha256": "cc1eef0acd6efd2e725177d12fa51aeaeb463537bb391813c57fadbeec40ca1a"
+    },
+    {
+      "pack": "behavior",
+      "path": "scripts/runtime/regions/simplex-noise.js",
+      "sha256": "f65d4f4373ab82663807c6c7f179b58931a448a6418c0ea4a6434eaabca880f2"
+    },
+    {
+      "pack": "behavior",
+      "path": "scripts/runtime/regions/voronoi-hex.js",
+      "sha256": "a9221eeb945568ae23a3e892b09448965da653f76f5505c1da1a0bc81d5d325d"
+    },
+    {
+      "pack": "behavior",
+      "path": "scripts/runtime/regions/terrain-sdf.js",
+      "sha256": "0dba46d69a7295c6d4d1d4eb09ea548d58bff8ca69fe58fc6742f426a5fa7a1b"
+    },
+    {
+      "pack": "behavior",
+      "path": "scripts/runtime/regions/region-catalogue.js",
+      "sha256": "89502f726fd684525ba1fd55ec1389d97fc5a18b867bf82652e00b520a4a42e8"
+    },
+    {
+      "pack": "behavior",
+      "path": "scripts/runtime/regions/region-service.js",
+      "sha256": "155238addf4c7ad89684745dfd75d4800f85568c197b8035477b274dd4011e9e"
+    },
+    {
+      "pack": "behavior",
+      "path": "scripts/runtime/persistence/store.js",
+      "sha256": "60710437aabed6193d67d3b14a016ae549810cff0fa5973714db112776be84b9"
+    },
+    {
+      "pack": "behavior",
+      "path": "scripts/runtime/stations/stations-service.js",
+      "sha256": "3d11a0ca265225fb3716bb7414b4d4ca14265c4f70a4d3030e86c480a37104f7"
+    },
+    {
+      "pack": "behavior",
+      "path": "scripts/runtime/equipment/equipment-service.js",
+      "sha256": "8f3d235ec718a3cb8aecb886921049a2366cd49c7391b9c3933f0bb715d2022e"
+    },
+    {
+      "pack": "behavior",
+      "path": "scripts/runtime/ecology/ecology-service.js",
+      "sha256": "b6fc5c775267fd49fd2f62ec9ec31c01a99279e5b4454b0623132f096a339b31"
+    },
+    {
+      "pack": "behavior",
+      "path": "scripts/runtime/transport/transport-service.js",
+      "sha256": "5659258cb082b0cdf1544d4d174aa06b90945b6c9b80003dc870621ae4b93a1a"
+    },
+    {
+      "pack": "behavior",
+      "path": "scripts/runtime/presentation/presentation-service.js",
+      "sha256": "fb13bb7ead38f8b5fc8436814b9216e3068b084168b241fa7a8714f8e0d5e0c8"
+    },
+    {
+      "pack": "behavior",
+      "path": "LICENSE.txt",
+      "sha256": "cbd12be92c00bebebce478f81518792a8a13bf00bcef9cdf7535aa19b8d616e2"
+    },
+    {
+      "pack": "resource",
+      "path": "manifest.json",
+      "sha256": "7734886c82a92195e5ddf5b79bb7d4f9f6b89fce402556957692ef3775ebd9bc"
+    },
+    {
+      "pack": "resource",
+      "path": "entity/runtime_inventory_carrier.entity.json",
+      "sha256": "141f7b78ebf44b2fdb93a17be32bb282e964623ca761ea4b5595a3f810a3b529"
+    },
+    {
+      "pack": "resource",
+      "path": "entity/generic_inventory_carrier.entity.json",
+      "sha256": "b7f3467631c98f33537165716587cdf09aa5592500a3d0b008a0b4fea5a78ee7"
+    },
+    {
+      "pack": "resource",
+      "path": "models/entity/betterend_inventory_probe_carrier.geo.json",
+      "sha256": "0221bc37834ef26eee46b9fe35067c9026c7f53ead82cbfb17919c8cb6b729bd"
+    },
+    {
+      "pack": "resource",
+      "path": "textures/entity/betterend_inventory_probe_carrier.texture_set.json",
+      "sha256": "79356381b250d68b9d6034c68dc171cf293c957cb8f6b9fd7d705fc09d8253a9"
+    },
+    {
+      "pack": "resource",
+      "path": "entity/chair.entity.json",
+      "sha256": "dd77a586c72a1bcbab2d2d30e69d51a4cef7eee4f2595a1f0c88a601d958d111"
+    },
+    {
+      "pack": "resource",
+      "path": "entity/end_lotus_boat.entity.json",
+      "sha256": "fccf9f89992a16e95a5b95ece6487e4ba384e566b13b169bcd4661d2fac7a07b"
+    },
+    {
+      "pack": "resource",
+      "path": "textures/terrain_texture.json",
+      "sha256": "a244de420fd85f702181d299a5acbfe9892c3278c69b69dfc19d0be356d123bd"
+    },
+    {
+      "pack": "resource",
+      "path": "textures/item_texture.json",
+      "sha256": "ced1c8bdb4a3dbe98cd0ee4eef74b622c537c654e87480f0fb3367c202ed41fb"
+    },
+    {
+      "pack": "resource",
+      "path": "textures/entity/betterend_inventory_probe_carrier.png",
+      "sha256": "019c667541c0884a09422fe2c962352bdf40433ef87a6cd95518e5fdde898b6c"
+    },
+    {
+      "pack": "resource",
+      "path": "textures/blocks/flavolite_rough.png",
+      "sha256": "019c667541c0884a09422fe2c962352bdf40433ef87a6cd95518e5fdde898b6c"
+    },
+    {
+      "pack": "resource",
+      "path": "textures/blocks/flavolite_rough.texture_set.json",
+      "sha256": "2a2f61dc92aa3a935deb9945c4505342e42549acc3a4d19cf88e704a8a9254a8"
+    },
+    {
+      "pack": "resource",
+      "path": "textures/blocks/flavolite_metal.png",
+      "sha256": "019c667541c0884a09422fe2c962352bdf40433ef87a6cd95518e5fdde898b6c"
+    },
+    {
+      "pack": "resource",
+      "path": "textures/blocks/flavolite_metal.texture_set.json",
+      "sha256": "e0b673e794ce9741e758feb81391b744519e5db286377d3518379aaa0d93576c"
+    },
+    {
+      "pack": "resource",
+      "path": "textures/blocks/flavolite_emissive.png",
+      "sha256": "019c667541c0884a09422fe2c962352bdf40433ef87a6cd95518e5fdde898b6c"
+    },
+    {
+      "pack": "resource",
+      "path": "textures/blocks/flavolite_emissive.texture_set.json",
+      "sha256": "b03f4ef3567f0dfb2d35a8288b33a79c7b3c16a7e11f9fa715f792a1e9560897"
+    },
+    {
+      "pack": "resource",
+      "path": "textures/items/thallasium_ingot.png",
+      "sha256": "f2069cbbb24692384ed69fb8c9b28ae6a4dae02242eccc96f551e96579561dae"
+    },
+    {
+      "pack": "resource",
+      "path": "textures/items/thallasium_ingot.texture_set.json",
+      "sha256": "d4cd577fba3c2fb5bf33a5760a22c0366de3b0505b2cf25aab5da7f1842659d6"
+    },
+    {
+      "pack": "resource",
+      "path": "LICENSE.txt",
+      "sha256": "cbd12be92c00bebebce478f81518792a8a13bf00bcef9cdf7535aa19b8d616e2"
+    },
+    {
+      "pack": "resource",
+      "path": "LICENSE.ASSETS.txt",
+      "sha256": "16a0d82a00e08b92cca6a995401d9e15c79c26343b379a27ed5c6750355093c1"
+    }
+  ],
+  "identity": {
+    "behaviorDataModule": "393559df-44ee-4c80-8bb7-9acb3c262141",
+    "behaviorHeader": "d16a5a53-d15f-482e-bf74-26c4d256ed24",
+    "behaviorScriptModule": "3ee680d7-833e-4f82-8daf-a3478c437cdd",
+    "namespace": "betterend_probe",
+    "resourceHeader": "da0a04d5-ea63-492c-a620-461751f5a788",
+    "resourceModule": "9c4f867f-b48b-4af5-a8bc-bd8d282d2c26",
+    "schemaVersion": 1,
+    "version": [
+      0,
+      1,
+      2
+    ]
+  },
+  "purpose": "capability-diagnostics-not-production-port",
+  "schemaVersion": 1,
+  "sourceAssets": [
+    {
+      "basis": "repository-license-inheritance; not among explicit LICENSE.ASSETS exceptions",
+      "destinations": [
+        "textures/blocks/flavolite_rough.png",
+        "textures/blocks/flavolite_metal.png",
+        "textures/blocks/flavolite_emissive.png",
+        "textures/entity/betterend_inventory_probe_carrier.png"
+      ],
+      "license": "MIT",
+      "sha256": "019c667541c0884a09422fe2c962352bdf40433ef87a6cd95518e5fdde898b6c",
+      "source": "src/main/resources/assets/betterend/textures/block/flavolite.png"
+    },
+    {
+      "basis": "repository-license-inheritance; not among explicit LICENSE.ASSETS exceptions",
+      "destinations": [
+        "textures/items/thallasium_ingot.png"
+      ],
+      "license": "MIT",
+      "sha256": "f2069cbbb24692384ed69fb8c9b28ae6a4dae02242eccc96f551e96579561dae",
+      "source": "src/main/resources/assets/betterend/textures/item/thallasium_ingot.png"
+    }
+  ],
+  "sourceCommit": "5a25059ef4fd77409024a2919fb0a0098388104f",
+  "target": "26.40"
+}

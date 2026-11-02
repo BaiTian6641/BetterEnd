@@ -57,12 +57,60 @@ test('shape snapshot retains waterlogging, empty collision and out-of-unit colli
   ].join('\n'), new Set(['betterend:crystal']));
   const crystal = shapes.blocks.get('betterend:crystal');
   assert.equal(shapes.totalStates, 2);
+  assert.equal(crystal.coverageMode, 'explicit-states');
   assert.deepEqual(crystal.properties.waterlogged, ['false', 'true']);
+  assert.equal(crystal.records[0].coverage, 'explicit-state');
   assert.equal(crystal.records[0].collision, 'empty');
   assert.equal(crystal.records[1].collision, '[0,0,0|1,1.5,1]');
   assert.equal(crystal.defaultState, null);
   assert.throws(() => parseShapeSnapshot('betterend:missing  shape=empty collision=empty', new Set()), /unregistered/);
   assert.throws(() => parseShapeSnapshot('betterend:crystal  shape=empty collision=empty\nbetterend:crystal  shape=empty collision=empty', new Set(['betterend:crystal'])), /Duplicate block-state/);
+});
+
+test('unqualified shape snapshot rows represent uniform neutral-context coverage distinctly from explicit states and reject mixed forms', () => {
+  const shapes = parseShapeSnapshot(
+    'betterend:amaranita_hyphae  shape=[0,0,0|1,1,1] collision=[0,0,0|1,1,1]',
+    new Set(['betterend:amaranita_hyphae']),
+  );
+  const hyphae = shapes.blocks.get('betterend:amaranita_hyphae');
+  assert.equal(hyphae.coverageMode, 'uniform-all-states');
+  assert.equal(hyphae.defaultState, null);
+  assert.equal(hyphae.runtimeVerified, false);
+  assert.deepEqual(Object.keys(hyphae.properties), []);
+  assert.equal(hyphae.auditContext.roundingDecimals, 4);
+  assert.equal(hyphae.auditContext.getter, 'net.minecraft.world.level.EmptyBlockGetter.INSTANCE');
+  assert.deepEqual(hyphae.records, [{
+    coverage: 'uniform-all-states',
+    states: null,
+    selection: '[0,0,0|1,1,1]',
+    collision: '[0,0,0|1,1,1]',
+    sourceLine: 1,
+  }]);
+  assert.throws(
+    () => parseShapeSnapshot([
+      'betterend:amaranita_hyphae  shape=[0,0,0|1,1,1] collision=[0,0,0|1,1,1]',
+      'betterend:amaranita_hyphae[axis=y]  shape=[0,0,0|1,1,1] collision=[0,0,0|1,1,1]',
+    ].join('\n'), new Set(['betterend:amaranita_hyphae'])),
+    /Contradictory mixed uniform and explicit/,
+  );
+  assert.throws(
+    () => parseShapeSnapshot([
+      'betterend:amaranita_hyphae[axis=y]  shape=[0,0,0|1,1,1] collision=[0,0,0|1,1,1]',
+      'betterend:amaranita_hyphae  shape=[0,0,0|1,1,1] collision=[0,0,0|1,1,1]',
+    ].join('\n'), new Set(['betterend:amaranita_hyphae'])),
+    /Contradictory mixed uniform and explicit/,
+  );
+  assert.throws(
+    () => parseShapeSnapshot([
+      'betterend:crystal[age=0]  shape=empty collision=empty',
+      'betterend:crystal[age=1,waterlogged=false]  shape=empty collision=empty',
+    ].join('\n'), new Set(['betterend:crystal'])),
+    /Inconsistent state property keys/,
+  );
+  assert.throws(
+    () => parseShapeSnapshot('betterend:crystal  shape=unavailable collision=empty', new Set(['betterend:crystal'])),
+    /Unavailable block shape/,
+  );
 });
 
 test('biome declarations preserve parent relationships and exclude codec registration identifiers', () => {

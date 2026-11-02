@@ -3,7 +3,22 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { zipSync } from 'fflate';
 import { SOURCE_COMMIT, assertUniquePortablePaths, compareText, hashBytes, stableJson } from './source-files.mjs';
+import { capabilityProbeDefinitions } from '../probes/capabilities/definitions.mjs';
 import { inventoryProbeDefinitions } from '../probes/inventory/definitions.mjs';
+
+const RUNTIME_MODULES = [
+  'regions/simplex-noise.js',
+  'regions/voronoi-hex.js',
+  'regions/terrain-sdf.js',
+  'regions/region-catalogue.js',
+  'regions/region-service.js',
+  'persistence/store.js',
+  'stations/stations-service.js',
+  'equipment/equipment-service.js',
+  'ecology/ecology-service.js',
+  'transport/transport-service.js',
+  'presentation/presentation-service.js',
+];
 
 const bedrockRoot = fileURLToPath(new URL('../', import.meta.url));
 const repoRoot = path.resolve(bedrockRoot, '..');
@@ -84,6 +99,15 @@ export async function buildProbe() {
   for (const [name, value] of inventory.behavior) jsonFile(bp, name, value);
   for (const [name, value] of inventory.resources) jsonFile(rp, name, value);
   for (const name of ['inventory.js', 'inventory-constants.js']) bp.set(`scripts/${name}`, await readFile(path.join(bedrockRoot, 'probes/inventory/scripts', name)));
+  const capabilities = capabilityProbeDefinitions();
+  for (const [name, value] of capabilities.behavior) jsonFile(bp, name, value);
+  for (const [name, value] of capabilities.resources) jsonFile(rp, name, value);
+  bp.set('scripts/capabilities.js', await readFile(path.join(bedrockRoot, 'probes/capabilities/scripts/capabilities.js')));
+  const capabilitiesCoreSource = await readFile(path.join(bedrockRoot, 'probes/capabilities/scripts/capabilities-core.js'), 'utf8');
+  bp.set('scripts/capabilities-core.js', Buffer.from(capabilitiesCoreSource.replaceAll('../../../runtime/', './runtime/')));
+  for (const runtimeModule of RUNTIME_MODULES) {
+    bp.set(`scripts/runtime/${runtimeModule}`, await readFile(path.join(bedrockRoot, 'runtime', runtimeModule)));
+  }
   jsonFile(rp, 'textures/terrain_texture.json', {
     resource_pack_name: 'betterend_probe', texture_name: 'atlas.terrain', padding: 8, num_mip_levels: 4,
     texture_data: Object.fromEntries(['rough', 'metal', 'emissive'].map(finish => [`betterend_probe_flavolite_${finish}`, { textures: `textures/blocks/flavolite_${finish}` }])),

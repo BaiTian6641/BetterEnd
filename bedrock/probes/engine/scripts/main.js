@@ -1,6 +1,7 @@
 import {
   BlockPermutation, BlockTypes, ItemStack, ItemTypes, ScriptEventSource, system, world,
 } from '@minecraft/server';
+import { capabilityActions, runCapabilityProbe } from './capabilities.js';
 import { installInventoryObservers, inventoryActions, runInventoryProbe } from './inventory.js';
 
 const blockId = 'betterend_probe:flavolite';
@@ -32,6 +33,10 @@ async function run(request) {
   if (typeof request.requestId !== 'string' || !/^[a-zA-Z0-9_-]{1,64}$/.test(request.requestId)) throw new Error('Invalid request ID');
   if (world.getAllPlayers().length !== 0) throw new Error('Automated mutation probes require an empty disposable server');
   const action = request.action;
+  if (capabilityActions.includes(action)) {
+    emit(await runCapabilityProbe(request));
+    return;
+  }
   if (inventoryActions.includes(action)) {
     emit(await runInventoryProbe(request));
     return;
