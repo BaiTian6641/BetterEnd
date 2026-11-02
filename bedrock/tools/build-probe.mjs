@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { zipSync } from 'fflate';
 import { SOURCE_COMMIT, assertUniquePortablePaths, compareText, hashBytes, stableJson } from './source-files.mjs';
+import { inventoryProbeDefinitions } from '../probes/inventory/definitions.mjs';
 
 const bedrockRoot = fileURLToPath(new URL('../', import.meta.url));
 const repoRoot = path.resolve(bedrockRoot, '..');
@@ -34,7 +35,7 @@ export async function buildProbe() {
   const { version } = identity;
   jsonFile(bp, 'manifest.json', {
     format_version: 2,
-    header: { name: 'BetterEnd engine capability probes', description: 'Diagnostic pack only: native blocks, End features and state readback. Not the complete BetterEnd port.', uuid: identity.behaviorHeader, version, min_engine_version: [1, 26, 40] },
+    header: { name: 'BetterEnd engine capability probes', description: 'Diagnostic native blocks, End features and inventory custody. Not the complete BetterEnd port.', uuid: identity.behaviorHeader, version, min_engine_version: [1, 26, 40] },
     modules: [
       { type: 'data', uuid: identity.behaviorDataModule, version },
       { type: 'script', language: 'javascript', entry: 'scripts/main.js', uuid: identity.behaviorScriptModule, version },
@@ -79,6 +80,10 @@ export async function buildProbe() {
     },
   });
   bp.set('scripts/main.js', await readFile(path.join(bedrockRoot, 'probes/engine/scripts/main.js')));
+  const inventory = inventoryProbeDefinitions();
+  for (const [name, value] of inventory.behavior) jsonFile(bp, name, value);
+  for (const [name, value] of inventory.resources) jsonFile(rp, name, value);
+  for (const name of ['inventory.js', 'inventory-constants.js']) bp.set(`scripts/${name}`, await readFile(path.join(bedrockRoot, 'probes/inventory/scripts', name)));
   jsonFile(rp, 'textures/terrain_texture.json', {
     resource_pack_name: 'betterend_probe', texture_name: 'atlas.terrain', padding: 8, num_mip_levels: 4,
     texture_data: Object.fromEntries(['rough', 'metal', 'emissive'].map(finish => [`betterend_probe_flavolite_${finish}`, { textures: `textures/blocks/flavolite_${finish}` }])),
@@ -88,6 +93,7 @@ export async function buildProbe() {
   const ingotPath = 'src/main/resources/assets/betterend/textures/item/thallasium_ingot.png';
   const flavolite = await readFile(path.join(repoRoot, flavolitePath));
   const ingot = await readFile(path.join(repoRoot, ingotPath));
+  for (const texture of inventory.textures) rp.set(texture.destination, await readFile(path.join(repoRoot, texture.source)));
   const finishes = { rough: [0, 0, 255], metal: [255, 0, 32], emissive: [0, 255, 255] };
   for (const [finish, mer] of Object.entries(finishes)) {
     rp.set(`textures/blocks/flavolite_${finish}.png`, flavolite);
@@ -101,7 +107,7 @@ export async function buildProbe() {
   rp.set('LICENSE.txt', notice);
   rp.set('LICENSE.ASSETS.txt', assetsNotice);
   const sourceAssets = [
-    { source: flavolitePath, sha256: hashBytes(flavolite), license: 'MIT', basis: 'repository-license-inheritance; not among explicit LICENSE.ASSETS exceptions', destinations: ['rough', 'metal', 'emissive'].map(finish => `textures/blocks/flavolite_${finish}.png`) },
+    { source: flavolitePath, sha256: hashBytes(flavolite), license: 'MIT', basis: 'repository-license-inheritance; not among explicit LICENSE.ASSETS exceptions', destinations: [...['rough', 'metal', 'emissive'].map(finish => `textures/blocks/flavolite_${finish}.png`), ...inventory.textures.filter(texture => texture.source === flavolitePath).map(texture => texture.destination)] },
     { source: ingotPath, sha256: hashBytes(ingot), license: 'MIT', basis: 'repository-license-inheritance; not among explicit LICENSE.ASSETS exceptions', destinations: ['textures/items/thallasium_ingot.png'] },
   ];
   const outputRoot = path.join(bedrockRoot, 'dist/probes/stable');

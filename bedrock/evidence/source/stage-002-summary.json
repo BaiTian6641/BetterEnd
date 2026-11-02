@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "scope": "Attested Java source/reference reconciliation and native Bedrock inventory diagnostics; not a completed survival port",
+  "upstreamCommit": "5a25059ef4fd77409024a2919fb0a0098388104f",
+  "automatedTests": {
+    "command": "npm --prefix bedrock run verify:source",
+    "passed": 40,
+    "failed": 0,
+    "skipped": 0,
+    "log": "evidence/source/verified-stage-003.log"
+  },
+  "sourceReproducibility": {
+    "exitCode": 0,
+    "catalogueCounts": {
+      "biomes": 27,
+      "blockStateSnapshotRows": 18852,
+      "blocks": 728,
+      "effectiveRuntimeJsonResources": 12060,
+      "explicitMobs": 6,
+      "items": 850,
+      "liveBlockStates": 22385,
+      "mainRecipes": 878,
+      "optionalRecipes": 1,
+      "parityEntries": 4954,
+      "recipes": 879,
+      "resources": 3320,
+      "runtimeEntities": 27,
+      "seatingBlocks": 33,
+      "sharedHelpers": 1,
+      "unresolved": 4,
+      "vehicles": 20
+    },
+    "assetCounts": {
+      "animation-metadata": 36,
+      "audio": 43,
+      "blockstate": 732,
+      "equipment-definition": 6,
+      "explicitlyRestricted": 3,
+      "item-definition": 850,
+      "localization": 16,
+      "model": 2548,
+      "model-template": 75,
+      "non-content-metadata": 1,
+      "other-source-asset": 336,
+      "particle-definition": 14,
+      "renderer-metadata": 83,
+      "sound-events": 1,
+      "texture": 1917,
+      "total": 6658
+    },
+    "unresolvedCount": 24
+  },
+  "reference": {
+    "lock": "upstream/java-reference.lock.json",
+    "runtime": {
+      "path": "evidence/java/runtime-2026-11-02T05-13-25.746Z-0d8cb2ba.json.gz",
+      "sha256": "cf141888fee9e6ffb3650d9dd4222b33f2d5211e34822a3cab55c359f9aeb56c",
+      "uncompressedSha256": "ecd590f35cb7a60c8f8548adc3bcf79bdce0e18987323dd249b646585739f849"
+    },
+    "receipt": {
+      "path": "evidence/java/export-2026-11-02T05-13-25.746Z-0d8cb2ba.json",
+      "sha256": "96711a35285062742168a6ff38b785bb67216e09bb7cb4fcf23dc79ac028f30c"
+    },
+    "buildManifest": {
+      "path": "evidence/java/build-2026-11-02T05-12-23.407Z-ebfe7755.inputs.json",
+      "sha256": "a664dfbe9c39282ae1cca0899e561c4f729f3b33337e22634a24f87fa4500572"
+    },
+    "runtimeSchemaVersion": 3,
+    "observedRegistryTags": 1560,
+    "availableRegistries": 163,
+    "propertiesGuardSmoke": "evidence/java/properties-guard-smoke.json",
+    "tagOmissionSmoke": "evidence/source/tag-omission-smoke.json"
+  },
+  "probePackage": {
+    "command": "npm --prefix bedrock run package:probe",
+    "exitCode": 0,
+    "log": "evidence/source/verified-stage-002-pack.log",
+    "archiveSha256": "e559c9430763e886eabb00fa19499da1eba59cb27c21685d6e099333cf867024",
+    "bytes": 16678,
+    "payloadFiles": 29
+  },
+  "inventoryEvidence": "evidence/engine/inventory-stage-001.json",
+  "recordedGateCounts": {
+    "ENG-001": {
+      "attempts": 10,
+      "failed": 2,
+      "limit": 15
+    },
+    "INV-001": {
+      "attempts": 12,
+      "failed": 1,
+      "limit": 15
+    },
+    "JAVA-001": {
+      "attempts": 3,
+      "failed": 0,
+      "limit": 15
+    },
+    "JAVA-002": {
+      "attempts": 5,
+      "failed": 2,
+      "limit": 15
+    }
+  },
+  "reviewedSlices": [
+    "Java production export and workspace safety",
+    "Dependency-created vehicle/seating obligations",
+    "Runtime corpus identity and omission handling",
+    "Native inventory custody and hopper restoration"
+  ],
+  "clientRenderingVerified": false,
+  "nativeInventoryUiVerified": false,
+  "platformCertificationComplete": false,
+  "survivalPortComplete": false,
+  "clientInstructions": "probes/inventory/README.md"
+}

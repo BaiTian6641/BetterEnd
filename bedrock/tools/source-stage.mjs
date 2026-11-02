@@ -5,11 +5,13 @@ import { buildCatalogue } from './catalogue.mjs';
 import { buildProvenance } from './provenance.mjs';
 import { SOURCE_COMMIT, stableJson } from './source-files.mjs';
 import { materializePinnedSource } from './pinned-source.mjs';
+import { loadLockedRuntime, reconcileCatalogue } from './runtime-reconciliation.mjs';
 
 const bedrockRoot = fileURLToPath(new URL('../', import.meta.url));
 const repoRoot = path.resolve(bedrockRoot, '..');
 
 export async function sourceOutputs(root = repoRoot) {
+  const { runtime, lock } = await loadLockedRuntime(bedrockRoot);
   const snapshot = await materializePinnedSource(root, bedrockRoot);
   let catalogue;
   let provenance;
@@ -19,22 +21,24 @@ export async function sourceOutputs(root = repoRoot) {
   } finally {
     await snapshot.dispose();
   }
+  reconcileCatalogue(catalogue, runtime, lock);
   const summary = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     sourceCommit: SOURCE_COMMIT,
-    scope: 'source-inventory-not-port-or-runtime-certification',
+    scope: 'source-and-production-registry-inventory-not-bedrock-gameplay-certification',
     catalogue: catalogue.counts,
     recipeTypes: catalogue.recipeTypes,
     assets: provenance.counts,
     unresolved: [...catalogue.unresolved, ...provenance.unresolved],
   };
   return new Map([
-    ['catalogue/generated/registrations.json', { schemaVersion: 1, sourceCommit: SOURCE_COMMIT, evidenceScope: catalogue.evidenceScope, blocks: catalogue.blocks, items: catalogue.items, entities: catalogue.entities, biomes: catalogue.biomes, nonRegistryVisuals: catalogue.nonRegistryVisuals }],
-    ['catalogue/generated/resources.json', { schemaVersion: 1, sourceCommit: SOURCE_COMMIT, resourcePrecedence: catalogue.resourcePrecedence, resources: catalogue.resources }],
-    ['catalogue/generated/parity.json', { schemaVersion: 1, sourceCommit: SOURCE_COMMIT, entries: catalogue.parity }],
+    ['catalogue/generated/registrations.json', { schemaVersion: 2, sourceCommit: SOURCE_COMMIT, evidenceScope: catalogue.evidenceScope, reference: catalogue.reference, blocks: catalogue.blocks, items: catalogue.items, entities: catalogue.entities, biomes: catalogue.biomes, nonRegistryVisuals: catalogue.nonRegistryVisuals }],
+    ['catalogue/generated/resources.json', { schemaVersion: 2, sourceCommit: SOURCE_COMMIT, resourcePrecedence: catalogue.resourcePrecedence, reference: catalogue.reference, resources: catalogue.resources }],
+    ['catalogue/generated/parity.json', { schemaVersion: 2, sourceCommit: SOURCE_COMMIT, entries: catalogue.parity }],
     ['upstream/asset-provenance.json', provenance],
     ['upstream/source.lock.json', { schemaVersion: 1, repository: catalogue.sourceRepository, commit: SOURCE_COMMIT, branch: 'release/26.3', catalogueFingerprint: catalogue.sourceFingerprint, assetFingerprint: provenance.sourceFingerprint, sources: catalogue.sources }],
     ['reports/source-summary.json', summary],
+    ['reports/runtime-reconciliation.json', catalogue.reconciliation],
   ]);
 }
 
@@ -54,7 +58,7 @@ async function main(args) {
     }
   }
   const summary = outputs.get('reports/source-summary.json');
-  console.log(JSON.stringify({ mode, outputFiles: outputs.size, catalogue: summary.catalogue, assets: summary.assets, unresolved: summary.unresolved.length, runtimeCertified: false }, null, 2));
+  console.log(JSON.stringify({ mode, outputFiles: outputs.size, catalogue: summary.catalogue, assets: summary.assets, unresolved: summary.unresolved.length, referenceRegistryVerified: true, bedrockGameplayCertified: false }, null, 2));
   const sourceErrors = summary.unresolved.filter(issue => issue.severity === 'source-error');
   if (sourceErrors.length) throw new Error(`${sourceErrors.length} source resource collisions require resolution`);
 }

@@ -1,0 +1,40 @@
+{
+  "command": [
+    "C:\\Users\\weyst\\Documents\\BetterEnd-Bedrock\\bedrock\\.work\\java-reference\\jdk\\jdk-25.0.5+8\\bin\\java.exe",
+    "-Xmx128m",
+    "-classpath",
+    "gradle/wrapper/gradle-wrapper.jar",
+    "org.gradle.wrapper.GradleWrapperMain",
+    "--offline",
+    "--no-daemon",
+    "--rerun-tasks",
+    "--gradle-user-home",
+    "C:\\Users\\weyst\\Documents\\BetterEnd-Bedrock\\bedrock\\.work\\java-reference\\gradle-user-home",
+    "--project-cache-dir",
+    "C:\\Users\\weyst\\Documents\\BetterEnd-Bedrock\\bedrock\\.work\\java-reference\\project-cache",
+    "--init-script",
+    "C:\\Users\\weyst\\Documents\\BetterEnd-Bedrock\\bedrock\\tools\\java-reference.init.gradle",
+    "-PbedrockWorkspace=C:\\Users\\weyst\\Documents\\BetterEnd-Bedrock\\bedrock\\",
+    "-PwunderVaultDir=C:\\Users\\weyst\\Documents\\BetterEnd-Bedrock\\bedrock\\.work\\java-reference\\empty-vault",
+    ":jar",
+    ":bedrockReferenceExporterJar",
+    ":bedrockReferenceClasspath"
+  ],
+  "counts": null,
+  "cwd": "C:\\Users\\weyst\\Documents\\BetterEnd-Bedrock\\bedrock\\.work\\java-reference\\source",
+  "exit": {
+    "code": 0,
+    "failure": null,
+    "signal": null
+  },
+  "failure": null,
+  "inputFingerprint": "3ff99216f1820311794e04ed70ccb748c5c37111b451230b3e78f85b56cb9ac2",
+  "mode": "build",
+  "output": null,
+  "outputSha256": null,
+  "portComplete": false,
+  "referenceManifest": "evidence/java/build-2026-11-02T04-53-38.665Z-5f42a434.inputs.json",
+  "retainedOutput": null,
+  "schemaVersion": 2,
+  "sourceCommit": "5a25059ef4fd77409024a2919fb0a0098388104f"
+}

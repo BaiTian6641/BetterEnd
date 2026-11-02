@@ -1,0 +1,131 @@
+Picked up JAVA_TOOL_OPTIONS: -Duser.home="C:/Users/weyst/Documents/BetterEnd-Bedrock/bedrock/.work/java-reference/home" -Djava.io.tmpdir="C:/Users/weyst/Documents/BetterEnd-Bedrock/bedrock/.work/java-reference/tmp"
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by net.rubygrapefruit.platform.internal.NativeLibraryLoader in an unnamed module (file:/C:/Users/weyst/Documents/BetterEnd-Bedrock/bedrock/.work/java-reference/gradle-user-home/wrapper/dists/gradle-9.7.0-bin/d4tj7w02tcgubx9zk9hbippn6/gradle-9.7.0/lib/native-platform-0.22-milestone-29.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.7.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+WARNING: allowLocalLibUse is enabled but '..\BCLib' was not found - building against the published Maven artifact instead.
+WARNING: allowLocalLibUse is enabled but '..\WunderLib' was not found - building against the published Maven artifact instead.
+WARNING: allowLocalLibUse is enabled but '..\WorldWeaver' was not found - building against the published org.betterx:worldweaver Maven artifact instead.
+
+> Configure project :
+Fabric Loom: 1.18.4
+Version: 26.301.2
+
+> Task :compileJavaC:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\source\src\main\java\org\betterx\betterend\integration\jei\AlloyingFuelCategory.java:84: 警告: [removal] IRecipeExtrasBuilder 中的 addAnimatedRecipeFlame(int) 已过时, 且标记为待删除
+        builder.addAnimatedRecipeFlame(entry.burnTimeTicks()).setPosition(1, 0);
+
+               ^
+C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\source\src\main\java\org\betterx\betterend\integration\jei\InfusionCategory.java:152: 警告: [removal] IRecipeExtrasBuilder 中的 addRecipeArrow() 已过时, 且标记为待删除
+        builder.addRecipeArrow().setPosition(RIGHT + 26, CENTER_Y - 8);
+               ^
+C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\source\src\main\java\org\betterx\betterend\registry\features\EndConfiguredBonemealFeature.java:23: 警告: [removal] de.ambertation.wover.feature.api.configured.configurators 中的 WeightedBlockPatch 已过时, 且标记为待删除
+    public static final FeatureKey<WeightedBlockPatch> BONEMEAL_END_MYCELIUM = FeatureContentManager
+                                   ^
+C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\source\src\main\java\org\betterx\betterend\registry\features\EndConfiguredBonemealFeature.java:24: 警告: [removal] FeatureContentManager 中的 bonemeal(Identifier) 已过时, 且标记为待删除
+            .bonemeal(BetterEnd.C.mk("bonemeal_end_mycelium"));
+            ^
+C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\source\src\main\java\org\betterx\betterend\registry\features\EndConfiguredBonemealFeature.java:26: 警告: [removal] de.ambertation.wover.feature.api.configured.configurators 中的 WeightedBlockPatch 已过时, 且标记为待删除
+    public static final FeatureKey<WeightedBlockPatch> BONEMEAL_JUNGLE_MOSS = FeatureContentManager
+                                   ^
+C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\source\src\main\java\org\betterx\betterend\registry\features\EndConfiguredBonemealFeature.java:27: 警告: [removal] FeatureContentManager 中的 bonemeal(Identifier) 已过时, 且标记为待删除
+            .bonemeal(BetterEnd.C.mk("bonemeal_jungle_moss"));
+            ^
+C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\source\src\main\java\org\betterx\betterend\registry\features\EndConfiguredBonemealFeature.java:29: 警告: [removal] de.ambertation.wover.feature.api.configured.configurators 中的 WeightedBlockPatch 已过时, 且标记为待删除
+    public static final FeatureKey<WeightedBlockPatch> BONEMEAL_SANGNUM = FeatureContentManager
+                                   ^
+C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\source\src\main\java\org\betterx\betterend\registry\features\EndConfiguredBonemealFeature.java:30: 警告: [removal] FeatureContentManager 中的 bonemeal(Identifier) 已过时, 且标记为待删除
+            .bonemeal(BetterEnd.C.mk("bonemeal_sangnum"));
+            ^
+C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\source\src\main\java\org\betterx\betterend\registry\features\EndConfiguredBonemealFeature.java:32: 警告: [removal] de.ambertation.wover.feature.api.configured.configurators 中的 WeightedBlockPatch 已过时, 且标记为待删除
+    public static final FeatureKey<WeightedBlockPatch> BONEMEAL_MOSSY_DRAGON_BONE = FeatureContentManager
+                                   ^
+C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\source\src\main\java\org\betterx\betterend\registry\features\EndConfiguredBonemealFeature.java:33: 警告: [removal] FeatureContentManager 中的 bonemeal(Identifier) 已过时, 且标记为待删除
+            .bonemeal(BetterEnd.C.mk("bonemeal_mossy_dragon_bone"));
+            ^
+C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\source\src\main\java\org\betterx\betterend\registry\features\EndConfiguredBonemealFeature.java:35: 警告: [removal] de.ambertation.wover.feature.api.configured.configurators 中的 WeightedBlockPatch 已过时, 且标记为待删除
+    public static final FeatureKey<WeightedBlockPatch> BONEMEAL_MOSSY_OBSIDIAN = FeatureContentManager
+                                   ^
+C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\source\src\main\java\org\betterx\betterend\registry\features\EndConfiguredBonemealFeature.java:36: 警告: [removal] FeatureContentManager 中的 bonemeal(Identifier) 已过时, 且标记为待删除
+            .bonemeal(BetterEnd.C.mk("bonemeal_mossy_obsidian"));
+            ^
+C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\source\src\main\java\org\betterx\betterend\registry\features\EndConfiguredBonemealFeature.java:38: 警告: [removal] de.ambertation.wover.feature.api.configured.configurators 中的 WeightedBlockPatch 已过时, 且标记为待删除
+    public static final FeatureKey<WeightedBlockPatch> BONEMEAL_CAVE_MOSS = FeatureContentManager
+                                   ^
+C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\source\src\main\java\org\betterx\betterend\registry\features\EndConfiguredBonemealFeature.java:39: 警告: [removal] FeatureContentManager 中的 bonemeal(Identifier) 已过时, 且标记为待删除
+            .bonemeal(BetterEnd.C.mk("bonemeal_cave_moss"));
+            ^
+C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\source\src\main\java\org\betterx\betterend\registry\features\EndConfiguredBonemealFeature.java:41: 警告: [removal] de.ambertation.wover.feature.api.configured.configurators 中的 WeightedBlockPatch 已过时, 且标记为待删除
+    public static final FeatureKey<WeightedBlockPatch> BONEMEAL_CHORUS_NYLIUM = FeatureContentManager
+                                   ^
+C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\source\src\main\java\org\betterx\betterend\registry\features\EndConfiguredBonemealFeature.java:42: 警告: [removal] FeatureContentManager 中的 bonemeal(Identifier) 已过时, 且标记为待删除
+            .bonemeal(BetterEnd.C.mk("bonemeal_chorus_nylium"));
+            ^
+C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\source\src\main\java\org\betterx\betterend\registry\features\EndConfiguredBonemealFeature.java:44: 警告: [removal] de.ambertation.wover.feature.api.configured.configurators 中的 WeightedBlockPatch 已过时, 且标记为待删除
+    public static final FeatureKey<WeightedBlockPatch> BONEMEAL_CRYSTAL_MOSS = FeatureContentManager
+                                   ^
+C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\source\src\main\java\org\betterx\betterend\registry\features\EndConfiguredBonemealFeature.java:45: 警告: [removal] FeatureContentManager 中的 bonemeal(Identifier) 已过时, 且标记为待删除
+            .bonemeal(BetterEnd.C.mk("bonemeal_crystal_moss"));
+            ^
+C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\source\src\main\java\org\betterx\betterend\registry\features\EndConfiguredBonemealFeature.java:47: 警告: [removal] de.ambertation.wover.feature.api.configured.configurators 中的 WeightedBlockPatch 已过时, 且标记为待删除
+    public static final FeatureKey<WeightedBlockPatch> BONEMEAL_SHADOW_GRASS = FeatureContentManager
+                                   ^
+C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\source\src\main\java\org\betterx\betterend\registry\features\EndConfiguredBonemealFeature.java:48: 警告: [removal] FeatureContentManager 中的 bonemeal(Identifier) 已过时, 且标记为待删除
+            .bonemeal(BetterEnd.C.mk("bonemeal_shadow_grass"));
+            ^
+C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\source\src\main\java\org\betterx\betterend\registry\features\EndConfiguredBonemealFeature.java:50: 警告: [removal] de.ambertation.wover.feature.api.configured.configurators 中的 WeightedBlockPatch 已过时, 且标记为待删除
+    public static final FeatureKey<WeightedBlockPatch> BONEMEAL_PINK_MOSS = FeatureContentManager
+                                   ^
+C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\source\src\main\java\org\betterx\betterend\registry\features\EndConfiguredBonemealFeature.java:51: 警告: [removal] FeatureContentManager 中的 bonemeal(Identifier) 已过时, 且标记为待删除
+            .bonemeal(BetterEnd.C.mk("bonemeal_pink_moss"));
+            ^
+C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\source\src\main\java\org\betterx\betterend\registry\features\EndConfiguredBonemealFeature.java:53: 警告: [removal] de.ambertation.wover.feature.api.configured.configurators 中的 WeightedBlockPatch 已过时, 且标记为待删除
+    public static final FeatureKey<WeightedBlockPatch> BONEMEAL_AMBER_MOSS = FeatureContentManager
+                                   ^
+C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\source\src\main\java\org\betterx\betterend\registry\features\EndConfiguredBonemealFeature.java:54: 警告: [removal] FeatureContentManager 中的 bonemeal(Identifier) 已过时, 且标记为待删除
+            .bonemeal(BetterEnd.C.mk("bonemeal_amber_moss"));
+            ^
+C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\source\src\main\java\org\betterx\datagen\betterend\worldgen\features\BonemealFeatureProvider.java:104: 警告: [removal] InlineBuilder 中的 bonemealPatch() 已过时, 且标记为待删除
+                .inlineConfiguration(context).bonemealPatch()
+                                             ^
+C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\source\src\main\java\org\betterx\datagen\betterend\worldgen\features\BonemealFeatureProvider.java:111: 警告: [removal] InlineBuilder 中的 bonemealPatch() 已过时, 且标记为待删除
+                .inlineConfiguration(context).bonemealPatch()
+                                             ^
+C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\source\src\main\java\org\betterx\datagen\betterend\worldgen\features\BonemealFeatureProvider.java:123: 警告: [removal] InlineBuilder 中的 bonemealPatch() 已过时, 且标记为待删除
+                .inlineConfiguration(context).bonemealPatch()
+                                             ^
+C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\source\src\main\java\org\betterx\datagen\betterend\worldgen\features\BonemealFeatureProvider.java:132: 警告: [removal] InlineBuilder 中的 bonemealPatch() 已过时, 且标记为待删除
+                .inlineConfiguration(context).bonemealPatch()
+                                             ^
+注: 某些输入文件使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+注: 某些输入文件使用了未经检查或不安全的操作。
+注: 有关详细信息, 请使用 -Xlint:unchecked 重新编译。
+28 个警告
+
+> Task :processResources
+> Task :classes
+> Task :processIncludeJars
+> Task :jar
+
+> Task :compileBedrockReferenceJava
+注: C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\java-exporter\src\main\java\dev\baitian\betterend\reference\ReferenceExporter.java使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+
+> Task :processBedrockReferenceResources
+> Task :bedrockReferenceClasses
+> Task :bedrockReferenceExporterJar
+> Task :bedrockReferenceClasspath
+
+[Incubating] Problems report is available at: file:///C:/Users/weyst/Documents/BetterEnd-Bedrock/bedrock/.work/java-reference/source/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.7.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 1m 24s
+8 actionable tasks: 8 executed

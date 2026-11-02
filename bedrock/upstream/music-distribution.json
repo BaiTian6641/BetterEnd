@@ -18,7 +18,9 @@
       "sha256": "1b05ebe3f690ffe921d64613e13616943be4cdcedade1807839388d9820cd28b",
       "artistCredit": "noqwww",
       "attributionEvidence": "src/main/resources/assets/betterend/lang/en_us.json",
-      "decodingVerified": false,
+      "decodingVerified": true,
+      "decoder": "Chromium OfflineAudioContext",
+      "decodeEvidence": "evidence/source/recovered-music-decode.json",
       "playbackVerified": false,
       "distributionAudit": "pending"
     },
@@ -29,11 +31,13 @@
       "sha256": "2196752806dff9e8a0b234e03e1dc24c425f0bcbead7cbf51333c2993a01da81",
       "artistCredit": "noqwww",
       "attributionEvidence": "src/main/resources/assets/betterend/lang/en_us.json",
-      "decodingVerified": false,
+      "decodingVerified": true,
+      "decoder": "Chromium OfflineAudioContext",
+      "decodeEvidence": "evidence/source/recovered-music-decode.json",
       "playbackVerified": false,
       "distributionAudit": "pending"
     }
   ],
   "licenseObservation": "The downloaded archive contains LICENSE and LICENSE.ASSETS with the same MIT notice and three explicit CC BY-NC-SA file exceptions as the source. No separate track-specific license notice was located among the archive license/credit filenames. This is recorded distribution-license evidence, not a completed per-track rights approval.",
-  "status": "Required bytes located and hash-verified in the official distribution; audio decoding, playback, integration and distribution review remain open."
+  "status": "Required bytes located, hash-verified and decoded in Chromium. Actual Bedrock playback, integration and per-track distribution review remain open."
 }

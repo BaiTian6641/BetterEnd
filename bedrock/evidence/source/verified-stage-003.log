@@ -1,0 +1,144 @@
+
+> @baitian6641/betterend-bedrock@0.1.0 extract:source
+> node tools/source-stage.mjs extract
+
+{
+  "mode": "extract",
+  "outputFiles": 7,
+  "catalogue": {
+    "blocks": 728,
+    "items": 850,
+    "explicitMobs": 6,
+    "biomes": 27,
+    "blockStateSnapshotRows": 18852,
+    "resources": 3320,
+    "recipes": 879,
+    "mainRecipes": 878,
+    "optionalRecipes": 1,
+    "parityEntries": 4954,
+    "unresolved": 4,
+    "liveBlockStates": 22385,
+    "runtimeEntities": 27,
+    "vehicles": 20,
+    "sharedHelpers": 1,
+    "seatingBlocks": 33,
+    "effectiveRuntimeJsonResources": 12060
+  },
+  "assets": {
+    "blockstate": 732,
+    "texture": 1917,
+    "localization": 16,
+    "other-source-asset": 336,
+    "renderer-metadata": 83,
+    "model": 2548,
+    "particle-definition": 14,
+    "model-template": 75,
+    "audio": 43,
+    "sound-events": 1,
+    "animation-metadata": 36,
+    "non-content-metadata": 1,
+    "equipment-definition": 6,
+    "item-definition": 850,
+    "total": 6658,
+    "explicitlyRestricted": 3
+  },
+  "unresolved": 24,
+  "referenceRegistryVerified": true,
+  "bedrockGameplayCertified": false
+}
+
+> @baitian6641/betterend-bedrock@0.1.0 verify:source
+> node --test tests/*.test.mjs && node tools/source-stage.mjs check
+
+✔ pack archives have identical bytes in western, UTC and eastern build timezones (542.6341ms)
+✔ authored resources win packaging but duplicates remain explicit policy violations (1.3755ms)
+✔ resource identity includes scope and registry category rather than output item name (0.6557ms)
+✔ enchantment tags retain their registry category and original tag identifiers (0.2214ms)
+✔ registration snapshots preserve sentinel and compact values and reject duplicate/malformed IDs (0.5987ms)
+✔ shape snapshot retains waterlogging, empty collision and out-of-unit collision bounds without inventing defaults (0.647ms)
+✔ biome declarations preserve parent relationships and exclude codec registration identifiers (0.5945ms)
+✔ explicit mob extraction does not treat spawn eggs or registry helper methods as additional mobs (0.4324ms)
+✔ failed attempts remain cumulative across passing runs and other gates (1.6704ms)
+✔ recorded evidence binds retained artifact bytes and rejects a false passing exit (42.9614ms)
+✔ fifteen failures prevent another attempt without erasing history (284.162ms)
+✔ missing or unretained artifacts cannot produce evidence and release the writer lock (24.0307ms)
+✔ corrupt or out-of-sequence evidence fails closed rather than resetting attempt counts (11.4512ms)
+✔ changing or deleting retained evidence invalidates an earlier passing receipt (28.0955ms)
+✔ non-string gate IDs cannot evade cumulative failure accounting (6.4925ms)
+✔ persisted evidence without a bound digest is not accepted as a passing record (7.4399ms)
+✔ pinned source uses committed bytes instead of checkout newline conversion or local modifications (582.1528ms)
+✔ generation acceptance evaluates protection per column when a scan crosses a region boundary (1.425ms)
+✔ incomplete or all-air outer scans do not masquerade as native generation success (0.2889ms)
+✔ native placement requires the correct precondition, post-permutation and requested dimension (0.3283ms)
+✔ restart inspection rejects a block whose identity survives but its permutation resets (0.3334ms)
+✔ an exact normalized restricted asset cannot inherit the ordinary repository license (3.1787ms)
+✔ renaming or combining restricted artwork preserves its obligations and byte-bound source identities (1.6275ms)
+✔ destination mapping preserves colliding basenames and separates namespaces and image classes (0.6492ms)
+✔ typed references distinguish bindings, templates, external models and actual audio files (0.6646ms)
+✔ invalid source JSON remains inventoried with a blocking diagnostic rather than silently overwritten (56.6638ms)
+✔ reference source identity detects changed, added and removed inputs despite an unchanged declared commit (41.28ms)
+✔ reference workspace ownership resolves directory links instead of trusting a lexical prefix (10.1096ms)
+✔ a matching source label cannot conceal a different loaded BetterEnd artifact (0.6925ms)
+✔ live Cartesian state domains expose missing/stale audit shapes without inventing geometry (1.6466ms)
+✔ incomplete, duplicate or mistyped live states/defaults cannot certify a domain (0.5876ms)
+✔ vehicle items and seating blocks cannot survive while their mandatory entity obligations disappear (0.3268ms)
+✔ missing or unbound merged tags remain distinct from valid empty membership (0.2656ms)
+✔ coherently rehashed evidence from another commit cannot be relabeled with the catalogue pin (25.6832ms)
+✔ portable source paths reject traversal, absolute paths and Windows archive hazards (1.5278ms)
+✔ archive destinations reject duplicate and case-only collisions without rejecting distinct assets (0.4627ms)
+✔ source JSON retains exact byte provenance and reports malformed input with its path (14.34ms)
+✔ duplicate decoded keys cannot silently overwrite source translations or recipe fields (5.0436ms)
+✔ directory discovery and fingerprints are independent of creation/input order (11.466ms)
+✔ deterministic JSON preserves array semantics while normalizing object key order (0.6971ms)
+ℹ tests 40
+ℹ suites 0
+ℹ pass 40
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 829.4853
+{
+  "mode": "check",
+  "outputFiles": 7,
+  "catalogue": {
+    "blocks": 728,
+    "items": 850,
+    "explicitMobs": 6,
+    "biomes": 27,
+    "blockStateSnapshotRows": 18852,
+    "resources": 3320,
+    "recipes": 879,
+    "mainRecipes": 878,
+    "optionalRecipes": 1,
+    "parityEntries": 4954,
+    "unresolved": 4,
+    "liveBlockStates": 22385,
+    "runtimeEntities": 27,
+    "vehicles": 20,
+    "sharedHelpers": 1,
+    "seatingBlocks": 33,
+    "effectiveRuntimeJsonResources": 12060
+  },
+  "assets": {
+    "blockstate": 732,
+    "texture": 1917,
+    "localization": 16,
+    "other-source-asset": 336,
+    "renderer-metadata": 83,
+    "model": 2548,
+    "particle-definition": 14,
+    "model-template": 75,
+    "audio": 43,
+    "sound-events": 1,
+    "animation-metadata": 36,
+    "non-content-metadata": 1,
+    "equipment-definition": 6,
+    "item-definition": 850,
+    "total": 6658,
+    "explicitlyRestricted": 3
+  },
+  "unresolved": 24,
+  "referenceRegistryVerified": true,
+  "bedrockGameplayCertified": false
+}

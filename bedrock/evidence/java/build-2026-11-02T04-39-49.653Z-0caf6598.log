@@ -1,0 +1,41 @@
+Picked up JAVA_TOOL_OPTIONS: -Duser.home=C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\home -Djava.io.tmpdir=C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\.work\java-reference\tmp
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by net.rubygrapefruit.platform.internal.NativeLibraryLoader in an unnamed module (file:/C:/Users/weyst/Documents/BetterEnd-Bedrock/bedrock/.work/java-reference/gradle-user-home/wrapper/dists/gradle-9.7.0-bin/d4tj7w02tcgubx9zk9hbippn6/gradle-9.7.0/lib/native-platform-0.22-milestone-29.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.7.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+WARNING: allowLocalLibUse is enabled but '..\BCLib' was not found - building against the published Maven artifact instead.
+WARNING: allowLocalLibUse is enabled but '..\WunderLib' was not found - building against the published Maven artifact instead.
+WARNING: allowLocalLibUse is enabled but '..\WorldWeaver' was not found - building against the published org.betterx:worldweaver Maven artifact instead.
+
+> Configure project :
+Fabric Loom: 1.18.4
+Version: 26.301.2
+
+> Task :compileJava UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :classes UP-TO-DATE
+> Task :processIncludeJars UP-TO-DATE
+> Task :jar UP-TO-DATE
+
+> Task :compileBedrockReferenceJava注: C:\Users\weyst\Documents\BetterEnd-Bedrock\bedrock\java-exporter\src\main\java\dev\baitian\betterend\reference\ReferenceExporter.java使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+
+
+> Task :processBedrockReferenceResources UP-TO-DATE
+> Task :bedrockReferenceClasses
+> Task :bedrockReferenceExporterJar
+> Task :bedrockReferenceClasspath
+
+[Incubating] Problems report is available at: file:///C:/Users/weyst/Documents/BetterEnd-Bedrock/bedrock/.work/java-reference/source/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.7.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 16s
+8 actionable tasks: 3 executed, 5 up-to-date

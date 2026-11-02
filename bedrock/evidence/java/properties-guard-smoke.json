@@ -1,0 +1,65 @@
+{
+  "scope": "actual Java source-launcher guard; no game/world launched",
+  "results": [
+    {
+      "case": "owned-loopback",
+      "command": [
+        "C:\\Users\\weyst\\Documents\\BetterEnd-Bedrock\\bedrock\\.work\\java-reference\\jdk\\jdk-25.0.5+8\\bin\\java.exe",
+        "C:\\Users\\weyst\\Documents\\BetterEnd-Bedrock\\bedrock\\java-exporter\\src\\main\\java\\dev\\baitian\\betterend\\reference\\ServerPropertiesGuard.java",
+        "C:\\Users\\weyst\\Documents\\BetterEnd-Bedrock\\bedrock\\.work\\tests\\reference-guard-h3imit0q\\owned-loopback"
+      ],
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "stdout": "BETTEREND_REFERENCE_PROPERTIES verified\n",
+      "stderr": "Picked up JAVA_TOOL_OPTIONS: -Duser.home=\"C:/Users/weyst/Documents/BetterEnd-Bedrock/bedrock/.work/java-reference/home\" -Djava.io.tmpdir=\"C:/Users/weyst/Documents/BetterEnd-Bedrock/bedrock/.work/java-reference/tmp\"\n"
+    },
+    {
+      "case": "duplicate-world-override",
+      "command": [
+        "C:\\Users\\weyst\\Documents\\BetterEnd-Bedrock\\bedrock\\.work\\java-reference\\jdk\\jdk-25.0.5+8\\bin\\java.exe",
+        "C:\\Users\\weyst\\Documents\\BetterEnd-Bedrock\\bedrock\\java-exporter\\src\\main\\java\\dev\\baitian\\betterend\\reference\\ServerPropertiesGuard.java",
+        "C:\\Users\\weyst\\Documents\\BetterEnd-Bedrock\\bedrock\\.work\\tests\\reference-guard-h3imit0q\\duplicate-world-override"
+      ],
+      "exitCode": 1,
+      "expectedExitCode": 1,
+      "stdout": "",
+      "stderr": "Picked up JAVA_TOOL_OPTIONS: -Duser.home=\"C:/Users/weyst/Documents/BetterEnd-Bedrock/bedrock/.work/java-reference/home\" -Djava.io.tmpdir=\"C:/Users/weyst/Documents/BetterEnd-Bedrock/bedrock/.work/java-reference/tmp\"\nException in thread \"main\" java.lang.IllegalStateException: Unsafe effective reference property: level-name\n\tat dev.baitian.betterend.reference.ServerPropertiesGuard.main(ServerPropertiesGuard.java:21)\n"
+    },
+    {
+      "case": "escaped-world-override",
+      "command": [
+        "C:\\Users\\weyst\\Documents\\BetterEnd-Bedrock\\bedrock\\.work\\java-reference\\jdk\\jdk-25.0.5+8\\bin\\java.exe",
+        "C:\\Users\\weyst\\Documents\\BetterEnd-Bedrock\\bedrock\\java-exporter\\src\\main\\java\\dev\\baitian\\betterend\\reference\\ServerPropertiesGuard.java",
+        "C:\\Users\\weyst\\Documents\\BetterEnd-Bedrock\\bedrock\\.work\\tests\\reference-guard-h3imit0q\\escaped-world-override"
+      ],
+      "exitCode": 1,
+      "expectedExitCode": 1,
+      "stdout": "",
+      "stderr": "Picked up JAVA_TOOL_OPTIONS: -Duser.home=\"C:/Users/weyst/Documents/BetterEnd-Bedrock/bedrock/.work/java-reference/home\" -Djava.io.tmpdir=\"C:/Users/weyst/Documents/BetterEnd-Bedrock/bedrock/.work/java-reference/tmp\"\nException in thread \"main\" java.lang.IllegalStateException: Unsafe effective reference property: level-name\n\tat dev.baitian.betterend.reference.ServerPropertiesGuard.main(ServerPropertiesGuard.java:21)\n"
+    },
+    {
+      "case": "duplicate-public-bind",
+      "command": [
+        "C:\\Users\\weyst\\Documents\\BetterEnd-Bedrock\\bedrock\\.work\\java-reference\\jdk\\jdk-25.0.5+8\\bin\\java.exe",
+        "C:\\Users\\weyst\\Documents\\BetterEnd-Bedrock\\bedrock\\java-exporter\\src\\main\\java\\dev\\baitian\\betterend\\reference\\ServerPropertiesGuard.java",
+        "C:\\Users\\weyst\\Documents\\BetterEnd-Bedrock\\bedrock\\.work\\tests\\reference-guard-h3imit0q\\duplicate-public-bind"
+      ],
+      "exitCode": 1,
+      "expectedExitCode": 1,
+      "stdout": "",
+      "stderr": "Picked up JAVA_TOOL_OPTIONS: -Duser.home=\"C:/Users/weyst/Documents/BetterEnd-Bedrock/bedrock/.work/java-reference/home\" -Djava.io.tmpdir=\"C:/Users/weyst/Documents/BetterEnd-Bedrock/bedrock/.work/java-reference/tmp\"\nException in thread \"main\" java.lang.IllegalStateException: Unsafe effective reference property: server-ip\n\tat dev.baitian.betterend.reference.ServerPropertiesGuard.main(ServerPropertiesGuard.java:21)\n"
+    },
+    {
+      "case": "duplicate-eula-revocation",
+      "command": [
+        "C:\\Users\\weyst\\Documents\\BetterEnd-Bedrock\\bedrock\\.work\\java-reference\\jdk\\jdk-25.0.5+8\\bin\\java.exe",
+        "C:\\Users\\weyst\\Documents\\BetterEnd-Bedrock\\bedrock\\java-exporter\\src\\main\\java\\dev\\baitian\\betterend\\reference\\ServerPropertiesGuard.java",
+        "C:\\Users\\weyst\\Documents\\BetterEnd-Bedrock\\bedrock\\.work\\tests\\reference-guard-h3imit0q\\duplicate-eula-revocation"
+      ],
+      "exitCode": 1,
+      "expectedExitCode": 1,
+      "stdout": "",
+      "stderr": "Picked up JAVA_TOOL_OPTIONS: -Duser.home=\"C:/Users/weyst/Documents/BetterEnd-Bedrock/bedrock/.work/java-reference/home\" -Djava.io.tmpdir=\"C:/Users/weyst/Documents/BetterEnd-Bedrock/bedrock/.work/java-reference/tmp\"\nException in thread \"main\" java.lang.IllegalStateException: Minecraft EULA acceptance is required; the guard does not grant it\n\tat dev.baitian.betterend.reference.ServerPropertiesGuard.main(ServerPropertiesGuard.java:25)\n"
+    }
+  ]
+}

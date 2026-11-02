@@ -1,0 +1,11 @@
+{
+  "command": [
+    "node",
+    "--input-type=module",
+    "-e",
+    "\nimport path from 'node:path';\nimport assert from 'node:assert/strict';\nimport {buildCatalogue} from './bedrock/tools/catalogue.mjs';\nimport {loadLockedRuntime,reconcileCatalogue} from './bedrock/tools/runtime-reconciliation.mjs';\nconst workspace=path.resolve('bedrock');\nconst catalogue=await buildCatalogue(path.join(workspace,'.work/java-reference/source'));\nconst {runtime,lock}=await loadLockedRuntime(workspace);\nconst id='betterend:thallasium/repair';\nruntime.registryTags['minecraft:item']=runtime.registryTags['minecraft:item'].filter(tag=>tag.id!==id);\nconst reconciled=reconcileCatalogue(catalogue,runtime,lock);\nconst diagnostic=reconciled.reconciliation.tagBindingIssues.find(issue=>issue.id===id);\nassert.equal(diagnostic?.code,'missing-runtime-tag');\nassert.equal(reconciled.resources.find(row=>row.category==='tags/item' && row.id===id).runtimeResource.matchesSourceBytes,true);\nassert.ok(reconciled.unresolved.some(issue=>issue.code==='missing-runtime-tag-bindings' && issue.severity==='release-blocker'));\nconsole.log(JSON.stringify({scope:'in-memory omission from the actual locked corpus; original evidence unchanged',rawResourceStillMatches:true,diagnostic,releaseBlocked:true},null,2));\n"
+  ],
+  "exitCode": 0,
+  "stdout": "{\n  \"scope\": \"in-memory omission from the actual locked corpus; original evidence unchanged\",\n  \"rawResourceStillMatches\": true,\n  \"diagnostic\": {\n    \"code\": \"missing-runtime-tag\",\n    \"registry\": \"minecraft:item\",\n    \"id\": \"betterend:thallasium/repair\",\n    \"source\": \"src/main/generated/data/betterend/tags/item/thallasium/repair.json\"\n  },\n  \"releaseBlocked\": true\n}\n",
+  "stderr": ""
+}

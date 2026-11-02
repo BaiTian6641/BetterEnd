@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "distributionVersion": "26.301.2",
+  "existingSourceTracksCompared": 43,
+  "existingSourceTracksMatchDistribution": true,
+  "tracks": [
+    {
+      "name": "ender_hollow.ogg",
+      "channels": 2,
+      "sampleRate": 48000,
+      "frames": 10546624,
+      "durationSeconds": 219.72133333333332,
+      "peak": 0.8923773169517517,
+      "rms": 0.19308276604086633,
+      "decoder": "Chromium OfflineAudioContext",
+      "bedrockPlaybackVerified": false
+    },
+    {
+      "name": "moonlit_undercurrents.ogg",
+      "channels": 2,
+      "sampleRate": 48000,
+      "frames": 11103424,
+      "durationSeconds": 231.32133333333334,
+      "peak": 0.972297191619873,
+      "rms": 0.21008850423723244,
+      "decoder": "Chromium OfflineAudioContext",
+      "bedrockPlaybackVerified": false
+    }
+  ],
+  "rightsApproved": false,
+  "bedrockPlaybackVerified": false
+}

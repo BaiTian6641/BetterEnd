@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "scope": "Native server-side inventory custody diagnostics, not production workstations or client certification",
+  "gateId": "INV-001",
+  "failedAttempts": 1,
+  "failedAttemptLimit": 15,
+  "runs": [
+    {
+      "receipt": "evidence/engine/2026-11-02T04-53-38.615Z-609ef6c4.json",
+      "engineBuild": "1.26.40.8",
+      "action": "inventory-setup",
+      "result": "fail",
+      "packageSha256": "14315aa27459c20ba7c90d9cdd3ad621957c2793c8b4a0572046f48e9d70cbaf",
+      "failure": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  [\n+   'end_stone'\n-   'minecraft:end_stone'\n  ]\n"
+    },
+    {
+      "receipt": "evidence/engine/2026-11-02T04-54-58.518Z-2fd17d77.json",
+      "engineBuild": "1.26.40.8",
+      "action": "inventory-inspect",
+      "result": "pass",
+      "packageSha256": "14315aa27459c20ba7c90d9cdd3ad621957c2793c8b4a0572046f48e9d70cbaf",
+      "failure": null
+    },
+    {
+      "receipt": "evidence/engine/2026-11-02T04-55-03.044Z-f9b31e26.json",
+      "engineBuild": "1.26.40.8",
+      "action": "inventory-roundtrip",
+      "result": "pass",
+      "packageSha256": "14315aa27459c20ba7c90d9cdd3ad621957c2793c8b4a0572046f48e9d70cbaf",
+      "failure": null
+    },
+    {
+      "receipt": "evidence/engine/2026-11-02T04-55-07.501Z-046378f3.json",
+      "engineBuild": "1.26.40.8",
+      "action": "inventory-transfer",
+      "result": "pass",
+      "packageSha256": "14315aa27459c20ba7c90d9cdd3ad621957c2793c8b4a0572046f48e9d70cbaf",
+      "failure": null
+    },
+    {
+      "receipt": "evidence/engine/2026-11-02T05-06-52.213Z-65cfbbba.json",
+      "engineBuild": "1.26.40.8",
+      "action": "inventory-hoppers",
+      "result": "pass",
+      "packageSha256": "e559c9430763e886eabb00fa19499da1eba59cb27c21685d6e099333cf867024",
+      "failure": null
+    },
+    {
+      "receipt": "evidence/engine/2026-11-02T05-07-04.475Z-e558e05f.json",
+      "engineBuild": "1.26.40.8",
+      "action": "inventory-inspect",
+      "result": "pass",
+      "packageSha256": "e559c9430763e886eabb00fa19499da1eba59cb27c21685d6e099333cf867024",
+      "failure": null
+    },
+    {
+      "receipt": "evidence/engine/2026-11-02T05-13-52.427Z-cb74b69f.json",
+      "engineBuild": "1.26.61.1",
+      "action": "inventory-setup",
+      "result": "pass",
+      "packageSha256": "e559c9430763e886eabb00fa19499da1eba59cb27c21685d6e099333cf867024",
+      "failure": null
+    },
+    {
+      "receipt": "evidence/engine/2026-11-02T05-13-57.436Z-1f858954.json",
+      "engineBuild": "1.26.61.1",
+      "action": "inventory-inspect",
+      "result": "pass",
+      "packageSha256": "e559c9430763e886eabb00fa19499da1eba59cb27c21685d6e099333cf867024",
+      "failure": null
+    },
+    {
+      "receipt": "evidence/engine/2026-11-02T05-14-02.380Z-0213e003.json",
+      "engineBuild": "1.26.61.1",
+      "action": "inventory-roundtrip",
+      "result": "pass",
+      "packageSha256": "e559c9430763e886eabb00fa19499da1eba59cb27c21685d6e099333cf867024",
+      "failure": null
+    },
+    {
+      "receipt": "evidence/engine/2026-11-02T05-14-06.376Z-d81c38b1.json",
+      "engineBuild": "1.26.61.1",
+      "action": "inventory-transfer",
+      "result": "pass",
+      "packageSha256": "e559c9430763e886eabb00fa19499da1eba59cb27c21685d6e099333cf867024",
+      "failure": null
+    },
+    {
+      "receipt": "evidence/engine/2026-11-02T05-14-10.350Z-2ed9246e.json",
+      "engineBuild": "1.26.61.1",
+      "action": "inventory-hoppers",
+      "result": "pass",
+      "packageSha256": "e559c9430763e886eabb00fa19499da1eba59cb27c21685d6e099333cf867024",
+      "failure": null
+    },
+    {
+      "receipt": "evidence/engine/2026-11-02T05-14-22.218Z-77db6b66.json",
+      "engineBuild": "1.26.61.1",
+      "action": "inventory-inspect",
+      "result": "pass",
+      "packageSha256": "e559c9430763e886eabb00fa19499da1eba59cb27c21685d6e099333cf867024",
+      "failure": null
+    }
+  ],
+  "clientUiVerified": false,
+  "opaqueItemDataCertified": false,
+  "abruptCrashRecoveryVerified": false,
+  "multiplayerVerified": false,
+  "allPlatformsCertified": false,
+  "instructions": "probes/inventory/README.md"
+}

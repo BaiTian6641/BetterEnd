@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "betterend_reference_exporter",
+  "version": "0.1.0",
+  "name": "BetterEnd Bedrock Reference Exporter",
+  "description": "Exports live production registry defaults and intrinsic components into the owned Bedrock workspace, then stops the disposable server.",
+  "environment": "server",
+  "entrypoints": {
+    "main": ["dev.baitian.betterend.reference.ReferenceExporter"]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "fabric-lifecycle-events-v1": "*",
+    "fabric-content-registries-v0": "*",
+    "java": ">=25",
+    "minecraft": "26.3",
+    "betterend": "26.301.2",
+    "bclib": "26.301.2",
+    "wover": "26.301.2",
+    "wunderlib": "26.301.2"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "authorization": "Explicit user selection: Authorize acceptance",
+  "agreement": "Minecraft EULA",
+  "agreementUrl": "https://aka.ms/MinecraftEULA",
+  "permittedOperation": "Set eula=true and run the disposable local Java reference server",
+  "scope": "bedrock/.work/java-reference/server",
+  "networkScope": "loopback-only",
+  "productionDeploymentAuthorized": false,
+  "existingPlayerWorldChangesAuthorized": false,
+  "assetDistributionRightsApproval": false
+}

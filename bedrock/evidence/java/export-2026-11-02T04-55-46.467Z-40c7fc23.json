@@ -1,0 +1,35 @@
+{
+  "command": [
+    "C:\\Users\\weyst\\Documents\\BetterEnd-Bedrock\\bedrock\\.work\\java-reference\\jdk\\jdk-25.0.5+8\\bin\\java.exe",
+    "-Xms512m",
+    "-Xmx4g",
+    "-Dbetterend.reference.workspace=C:\\Users\\weyst\\Documents\\BetterEnd-Bedrock\\bedrock\\",
+    "-Dbetterend.reference.output=C:\\Users\\weyst\\Documents\\BetterEnd-Bedrock\\bedrock\\.work\\java-reference\\exports\\runtime-2026-11-02T04-55-46.467Z-40c7fc23.json",
+    "-jar",
+    "fabric-server-launch.jar",
+    "nogui"
+  ],
+  "counts": {
+    "biomes": 27,
+    "blocks": 728,
+    "entities": 27,
+    "issues": 0,
+    "items": 850
+  },
+  "cwd": "C:\\Users\\weyst\\Documents\\BetterEnd-Bedrock\\bedrock\\.work\\java-reference\\server",
+  "exit": {
+    "code": 0,
+    "failure": null,
+    "signal": null
+  },
+  "failure": null,
+  "inputFingerprint": "3ff99216f1820311794e04ed70ccb748c5c37111b451230b3e78f85b56cb9ac2",
+  "mode": "export",
+  "output": ".work/java-reference/exports/runtime-2026-11-02T04-55-46.467Z-40c7fc23.json",
+  "outputSha256": "072f9f90d1eac8ea76409ef0311229f61ddd18705c9ae7646907782afc82b5b3",
+  "portComplete": false,
+  "referenceManifest": null,
+  "retainedOutput": "evidence/java/runtime-2026-11-02T04-55-46.467Z-40c7fc23.json.gz",
+  "schemaVersion": 2,
+  "sourceCommit": "5a25059ef4fd77409024a2919fb0a0098388104f"
+}

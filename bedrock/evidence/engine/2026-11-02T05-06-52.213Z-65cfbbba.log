@@ -1,0 +1,63 @@
+NO LOG FILE! - setting up server logging...
+[2026-11-02 13:06:52:283 INFO] Starting Server
+[2026-11-02 13:06:52:283 INFO] Version: 1.26.40.8
+[2026-11-02 13:06:52:283 INFO] Session ID: 83c095b2-f388-4222-b08b-b5d34862c206
+[2026-11-02 13:06:52:283 INFO] Build ID: 48609425
+[2026-11-02 13:06:52:283 INFO] Branch: r/26_u4
+[2026-11-02 13:06:52:283 INFO] Commit ID: 93e89c3199ffce33269d88e6fec322330c130ae3
+[2026-11-02 13:06:52:283 INFO] Configuration: Publish
+[2026-11-02 13:06:52:284 INFO] Contents of server.properties: {}
+[2026-11-02 13:06:52:284 INFO] Level Name: betterend-capability-2640
+[2026-11-02 13:06:52:284 INFO] Profiler config ('bootstrap.json') load result: success=1, errorMessage=(null)
+[2026-11-02 13:06:52:286 INFO] No CDN config file found at: cdn_config.json for dedicated server
+[2026-11-02 13:06:52:286 INFO] Game mode: 1 Creative
+[2026-11-02 13:06:52:286 INFO] Difficulty: 1 EASY
+[2026-11-02 13:06:52:286 INFO] Content logging to console is enabled.
+[2026-11-02 13:06:52:288 INFO] 
+
+#####################################################
+#                                                   #
+#               LOADING VANILLA WORLD               #
+#                                                   #
+#####################################################
+[2026-11-02 13:06:52:943 INFO] Opening level 'worlds/betterend-capability-2640/db'
+[2026-11-02 13:06:53:163 INFO] Pack Stack - [00] BetterEnd engine capability probes (id: d16a5a53-d15f-482e-bf74-26c4d256ed24, version: 0.1.2) @ behavior_packs/betterend_probe
+[2026-11-02 13:06:53:211 WARN] [Scripting] BETTEREND_PROBE {"phase":"startup"}
+
+[2026-11-02 13:06:54:286 INFO] IPv4 supported, port: 29140: Used for gameplay
+[2026-11-02 13:06:54:286 INFO] IPv6 supported, port: 29141: Used for gameplay
+[2026-11-02 13:06:54:316 INFO] Signed in to signaling service successfully
+[2026-11-02 13:06:54:503 INFO] Server started.
+[2026-11-02 13:06:54:503 WARN] ================ ALLOW LIST WARNING ===================
+[2026-11-02 13:06:54:503 WARN] Allow list is enabled but contains no entries. 
+[2026-11-02 13:06:54:503 WARN] Use allowlist add <playername> for you and your friends so that they can access the server, or modify allowlist.json manually.
+[2026-11-02 13:06:54:503 WARN] 
+Alternatively, the allow list can be turned off by typing allowlist off or manually toggled in the server.properties file.
+[2026-11-02 13:06:54:503 WARN] =======================================================
+[2026-11-02 13:06:54:503 INFO] ================ TELEMETRY MESSAGE ===================
+[2026-11-02 13:06:54:503 INFO] Server Telemetry is currently not enabled. 
+[2026-11-02 13:06:54:503 INFO] Enabling this telemetry helps us improve the game.
+[2026-11-02 13:06:54:503 INFO] 
+[2026-11-02 13:06:54:503 INFO] To enable this feature, add the line 'emit-server-telemetry=true'
+[2026-11-02 13:06:54:503 INFO] to the server.properties file in the handheld/src-server directory
+[2026-11-02 13:06:54:503 INFO] ======================================================
+[2026-11-02 13:06:54:545 WARN] [Scripting] BETTEREND_PROBE {"phase":"worldLoad","tick":147,"seed":"2640","players":0,"blockRegistered":true,"itemRegistered":true}
+
+[2026-11-02 13:06:54:647 INFO] Script event betterend_probe:run has been sent
+[2026-11-02 13:06:54:802 WARN] [Scripting] BETTEREND_PROBE {"phase":"inventoryEntityLoaded","id":"-25769803775","tick":153}
+
+[2026-11-02 13:06:54:802 WARN] [Scripting] BETTEREND_PROBE {"phase":"inventoryEntityLoaded","id":"-25769803774","tick":153}
+
+[2026-11-02 13:06:54:802 WARN] [Scripting] BETTEREND_PROBE {"phase":"inventoryEntityLoaded","id":"-25769803773","tick":153}
+
+[2026-11-02 13:07:02:843 WARN] [Scripting] BETTEREND_PROBE {"phase":"result","requestId":"65cfbbba-343d-45e1-b565-acac4825d06f","action":"inventory-hoppers","probeId":"native-inventory-v1","dimension":"minecraft:the_end","seed":"2640","startedTick":149,"completedTick":314,"players":0,"carriers":[{"role":"runtime","id":"-25769803775","typeId":"betterend_inventory_probe:carrier_runtime","position":{"x":4096.5,"y":79.7125015258789,"z":4096.5},"velocity":{"x":0,"y":0,"z":0},"size":27,"revision":42,"items":[{"typeId":"minecraft:diamond_sword","amount":1,"maxAmount":1,"isStackable":false,"nameTag":"Inventory probe: runtime","lore":["Native custody; never reconstructed","Fixture native-inventory-v1"],"rawLore":[{"text":"Native custody; never reconstructed"},{"text":"Fixture native-inventory-v1"}],"durability":{"damage":37,"maximum":1561,"unbreakable":true},"enchantments":[{"id":"unbreaking","level":3}],"dynamicProperties":{"betterend_inventory_probe:counter":42.5,"betterend_inventory_probe:enabled":true,"betterend_inventory_probe:token":"native-inventory-v1/runtime","betterend_inventory_probe:vector":{"x":-3,"y":80,"z":7.25}},"keepOnDeath":true,"lockMode":"none","canDestroy":["end_stone"],"canPlaceOn":["end_stone"],"tags":["minecraft:diamond_tier","minecraft:is_sword","minecraft:is_tool","minecraft:transformable_items"]},{"typeId":"minecraft:iron_ingot","amount":10,"maxAmount":64,"isStackable":true,"nameTag":null,"lore":[],"rawLore":[],"durability":null,"enchantments":[],"dynamicProperties":{},"keepOnDeath":false,"lockMode":"none","canDestroy":[],"canPlaceOn":[],"tags":["minecraft:trim_materials"]},null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]},{"role":"generic","id":"-25769803774","typeId":"betterend_inventory_probe:carrier_generic","position":{"x":4100.5,"y":80.0625,"z":4096.5},"velocity":{"x":0,"y":0,"z":0},"size":27,"revision":42,"items":[{"typeId":"minecraft:diamond_sword","amount":1,"maxAmount":1,"isStackable":false,"nameTag":"Inventory probe: generic","lore":["Native custody; never reconstructed","Fixture native-inventory-v1"],"rawLore":[{"text":"Native custody; never reconstructed"},{"text":"Fixture native-inventory-v1"}],"durability":{"damage":37,"maximum":1561,"unbreakable":true},"enchantments":[{"id":"unbreaking","level":3}],"dynamicProperties":{"betterend_inventory_probe:counter":42.5,"betterend_inventory_probe:enabled":true,"betterend_inventory_probe:token":"native-inventory-v1/generic","betterend_inventory_probe:vector":{"x":-3,"y":80,"z":7.25}},"keepOnDeath":true,"lockMode":"none","canDestroy":["end_stone"],"canPlaceOn":["end_stone"],"tags":["minecraft:diamond_tier","minecraft:is_sword","minecraft:is_tool","minecraft:transformable_items"]},{"typeId":"minecraft:iron_ingot","amount":10,"maxAmount":64,"isStackable":true,"nameTag":null,"lore":[],"rawLore":[],"durability":null,"enchantments":[],"dynamicProperties":{},"keepOnDeath":false,"lockMode":"none","canDestroy":[],"canPlaceOn":[],"tags":["minecraft:trim_materials"]},null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]},{"role":"vanilla","id":"-25769803773","typeId":"minecraft:chest_minecart","position":{"x":4104.5,"y":80.1500015258789,"z":4096.5},"velocity":{"x":0,"y":0,"z":0},"size":27,"revision":null,"items":[{"typeId":"minecraft:diamond_sword","amount":1,"maxAmount":1,"isStackable":false,"nameTag":"Inventory probe: vanilla","lore":["Native custody; never reconstructed","Fixture native-inventory-v1"],"rawLore":[{"text":"Native custody; never reconstructed"},{"text":"Fixture native-inventory-v1"}],"durability":{"damage":37,"maximum":1561,"unbreakable":true},"enchantments":[{"id":"unbreaking","level":3}],"dynamicProperties":{"betterend_inventory_probe:counter":42.5,"betterend_inventory_probe:enabled":true,"betterend_inventory_probe:token":"native-inventory-v1/vanilla","betterend_inventory_probe:vector":{"x":-3,"y":80,"z":7.25}},"keepOnDeath":true,"lockMode":"none","canDestroy":["end_stone"],"canPlaceOn":["end_stone"],"tags":["minecraft:diamond_tier","minecraft:is_sword","minecraft:is_tool","minecraft:transformable_items"]},{"typeId":"minecraft:iron_ingot","amount":10,"maxAmount":64,"isStackable":true,"nameTag":null,"lore":[],"rawLore":[],"durability":null,"enchantments":[],"dynamicProperties":{},"keepOnDeath":false,"lockMode":"none","canDestroy":[],"canPlaceOn":[],"tags":["minecraft:trim_materials"]},null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]}],"experiment":[{"role":"runtime","extracted":{"minecraft:diamond_sword":1,"minecraft:iron_ingot":10},"extractionTicks":120,"extractionState":{"toggle_bit":false,"facing_direction":0},"insertedSword":true,"insertionTicks":40,"insertionState":{"toggle_bit":false,"facing_direction":0},"nativeItemsRestored":true},{"role":"generic","extracted":{"minecraft:diamond_sword":1,"minecraft:iron_ingot":10},"extractionTicks":120,"extractionState":{"toggle_bit":false,"facing_direction":0},"insertedSword":true,"insertionTicks":40,"insertionState":{"toggle_bit":false,"facing_direction":0},"nativeItemsRestored":true},{"role":"vanilla","extracted":{"minecraft:diamond_sword":1,"minecraft:iron_ingot":10},"extractionTicks":120,"extractionState":{"toggle_bit":false,"facing_direction":0},"insertedSword":true,"insertionTicks":40,"insertionState":{"toggle_bit":false,"facing_direction":0},"nativeItemsRestored":true}],"inventoryComplete":true,"clientUiVerified":false,"opaqueItemDataCertified":false}
+
+ [2026-11-02 13:07:02:901 INFO] Server stop requested.
+[2026-11-02 13:07:02:949 WARN] [Scripting] BETTEREND_PROBE {"phase":"inventoryEntityRemovedOrUnloaded","id":"-25769803775","tick":316}
+
+[2026-11-02 13:07:02:949 WARN] [Scripting] BETTEREND_PROBE {"phase":"inventoryEntityRemovedOrUnloaded","id":"-25769803774","tick":316}
+
+[2026-11-02 13:07:02:949 WARN] [Scripting] BETTEREND_PROBE {"phase":"inventoryEntityRemovedOrUnloaded","id":"-25769803773","tick":316}
+
+[2026-11-02 13:07:02:998 INFO] Stopping server...
+Quit correctly

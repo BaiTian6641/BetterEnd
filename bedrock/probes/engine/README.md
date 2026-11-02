@@ -1,6 +1,6 @@
 # Native engine capability probes
 
-These are executable diagnostic packs, **not the completed BetterEnd gameplay port**. They use a separate `betterend_probe` namespace and disposable worlds. Do not install them into an existing player world.
+These are executable diagnostic packs, **not the completed BetterEnd gameplay port**. They use separate diagnostic namespaces and disposable worlds. Do not install them into an existing player world.
 
 ## What the pack implements
 
@@ -9,6 +9,7 @@ These are executable diagnostic packs, **not the completed BetterEnd gameplay po
 - Original source albedo, same-pack PBR texture sets, terrain/item atlas entries and retained license notices. Calibration MER values are not claims about upstream art direction.
 - A native End feature restricted by biome tag and a proposed central-square exclusion. Its placement must be observed; valid JSON or a script-forced block is not proof of natural generation.
 - Stable `@minecraft/server` 2.9.0 startup, zero-player console requests, temporary ticking-area loading, native state/item readback and owned-area cleanup.
+- Native inventory candidates and a vanilla control, with restart, metadata custody, transfer-capacity and hopper I/O scenarios. See [inventory evidence and the required client session](../inventory/README.md).
 
 No graphics scripting, GameTest, Beta APIs or Preview client is required for this particular probe. Per-player VV graphics and gameplay systems have separate gates and are not tested by this pack.
 
@@ -49,7 +50,7 @@ npm --prefix bedrock run probe:bds -- --engine .work/engines/bds-1.26.40.8 --bui
 
 The official target archive was acquired through Chromium after direct download transports failed. Its Microsoft signature, archive/executable hashes and exact runtime version are recorded in `upstream/engine.lock.json`. For the separate newer lane, use `.work/engines/bds-1.26.61.1` and `--build 1.26.61.1`. A newer receipt never certifies 26.40.
 
-The runner checks the engine's reported version, requires real block/item registration and structured state output, and requests a clean stop. A timeout, forced termination, content error, missing result, or failed state assertion fails the run. Logs and JSON receipts are retained under `bedrock/evidence/engine/`; `ENG-001` counts these supporting engine attempts cumulatively toward the agreed cap. A supporting result is not the entire CAP-001/CAP-002/platform gate.
+The runner checks the engine's reported version, requires real block/item registration and structured state output, and requests a clean stop. A timeout, forced termination, content error, missing result, or failed state assertion fails the run. Logs and JSON receipts are retained under `bedrock/evidence/engine/`; each runtime-tested archive and its manifest are retained by content hash under `evidence/packs/`. `ENG-001` counts the block/worldgen attempts and `INV-001` counts inventory attempts cumulatively toward the agreed cap. Neither supporting gate certifies client UI or a full platform gate.
 
 A scan containing only air is not a successful generation test. The initial fixed-Y probe found air at Y=64 while actual surfaces were Y=28–61. The current rule uses the documented heightmap expression; scans inspect the corresponding terrain columns. The revised rule was tested in a fresh disposable world, without rewriting the first world's generated terrain or creating artificial End Stone to force a pass.
 

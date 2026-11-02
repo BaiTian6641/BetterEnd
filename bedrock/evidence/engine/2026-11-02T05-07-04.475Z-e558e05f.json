@@ -1,0 +1,432 @@
+{
+  "certifiesAllPlatforms": false,
+  "clientRenderingVerified": false,
+  "events": [
+    {
+      "phase": "startup"
+    },
+    {
+      "blockRegistered": true,
+      "itemRegistered": true,
+      "phase": "worldLoad",
+      "players": 0,
+      "seed": "2640",
+      "tick": 318
+    },
+    {
+      "id": "-25769803775",
+      "phase": "inventoryEntityLoaded",
+      "tick": 324
+    },
+    {
+      "id": "-25769803774",
+      "phase": "inventoryEntityLoaded",
+      "tick": 324
+    },
+    {
+      "id": "-25769803773",
+      "phase": "inventoryEntityLoaded",
+      "tick": 324
+    },
+    {
+      "action": "inventory-inspect",
+      "carriers": [
+        {
+          "id": "-25769803775",
+          "items": [
+            {
+              "amount": 1,
+              "canDestroy": [
+                "end_stone"
+              ],
+              "canPlaceOn": [
+                "end_stone"
+              ],
+              "durability": {
+                "damage": 37,
+                "maximum": 1561,
+                "unbreakable": true
+              },
+              "dynamicProperties": {
+                "betterend_inventory_probe:counter": 42.5,
+                "betterend_inventory_probe:enabled": true,
+                "betterend_inventory_probe:token": "native-inventory-v1/runtime",
+                "betterend_inventory_probe:vector": {
+                  "x": -3,
+                  "y": 80,
+                  "z": 7.25
+                }
+              },
+              "enchantments": [
+                {
+                  "id": "unbreaking",
+                  "level": 3
+                }
+              ],
+              "isStackable": false,
+              "keepOnDeath": true,
+              "lockMode": "none",
+              "lore": [
+                "Native custody; never reconstructed",
+                "Fixture native-inventory-v1"
+              ],
+              "maxAmount": 1,
+              "nameTag": "Inventory probe: runtime",
+              "rawLore": [
+                {
+                  "text": "Native custody; never reconstructed"
+                },
+                {
+                  "text": "Fixture native-inventory-v1"
+                }
+              ],
+              "tags": [
+                "minecraft:diamond_tier",
+                "minecraft:is_sword",
+                "minecraft:is_tool",
+                "minecraft:transformable_items"
+              ],
+              "typeId": "minecraft:diamond_sword"
+            },
+            {
+              "amount": 10,
+              "canDestroy": [],
+              "canPlaceOn": [],
+              "durability": null,
+              "dynamicProperties": {},
+              "enchantments": [],
+              "isStackable": true,
+              "keepOnDeath": false,
+              "lockMode": "none",
+              "lore": [],
+              "maxAmount": 64,
+              "nameTag": null,
+              "rawLore": [],
+              "tags": [
+                "minecraft:trim_materials"
+              ],
+              "typeId": "minecraft:iron_ingot"
+            },
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "position": {
+            "x": 4096.5,
+            "y": 79.7125015258789,
+            "z": 4096.5
+          },
+          "revision": 42,
+          "role": "runtime",
+          "size": 27,
+          "typeId": "betterend_inventory_probe:carrier_runtime",
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        {
+          "id": "-25769803774",
+          "items": [
+            {
+              "amount": 1,
+              "canDestroy": [
+                "end_stone"
+              ],
+              "canPlaceOn": [
+                "end_stone"
+              ],
+              "durability": {
+                "damage": 37,
+                "maximum": 1561,
+                "unbreakable": true
+              },
+              "dynamicProperties": {
+                "betterend_inventory_probe:counter": 42.5,
+                "betterend_inventory_probe:enabled": true,
+                "betterend_inventory_probe:token": "native-inventory-v1/generic",
+                "betterend_inventory_probe:vector": {
+                  "x": -3,
+                  "y": 80,
+                  "z": 7.25
+                }
+              },
+              "enchantments": [
+                {
+                  "id": "unbreaking",
+                  "level": 3
+                }
+              ],
+              "isStackable": false,
+              "keepOnDeath": true,
+              "lockMode": "none",
+              "lore": [
+                "Native custody; never reconstructed",
+                "Fixture native-inventory-v1"
+              ],
+              "maxAmount": 1,
+              "nameTag": "Inventory probe: generic",
+              "rawLore": [
+                {
+                  "text": "Native custody; never reconstructed"
+                },
+                {
+                  "text": "Fixture native-inventory-v1"
+                }
+              ],
+              "tags": [
+                "minecraft:diamond_tier",
+                "minecraft:is_sword",
+                "minecraft:is_tool",
+                "minecraft:transformable_items"
+              ],
+              "typeId": "minecraft:diamond_sword"
+            },
+            {
+              "amount": 10,
+              "canDestroy": [],
+              "canPlaceOn": [],
+              "durability": null,
+              "dynamicProperties": {},
+              "enchantments": [],
+              "isStackable": true,
+              "keepOnDeath": false,
+              "lockMode": "none",
+              "lore": [],
+              "maxAmount": 64,
+              "nameTag": null,
+              "rawLore": [],
+              "tags": [
+                "minecraft:trim_materials"
+              ],
+              "typeId": "minecraft:iron_ingot"
+            },
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "position": {
+            "x": 4100.5,
+            "y": 80.0625,
+            "z": 4096.5
+          },
+          "revision": 42,
+          "role": "generic",
+          "size": 27,
+          "typeId": "betterend_inventory_probe:carrier_generic",
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        {
+          "id": "-25769803773",
+          "items": [
+            {
+              "amount": 1,
+              "canDestroy": [
+                "end_stone"
+              ],
+              "canPlaceOn": [
+                "end_stone"
+              ],
+              "durability": {
+                "damage": 37,
+                "maximum": 1561,
+                "unbreakable": true
+              },
+              "dynamicProperties": {
+                "betterend_inventory_probe:counter": 42.5,
+                "betterend_inventory_probe:enabled": true,
+                "betterend_inventory_probe:token": "native-inventory-v1/vanilla",
+                "betterend_inventory_probe:vector": {
+                  "x": -3,
+                  "y": 80,
+                  "z": 7.25
+                }
+              },
+              "enchantments": [
+                {
+                  "id": "unbreaking",
+                  "level": 3
+                }
+              ],
+              "isStackable": false,
+              "keepOnDeath": true,
+              "lockMode": "none",
+              "lore": [
+                "Native custody; never reconstructed",
+                "Fixture native-inventory-v1"
+              ],
+              "maxAmount": 1,
+              "nameTag": "Inventory probe: vanilla",
+              "rawLore": [
+                {
+                  "text": "Native custody; never reconstructed"
+                },
+                {
+                  "text": "Fixture native-inventory-v1"
+                }
+              ],
+              "tags": [
+                "minecraft:diamond_tier",
+                "minecraft:is_sword",
+                "minecraft:is_tool",
+                "minecraft:transformable_items"
+              ],
+              "typeId": "minecraft:diamond_sword"
+            },
+            {
+              "amount": 10,
+              "canDestroy": [],
+              "canPlaceOn": [],
+              "durability": null,
+              "dynamicProperties": {},
+              "enchantments": [],
+              "isStackable": true,
+              "keepOnDeath": false,
+              "lockMode": "none",
+              "lore": [],
+              "maxAmount": 64,
+              "nameTag": null,
+              "rawLore": [],
+              "tags": [
+                "minecraft:trim_materials"
+              ],
+              "typeId": "minecraft:iron_ingot"
+            },
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "position": {
+            "x": 4104.5,
+            "y": 80.1500015258789,
+            "z": 4096.5
+          },
+          "revision": null,
+          "role": "vanilla",
+          "size": 27,
+          "typeId": "minecraft:chest_minecart",
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        }
+      ],
+      "clientUiVerified": false,
+      "completedTick": 325,
+      "dimension": "minecraft:the_end",
+      "experiment": null,
+      "inventoryComplete": true,
+      "opaqueItemDataCertified": false,
+      "phase": "result",
+      "players": 0,
+      "probeId": "native-inventory-v1",
+      "requestId": "e558e05f-ec6e-4cba-8dd9-0605e683218e",
+      "seed": "2640",
+      "startedTick": 320
+    },
+    {
+      "id": "-25769803775",
+      "phase": "inventoryEntityRemovedOrUnloaded",
+      "tick": 327
+    },
+    {
+      "id": "-25769803774",
+      "phase": "inventoryEntityRemovedOrUnloaded",
+      "tick": 327
+    },
+    {
+      "id": "-25769803773",
+      "phase": "inventoryEntityRemovedOrUnloaded",
+      "tick": 327
+    }
+  ],
+  "executableSha256": "e7775e636b9fdcbc354823d92d0c22c12738a2141d12557d856744293d258372",
+  "exit": {
+    "code": 0,
+    "signal": null
+  },
+  "expectedBuild": "1.26.40.8",
+  "failure": null,
+  "forcedTermination": false,
+  "observedBuild": "1.26.40.8",
+  "packageSha256": "e559c9430763e886eabb00fa19499da1eba59cb27c21685d6e099333cf867024",
+  "request": {
+    "action": "inventory-inspect",
+    "probeId": "native-inventory-v1",
+    "requestId": "e558e05f-ec6e-4cba-8dd9-0605e683218e"
+  },
+  "schemaVersion": 1,
+  "scope": "supporting-server-side-evidence-not-full-capability-certification"
+}

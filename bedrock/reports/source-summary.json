@@ -21,14 +21,20 @@
     "biomes": 27,
     "blockStateSnapshotRows": 18852,
     "blocks": 728,
+    "effectiveRuntimeJsonResources": 12060,
     "explicitMobs": 6,
     "items": 850,
+    "liveBlockStates": 22385,
     "mainRecipes": 878,
     "optionalRecipes": 1,
-    "parityEntries": 4931,
+    "parityEntries": 4954,
     "recipes": 879,
     "resources": 3320,
-    "unresolved": 7
+    "runtimeEntities": 27,
+    "seatingBlocks": 33,
+    "sharedHelpers": 1,
+    "unresolved": 4,
+    "vehicles": 20
   },
   "recipeTypes": {
     "bclib:alloying": 8,
@@ -43,28 +49,14 @@
     "minecraft:smoking": 4,
     "minecraft:stonecutting": 89
   },
-  "schemaVersion": 1,
-  "scope": "source-inventory-not-port-or-runtime-certification",
+  "schemaVersion": 2,
+  "scope": "source-and-production-registry-inventory-not-bedrock-gameplay-certification",
   "sourceCommit": "5a25059ef4fd77409024a2919fb0a0098388104f",
   "unresolved": [
-    {
-      "code": "runtime-registry-not-exported",
-      "detail": "Checked-in registration/property/shape audits do not prove live default states, intrinsic item components, conditional registrations, or dependency-created entity types.",
-      "severity": "release-blocker"
-    },
     {
       "code": "dependency-assets-not-resolved",
       "detail": "BCLib, WorldWeaver, WunderLib, vanilla reference assets and any external WunderVault inputs require pinned provenance and runtime reconciliation.",
       "severity": "release-blocker"
-    },
-    {
-      "code": "snapshot-flammability-disagreement",
-      "detail": "EndWoodenComplexMaterial requests non-log flammability 5/20 while the checked-in dragon_tree_planks audit reports 5/5; resolve with the pinned Java runtime.",
-      "severity": "release-blocker",
-      "sources": [
-        "src/main/java/org/betterx/betterend/complexmaterials/EndWoodenComplexMaterial.java",
-        "src/main/generated/block_registrations.json"
-      ]
     },
     {
       "code": "nonregistry-blockstate-resource",
@@ -74,21 +66,16 @@
     },
     {
       "code": "nonregistry-blockstate-resource",
-      "id": "betterend:custom_chorus_flower",
-      "severity": "review",
-      "source": "src/main/resources/assets/betterend/blockstates/custom_chorus_flower.json"
-    },
-    {
-      "code": "nonregistry-blockstate-resource",
-      "id": "betterend:custom_chorus_plant",
-      "severity": "review",
-      "source": "src/main/resources/assets/betterend/blockstates/custom_chorus_plant.json"
-    },
-    {
-      "code": "nonregistry-blockstate-resource",
       "id": "betterend:ivis_vine",
       "severity": "review",
       "source": "src/main/resources/assets/betterend/blockstates/ivis_vine.json"
+    },
+    {
+      "code": "shape-audit-domain-mismatch",
+      "detail": "Live domains are authoritative; neutral/context-dependent collision geometry is not invented for missing audit rows.",
+      "missingLiveStateShapes": 3712,
+      "severity": "release-blocker",
+      "staleAuditStateShapes": 179
     },
     {
       "code": "invalid-source-asset-json",

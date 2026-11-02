@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "5a25059ef4fd77409024a2919fb0a0098388104f",
+  "java": {
+    "distribution": "Eclipse Temurin",
+    "version": "25.0.5+8",
+    "sha256": "636bdc13dc649ddc7d5921c5c7d23cca6e44fd19d662b45cc9c02135a6c96c42",
+    "locallyVerified": true,
+    "url": "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5%2B8/OpenJDK25U-jdk_x64_windows_hotspot_25.0.5_8.zip"
+  },
+  "dependencies": [
+    {
+      "file": "bclib-26.301.2.jar",
+      "sha256": "a2a917e0d542c0856b5957a103971d9789e24403634858279ecdd42e62ce0b51",
+      "modId": "bclib",
+      "version": "26.301.2",
+      "nestedModules": []
+    },
+    {
+      "file": "worldweaver-26.301.2.jar",
+      "sha256": "226fc340e0341ae23de55ef506443928ea24a5ec867babe607546247e2e4c580",
+      "modId": "wover",
+      "version": "26.301.2",
+      "nestedModules": [
+        {
+          "file": "wover-biome-api-26.301.2.jar",
+          "sha256": "31356bf0782075100a1841e27f58c6f7d324922f888d918e440576710bab2640"
+        },
+        {
+          "file": "wover-block-api-26.301.2.jar",
+          "sha256": "962a9cece08978a5d39c9a001fbac5f8981bf399d2ffaa029b94ed649546542d"
+        },
+        {
+          "file": "wover-common-api-26.301.2.jar",
+          "sha256": "adb33d2f29efc1ce410d3781a316379a095b62bbee098afe501569d5097be72f"
+        },
+        {
+          "file": "wover-core-api-26.301.2.jar",
+          "sha256": "bfd501ff8d7096815a6e86ff9423b04111e8139091c9b6dbea99acacd61378fc"
+        },
+        {
+          "file": "wover-datagen-api-26.301.2.jar",
+          "sha256": "dc555a2df51a8cb9696db62fab98b5c717db5406d3fa07b101af5154816e36b4"
+        },
+        {
+          "file": "wover-event-api-26.301.2.jar",
+          "sha256": "6dfc1265d3061e6d3700dca068bbf163e69f10db324d3a9a5b3abac96a220b2f"
+        },
+        {
+          "file": "wover-feature-api-26.301.2.jar",
+          "sha256": "b111e12c04440d74bc374bbac26781922d2fd87e570e776fdcc58972502f2ddd"
+        },
+        {
+          "file": "wover-generator-api-26.301.2.jar",
+          "sha256": "2e15cceedbfef004e10f724472281a0a6e0591a224fca139ee33eab7e86e88af"
+        },
+        {
+          "file": "wover-item-api-26.301.2.jar",
+          "sha256": "d45319868d32b4451aae20017fed107d2da5674ca07bada62075bf3cbc9519c2"
+        },
+        {
+          "file": "wover-loot-api-26.301.2.jar",
+          "sha256": "f6c8b429528a0b81f57d03268fe0afb0e4c85db9c393b452d2953aecf0bb1f68"
+        },
+        {
+          "file": "wover-math-api-26.301.2.jar",
+          "sha256": "f58057bd4b45389c917d6fcffc4c6664a06fcd9d0db60b5cdd86f2df29450fdc"
+        },
+        {
+          "file": "wover-pottable-api-26.301.2.jar",
+          "sha256": "67bffd2c1fd1850da8f0ec2db8694fe4601d48d9cfc98b3cbbe117a4e5c425b6"
+        },
+        {
+          "file": "wover-preset-api-26.301.2.jar",
+          "sha256": "f29fb8614e77c980b972b3bc58abb7b31087af9f4a3e4509880e890d77789540"
+        },
+        {
+          "file": "wover-recipe-api-26.301.2.jar",
+          "sha256": "e8bf7266c51fc0aef09359dd4da5188aded8ef793a74b917e013bd6ccb72fc33"
+        },
+        {
+          "file": "wover-sets-api-26.301.2.jar",
+          "sha256": "6de943f1b8ea342b186c068c82c9bad0e1d93132acba5ce2009a78c415ca3363"
+        },
+        {
+          "file": "wover-structure-api-26.301.2.jar",
+          "sha256": "7d32d1e67cacfbd78163d007415e650d52dd9cee7e85a4e73f59754ebcaf9999"
+        },
+        {
+          "file": "wover-surface-api-26.301.2.jar",
+          "sha256": "9314fae3b33ebec04b16c9caecf96e4907684e05b5fd48253f300d817e3956c3"
+        },
+        {
+          "file": "wover-tag-api-26.301.2.jar",
+          "sha256": "4d8655a0b7eb0fc540496de46ee78be1f201ec724e4f7678c29e1ddff168091a"
+        },
+        {
+          "file": "wover-test-api-26.301.2.jar",
+          "sha256": "3a221d7803db5f04621d3710b0b649ecb3bde69d4ec29124947d0f82d57badc3"
+        },
+        {
+          "file": "wover-ui-api-26.301.2.jar",
+          "sha256": "6e671732cd9e4c3892ab91e4ca5e305437eae15df6d507db575814f9f8db714a"
+        },
+        {
+          "file": "wunderlib-26.301.2.jar",
+          "sha256": "232018e0352b81024ef5ebe8f08ce074c13b42de66d6900982fe3818cfb513ce"
+        }
+      ]
+    },
+    {
+      "file": "wunderlib-26.301.2.jar",
+      "sha256": "232018e0352b81024ef5ebe8f08ce074c13b42de66d6900982fe3818cfb513ce",
+      "modId": "wunderlib",
+      "version": "26.301.2",
+      "nestedModules": []
+    }
+  ],
+  "repository": "https://maven.ambertation.de/releases/",
+  "worldWeaverResolution": {
+    "requested": "org.betterx:worldweaver:26.301.2",
+    "resolved": "de.ambertation:worldweaver:26.301.2",
+    "nestedCompileModules": 21
+  },
+  "runtimeExportComplete": true,
+  "runtimeExportScope": "Attested production registry defaults, intrinsic components, merged tags and effective JSON; gameplay and target parity remain separate."
+}

@@ -2,22 +2,28 @@
 
 Native Bedrock port on `experimental/bedrock-26.40`. The required baseline is **26.40**, with separately verified newer public client/BDS deployment lanes. Required clients include Windows, Android, iOS/iPadOS, Xbox, PlayStation and Nintendo. Stock clients receive resources through the custom server; lack of a console-local add-on importer is not an exclusion.
 
-**Current implementation:** deterministic source inventory/provenance tooling, integrity-checked acceptance receipts, and executable native-engine diagnostic packs. **The full survival port is not complete and no platform/rendering certification is claimed.** The [execution contract](docs/execution-contract.md) remains the completion standard.
+**Current implementation:** deterministic source/provenance tooling, an input-attested live Java reference exporter, integrity-checked acceptance receipts, and native Bedrock block/worldgen/inventory diagnostic packs. **The full survival port is not complete and no platform/rendering certification is claimed.** The [execution contract](docs/execution-contract.md) remains the completion standard.
 
 ## Implemented source pipeline
 
-The exporter materializes the immutable upstream Git commit, preserving its exact bytes independently of Windows checkout conversion or local source changes. It inventories registration/property/state snapshots, effective generated/authored resources, separate optional packs, explicit mob/biome declarations, recipes and complete source-asset provenance. It does not pretend checked-in audits are live runtime exports.
+Source extraction materializes the immutable upstream Git commit, preserving its bytes independently of checkout conversion or local changes. It joins checked-in audits/resources with a hash-pinned production Java runtime corpus: true defaults, complete state domains, intrinsic components, dependency-created entities and merged registry tags. Raw resource visibility is not recipe activation; registry observations are not gameplay or client certification.
 
 | Inventoried source category | Count |
 |---|---:|
 | Block registrations | 728 |
 | Item registrations | 850 |
 | Explicit mob families | 6 |
+| Boat/chest-boat/raft vehicle types | 20 |
+| Shared seating helper types | 1 |
+| Furniture blocks using that helper | 33 |
 | Region keys | 27 |
 | Observed state/shape snapshot rows | 18,852 |
+| Live possible block states | 22,385 |
+| Live states missing checked-in shape rows | 3,712 |
+| Stale checked-in state/shape rows | 179 |
 | Main recipes | 878 |
 | Separately scoped optional recipe | 1 |
-| Source parity records | 4,931 |
+| Source/runtime parity records | 4,954 |
 | Physical source assets | 6,658 |
 | Explicit CC BY-NC-SA asset exceptions | 3 |
 
@@ -35,10 +41,11 @@ npm --prefix bedrock run package:probe
 npm --prefix bedrock run evidence -- status ENG-001
 ```
 
-- `extract:source` writes the deterministic checked-in inventory from the pinned commit, not moving `HEAD`.
+- `extract:source` joins the immutable source with the committed, hash-verified runtime corpus; it does not follow moving `HEAD`.
 - `verify:source` runs meaningful regression tests and checks generated records for drift.
 - `package:probe` builds real BP/RP folders and a portable diagnostic `.mcaddon`; it is not a production BetterEnd release.
 - `evidence` records retained, hash-bound observations and enforces the cumulative 15-failure cap. Missing/changed evidence, malformed IDs and corrupt ledgers fail closed.
+- `reference:build` and `reference:export` regenerate the real Java observations in the prepared isolated workspace. See [reference prerequisites and evidence](java-exporter/README.md); ordinary source verification uses the retained corpus and does not require a local Java server.
 
 The final goal's `verify` and `package` release acceptance is distinct from these source/probe commands; it must include the completed gameplay and actual platform gates. Passing this stage must not be advertised as completing that contract.
 
@@ -48,6 +55,8 @@ See [the probe instructions](probes/engine/README.md) for the owned disposable-s
 
 The probe uses the real engine, real original albedo, supported PBR texture sets and stable Script API 2.9.0. Its separate namespace and calibration states are diagnostic instruments, not substitute gameplay content. Client screenshots, resource delivery and controller/touch usability require actual client tests; BDS output alone cannot certify them.
 
+The [native inventory probe](probes/inventory/README.md) additionally exercises real carrier storage, metadata custody, restart, capacity boundaries and hopper I/O. Exact 26.40.8 and separate 26.61.1 server lanes passed those automated scenarios. Native screen opening, simultaneous player access and Classic/VV presentation still require the documented stock-client session.
+
 ## Scope and evidence
 
 - New implementation, tooling, dependencies, documentation and retained evidence stay under this directory. The upstream Java tree and existing root changes are left untouched.
@@ -55,6 +64,6 @@ The probe uses the real engine, real original albedo, supported PBR texture sets
 - `.gitattributes` keeps generated text reproducible and retained evidence byte-exact across checkouts.
 - [Source review](docs/source-review.md) records independently reviewed defects and corrections.
 - [Initial specification](docs/reference/BetterEnd_Bedrock_26.40_Implementation_Plan.md) preserves the full required content/platform scope.
-- The two missing music files have been located and hash-verified in the official distribution; `upstream/music-distribution.json` distinguishes acquisition from pending decoding/playback/rights review.
+- The two missing music files have been located, hash-verified and decoded from the official distribution; `upstream/music-distribution.json` distinguishes that evidence from pending Bedrock playback/integration and rights review.
 
 No production deployment, existing-world migration, asset-rights clearance, native client rendering, or complete survival-loop result is implied by this tooling stage.

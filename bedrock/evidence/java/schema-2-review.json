@@ -1,0 +1,14 @@
+{
+  "gateId": "JAVA-002",
+  "result": "fail",
+  "method": "manual",
+  "operator": "assistant: verified the review finding against actual runtime JSON and the exact Minecraft server JAR",
+  "profile": "java-26.3-production-no-vault",
+  "scenario": "Reference completeness review after the first schema-2 export",
+  "observed": "The runtime export had zero codec issues, but betterend:amaranita_fur's minecraft:compostable.layers referenced minecraft:compostable/low without retaining data/minecraft/context_int_provider/compostable/low.json. The exact server JAR defines a guaranteed first layer and a 30/70 weighted default. The narrow number_provider allowlist was wrong for Java 26.3. Reviewed source-to-artifact binding, effective server-property parsing and temporary-file exclusivity also required hardening. The earlier codec pass does not close reference completeness.",
+  "artifacts": [
+    "evidence/java/runtime-2026-11-02T04-40-29.892Z-2646e32a.json.gz",
+    "evidence/java/export-2026-11-02T04-40-29.892Z-2646e32a.json",
+    "evidence/java/export-2026-11-02T04-40-29.892Z-2646e32a.log"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "5a25059ef4fd77409024a2919fb0a0098388104f",
+  "profile": "java-26.3-production-no-vault",
+  "sourceFingerprint": "3ff99216f1820311794e04ed70ccb748c5c37111b451230b3e78f85b56cb9ac2",
+  "runtime": {
+    "path": "evidence/java/runtime-2026-11-02T05-13-25.746Z-0d8cb2ba.json.gz",
+    "sha256": "cf141888fee9e6ffb3650d9dd4222b33f2d5211e34822a3cab55c359f9aeb56c",
+    "uncompressedSha256": "ecd590f35cb7a60c8f8548adc3bcf79bdce0e18987323dd249b646585739f849"
+  },
+  "buildManifest": {
+    "path": "evidence/java/build-2026-11-02T05-12-23.407Z-ebfe7755.inputs.json",
+    "sha256": "a664dfbe9c39282ae1cca0899e561c4f729f3b33337e22634a24f87fa4500572"
+  },
+  "receipt": {
+    "path": "evidence/java/export-2026-11-02T05-13-25.746Z-0d8cb2ba.json",
+    "sha256": "96711a35285062742168a6ff38b785bb67216e09bb7cb4fcf23dc79ac028f30c"
+  },
+  "scope": "Observed registry/default components, merged registry tags and effective JSON data; not in-world behavior, client visuals, all integrations or Bedrock parity certification."
+}

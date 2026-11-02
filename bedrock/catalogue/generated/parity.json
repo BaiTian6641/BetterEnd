@@ -9843,6 +9843,61 @@
       "upstreamId": "betterend:virid_jadestone_wall"
     },
     {
+      "associatedBlocks": [
+        "betterend:dragon_tree_bar_stool",
+        "betterend:dragon_tree_chair",
+        "betterend:dragon_tree_taburet",
+        "betterend:end_lotus_bar_stool",
+        "betterend:end_lotus_chair",
+        "betterend:end_lotus_taburet",
+        "betterend:helix_tree_bar_stool",
+        "betterend:helix_tree_chair",
+        "betterend:helix_tree_taburet",
+        "betterend:jellyshroom_bar_stool",
+        "betterend:jellyshroom_chair",
+        "betterend:jellyshroom_taburet",
+        "betterend:lacugrove_bar_stool",
+        "betterend:lacugrove_chair",
+        "betterend:lacugrove_taburet",
+        "betterend:lucernia_bar_stool",
+        "betterend:lucernia_chair",
+        "betterend:lucernia_jellyshroom_bar_stool",
+        "betterend:lucernia_jellyshroom_chair",
+        "betterend:lucernia_jellyshroom_taburet",
+        "betterend:lucernia_taburet",
+        "betterend:mossy_glowshroom_bar_stool",
+        "betterend:mossy_glowshroom_chair",
+        "betterend:mossy_glowshroom_taburet",
+        "betterend:pythadendron_bar_stool",
+        "betterend:pythadendron_chair",
+        "betterend:pythadendron_taburet",
+        "betterend:tenanea_bar_stool",
+        "betterend:tenanea_chair",
+        "betterend:tenanea_taburet",
+        "betterend:umbrella_tree_bar_stool",
+        "betterend:umbrella_tree_chair",
+        "betterend:umbrella_tree_taburet"
+      ],
+      "evidence": [],
+      "key": "entity-helper/bclib:chair",
+      "kind": "entity-helper",
+      "requirements": [
+        "single-occupant-riding",
+        "player-interaction",
+        "eligible-mob-autoboarding",
+        "upper-half-forwarding",
+        "orphan-cleanup",
+        "reload-reconciliation"
+      ],
+      "sources": [
+        "src/main/java/org/betterx/betterend/complexmaterials/EndWoodenComplexMaterial.java",
+        "evidence/java/runtime-2026-11-02T05-13-25.746Z-0d8cb2ba.json.gz"
+      ],
+      "status": "Unproven",
+      "targetId": "betterend_bedrock:chair",
+      "upstreamId": "bclib:chair"
+    },
+    {
       "evidence": [],
       "key": "item/betterend:aeridium",
       "kind": "item",
@@ -55777,8 +55832,496 @@
       "status": "Unproven",
       "targetId": "betterend_bedrock:guide_book",
       "upstreamId": "betterend:guide_book"
+    },
+    {
+      "evidence": [],
+      "key": "vanilla-block-override/minecraft:chorus_flower",
+      "kind": "vanilla-block-override",
+      "requirements": [
+        "classic-and-vv-visuals",
+        "source-substrate-and-growth-behavior",
+        "vanilla-progression-safety"
+      ],
+      "sources": [
+        "src/main/java/org/betterx/betterend/mixin/client/BlockStateModelLoaderMixin.java",
+        "src/main/java/org/betterx/betterend/mixin/common/ChorusFlowerBlockMixin.java",
+        "src/main/resources/assets/betterend/blockstates/custom_chorus_flower.json"
+      ],
+      "status": "Unproven",
+      "targetId": "minecraft:chorus_flower",
+      "upstreamId": "minecraft:chorus_flower",
+      "visualResourceId": "betterend:custom_chorus_flower"
+    },
+    {
+      "evidence": [],
+      "key": "vanilla-block-override/minecraft:chorus_plant",
+      "kind": "vanilla-block-override",
+      "requirements": [
+        "classic-and-vv-visuals",
+        "source-substrate-and-growth-behavior",
+        "vanilla-progression-safety"
+      ],
+      "sources": [
+        "src/main/java/org/betterx/betterend/mixin/client/BlockStateModelLoaderMixin.java",
+        "src/main/java/org/betterx/betterend/mixin/common/ChorusPlantBlockMixin.java",
+        "src/main/resources/assets/betterend/blockstates/custom_chorus_plant.json"
+      ],
+      "status": "Unproven",
+      "targetId": "minecraft:chorus_plant",
+      "upstreamId": "minecraft:chorus_plant",
+      "visualResourceId": "betterend:custom_chorus_plant"
+    },
+    {
+      "associatedItemId": "betterend:dragon_tree_boat",
+      "evidence": [],
+      "key": "vehicle/betterend:dragon_tree_boat",
+      "kind": "vehicle",
+      "requirements": [
+        "item-placement",
+        "native-passengers",
+        "water-transport",
+        "survival-recovery",
+        "unload-and-restart-persistence"
+      ],
+      "sources": [
+        "src/main/java/org/betterx/betterend/registry/block/EndWoodBlocks.java",
+        "src/main/java/org/betterx/betterend/complexmaterials/EndWoodenComplexMaterial.java",
+        "evidence/java/runtime-2026-11-02T05-13-25.746Z-0d8cb2ba.json.gz"
+      ],
+      "status": "Unproven",
+      "targetId": "betterend_bedrock:dragon_tree_boat",
+      "upstreamId": "betterend:dragon_tree_boat"
+    },
+    {
+      "associatedItemId": "betterend:dragon_tree_chest_boat",
+      "evidence": [],
+      "key": "vehicle/betterend:dragon_tree_chest_boat",
+      "kind": "vehicle",
+      "requirements": [
+        "item-placement",
+        "native-passengers",
+        "water-transport",
+        "survival-recovery",
+        "unload-and-restart-persistence",
+        "native-cargo-inventory",
+        "cargo-recovery",
+        "concurrent-access"
+      ],
+      "sources": [
+        "src/main/java/org/betterx/betterend/registry/block/EndWoodBlocks.java",
+        "src/main/java/org/betterx/betterend/complexmaterials/EndWoodenComplexMaterial.java",
+        "evidence/java/runtime-2026-11-02T05-13-25.746Z-0d8cb2ba.json.gz"
+      ],
+      "status": "Unproven",
+      "targetId": "betterend_bedrock:dragon_tree_chest_boat",
+      "upstreamId": "betterend:dragon_tree_chest_boat"
+    },
+    {
+      "associatedItemId": "betterend:end_lotus_chest_raft",
+      "evidence": [],
+      "key": "vehicle/betterend:end_lotus_chest_raft",
+      "kind": "vehicle",
+      "requirements": [
+        "item-placement",
+        "native-passengers",
+        "water-transport",
+        "survival-recovery",
+        "unload-and-restart-persistence",
+        "native-cargo-inventory",
+        "cargo-recovery",
+        "concurrent-access"
+      ],
+      "sources": [
+        "src/main/java/org/betterx/betterend/registry/block/EndWoodBlocks.java",
+        "src/main/java/org/betterx/betterend/complexmaterials/EndWoodenComplexMaterial.java",
+        "evidence/java/runtime-2026-11-02T05-13-25.746Z-0d8cb2ba.json.gz"
+      ],
+      "status": "Unproven",
+      "targetId": "betterend_bedrock:end_lotus_chest_raft",
+      "upstreamId": "betterend:end_lotus_chest_raft"
+    },
+    {
+      "associatedItemId": "betterend:end_lotus_raft",
+      "evidence": [],
+      "key": "vehicle/betterend:end_lotus_raft",
+      "kind": "vehicle",
+      "requirements": [
+        "item-placement",
+        "native-passengers",
+        "water-transport",
+        "survival-recovery",
+        "unload-and-restart-persistence"
+      ],
+      "sources": [
+        "src/main/java/org/betterx/betterend/registry/block/EndWoodBlocks.java",
+        "src/main/java/org/betterx/betterend/complexmaterials/EndWoodenComplexMaterial.java",
+        "evidence/java/runtime-2026-11-02T05-13-25.746Z-0d8cb2ba.json.gz"
+      ],
+      "status": "Unproven",
+      "targetId": "betterend_bedrock:end_lotus_raft",
+      "upstreamId": "betterend:end_lotus_raft"
+    },
+    {
+      "associatedItemId": "betterend:helix_tree_boat",
+      "evidence": [],
+      "key": "vehicle/betterend:helix_tree_boat",
+      "kind": "vehicle",
+      "requirements": [
+        "item-placement",
+        "native-passengers",
+        "water-transport",
+        "survival-recovery",
+        "unload-and-restart-persistence"
+      ],
+      "sources": [
+        "src/main/java/org/betterx/betterend/registry/block/EndWoodBlocks.java",
+        "src/main/java/org/betterx/betterend/complexmaterials/EndWoodenComplexMaterial.java",
+        "evidence/java/runtime-2026-11-02T05-13-25.746Z-0d8cb2ba.json.gz"
+      ],
+      "status": "Unproven",
+      "targetId": "betterend_bedrock:helix_tree_boat",
+      "upstreamId": "betterend:helix_tree_boat"
+    },
+    {
+      "associatedItemId": "betterend:helix_tree_chest_boat",
+      "evidence": [],
+      "key": "vehicle/betterend:helix_tree_chest_boat",
+      "kind": "vehicle",
+      "requirements": [
+        "item-placement",
+        "native-passengers",
+        "water-transport",
+        "survival-recovery",
+        "unload-and-restart-persistence",
+        "native-cargo-inventory",
+        "cargo-recovery",
+        "concurrent-access"
+      ],
+      "sources": [
+        "src/main/java/org/betterx/betterend/registry/block/EndWoodBlocks.java",
+        "src/main/java/org/betterx/betterend/complexmaterials/EndWoodenComplexMaterial.java",
+        "evidence/java/runtime-2026-11-02T05-13-25.746Z-0d8cb2ba.json.gz"
+      ],
+      "status": "Unproven",
+      "targetId": "betterend_bedrock:helix_tree_chest_boat",
+      "upstreamId": "betterend:helix_tree_chest_boat"
+    },
+    {
+      "associatedItemId": "betterend:jellyshroom_boat",
+      "evidence": [],
+      "key": "vehicle/betterend:jellyshroom_boat",
+      "kind": "vehicle",
+      "requirements": [
+        "item-placement",
+        "native-passengers",
+        "water-transport",
+        "survival-recovery",
+        "unload-and-restart-persistence"
+      ],
+      "sources": [
+        "src/main/java/org/betterx/betterend/registry/block/EndWoodBlocks.java",
+        "src/main/java/org/betterx/betterend/complexmaterials/EndWoodenComplexMaterial.java",
+        "evidence/java/runtime-2026-11-02T05-13-25.746Z-0d8cb2ba.json.gz"
+      ],
+      "status": "Unproven",
+      "targetId": "betterend_bedrock:jellyshroom_boat",
+      "upstreamId": "betterend:jellyshroom_boat"
+    },
+    {
+      "associatedItemId": "betterend:jellyshroom_chest_boat",
+      "evidence": [],
+      "key": "vehicle/betterend:jellyshroom_chest_boat",
+      "kind": "vehicle",
+      "requirements": [
+        "item-placement",
+        "native-passengers",
+        "water-transport",
+        "survival-recovery",
+        "unload-and-restart-persistence",
+        "native-cargo-inventory",
+        "cargo-recovery",
+        "concurrent-access"
+      ],
+      "sources": [
+        "src/main/java/org/betterx/betterend/registry/block/EndWoodBlocks.java",
+        "src/main/java/org/betterx/betterend/complexmaterials/EndWoodenComplexMaterial.java",
+        "evidence/java/runtime-2026-11-02T05-13-25.746Z-0d8cb2ba.json.gz"
+      ],
+      "status": "Unproven",
+      "targetId": "betterend_bedrock:jellyshroom_chest_boat",
+      "upstreamId": "betterend:jellyshroom_chest_boat"
+    },
+    {
+      "associatedItemId": "betterend:lacugrove_boat",
+      "evidence": [],
+      "key": "vehicle/betterend:lacugrove_boat",
+      "kind": "vehicle",
+      "requirements": [
+        "item-placement",
+        "native-passengers",
+        "water-transport",
+        "survival-recovery",
+        "unload-and-restart-persistence"
+      ],
+      "sources": [
+        "src/main/java/org/betterx/betterend/registry/block/EndWoodBlocks.java",
+        "src/main/java/org/betterx/betterend/complexmaterials/EndWoodenComplexMaterial.java",
+        "evidence/java/runtime-2026-11-02T05-13-25.746Z-0d8cb2ba.json.gz"
+      ],
+      "status": "Unproven",
+      "targetId": "betterend_bedrock:lacugrove_boat",
+      "upstreamId": "betterend:lacugrove_boat"
+    },
+    {
+      "associatedItemId": "betterend:lacugrove_chest_boat",
+      "evidence": [],
+      "key": "vehicle/betterend:lacugrove_chest_boat",
+      "kind": "vehicle",
+      "requirements": [
+        "item-placement",
+        "native-passengers",
+        "water-transport",
+        "survival-recovery",
+        "unload-and-restart-persistence",
+        "native-cargo-inventory",
+        "cargo-recovery",
+        "concurrent-access"
+      ],
+      "sources": [
+        "src/main/java/org/betterx/betterend/registry/block/EndWoodBlocks.java",
+        "src/main/java/org/betterx/betterend/complexmaterials/EndWoodenComplexMaterial.java",
+        "evidence/java/runtime-2026-11-02T05-13-25.746Z-0d8cb2ba.json.gz"
+      ],
+      "status": "Unproven",
+      "targetId": "betterend_bedrock:lacugrove_chest_boat",
+      "upstreamId": "betterend:lacugrove_chest_boat"
+    },
+    {
+      "associatedItemId": "betterend:lucernia_boat",
+      "evidence": [],
+      "key": "vehicle/betterend:lucernia_boat",
+      "kind": "vehicle",
+      "requirements": [
+        "item-placement",
+        "native-passengers",
+        "water-transport",
+        "survival-recovery",
+        "unload-and-restart-persistence"
+      ],
+      "sources": [
+        "src/main/java/org/betterx/betterend/registry/block/EndWoodBlocks.java",
+        "src/main/java/org/betterx/betterend/complexmaterials/EndWoodenComplexMaterial.java",
+        "evidence/java/runtime-2026-11-02T05-13-25.746Z-0d8cb2ba.json.gz"
+      ],
+      "status": "Unproven",
+      "targetId": "betterend_bedrock:lucernia_boat",
+      "upstreamId": "betterend:lucernia_boat"
+    },
+    {
+      "associatedItemId": "betterend:lucernia_chest_boat",
+      "evidence": [],
+      "key": "vehicle/betterend:lucernia_chest_boat",
+      "kind": "vehicle",
+      "requirements": [
+        "item-placement",
+        "native-passengers",
+        "water-transport",
+        "survival-recovery",
+        "unload-and-restart-persistence",
+        "native-cargo-inventory",
+        "cargo-recovery",
+        "concurrent-access"
+      ],
+      "sources": [
+        "src/main/java/org/betterx/betterend/registry/block/EndWoodBlocks.java",
+        "src/main/java/org/betterx/betterend/complexmaterials/EndWoodenComplexMaterial.java",
+        "evidence/java/runtime-2026-11-02T05-13-25.746Z-0d8cb2ba.json.gz"
+      ],
+      "status": "Unproven",
+      "targetId": "betterend_bedrock:lucernia_chest_boat",
+      "upstreamId": "betterend:lucernia_chest_boat"
+    },
+    {
+      "associatedItemId": "betterend:mossy_glowshroom_boat",
+      "evidence": [],
+      "key": "vehicle/betterend:mossy_glowshroom_boat",
+      "kind": "vehicle",
+      "requirements": [
+        "item-placement",
+        "native-passengers",
+        "water-transport",
+        "survival-recovery",
+        "unload-and-restart-persistence"
+      ],
+      "sources": [
+        "src/main/java/org/betterx/betterend/registry/block/EndWoodBlocks.java",
+        "src/main/java/org/betterx/betterend/complexmaterials/EndWoodenComplexMaterial.java",
+        "evidence/java/runtime-2026-11-02T05-13-25.746Z-0d8cb2ba.json.gz"
+      ],
+      "status": "Unproven",
+      "targetId": "betterend_bedrock:mossy_glowshroom_boat",
+      "upstreamId": "betterend:mossy_glowshroom_boat"
+    },
+    {
+      "associatedItemId": "betterend:mossy_glowshroom_chest_boat",
+      "evidence": [],
+      "key": "vehicle/betterend:mossy_glowshroom_chest_boat",
+      "kind": "vehicle",
+      "requirements": [
+        "item-placement",
+        "native-passengers",
+        "water-transport",
+        "survival-recovery",
+        "unload-and-restart-persistence",
+        "native-cargo-inventory",
+        "cargo-recovery",
+        "concurrent-access"
+      ],
+      "sources": [
+        "src/main/java/org/betterx/betterend/registry/block/EndWoodBlocks.java",
+        "src/main/java/org/betterx/betterend/complexmaterials/EndWoodenComplexMaterial.java",
+        "evidence/java/runtime-2026-11-02T05-13-25.746Z-0d8cb2ba.json.gz"
+      ],
+      "status": "Unproven",
+      "targetId": "betterend_bedrock:mossy_glowshroom_chest_boat",
+      "upstreamId": "betterend:mossy_glowshroom_chest_boat"
+    },
+    {
+      "associatedItemId": "betterend:pythadendron_boat",
+      "evidence": [],
+      "key": "vehicle/betterend:pythadendron_boat",
+      "kind": "vehicle",
+      "requirements": [
+        "item-placement",
+        "native-passengers",
+        "water-transport",
+        "survival-recovery",
+        "unload-and-restart-persistence"
+      ],
+      "sources": [
+        "src/main/java/org/betterx/betterend/registry/block/EndWoodBlocks.java",
+        "src/main/java/org/betterx/betterend/complexmaterials/EndWoodenComplexMaterial.java",
+        "evidence/java/runtime-2026-11-02T05-13-25.746Z-0d8cb2ba.json.gz"
+      ],
+      "status": "Unproven",
+      "targetId": "betterend_bedrock:pythadendron_boat",
+      "upstreamId": "betterend:pythadendron_boat"
+    },
+    {
+      "associatedItemId": "betterend:pythadendron_chest_boat",
+      "evidence": [],
+      "key": "vehicle/betterend:pythadendron_chest_boat",
+      "kind": "vehicle",
+      "requirements": [
+        "item-placement",
+        "native-passengers",
+        "water-transport",
+        "survival-recovery",
+        "unload-and-restart-persistence",
+        "native-cargo-inventory",
+        "cargo-recovery",
+        "concurrent-access"
+      ],
+      "sources": [
+        "src/main/java/org/betterx/betterend/registry/block/EndWoodBlocks.java",
+        "src/main/java/org/betterx/betterend/complexmaterials/EndWoodenComplexMaterial.java",
+        "evidence/java/runtime-2026-11-02T05-13-25.746Z-0d8cb2ba.json.gz"
+      ],
+      "status": "Unproven",
+      "targetId": "betterend_bedrock:pythadendron_chest_boat",
+      "upstreamId": "betterend:pythadendron_chest_boat"
+    },
+    {
+      "associatedItemId": "betterend:tenanea_boat",
+      "evidence": [],
+      "key": "vehicle/betterend:tenanea_boat",
+      "kind": "vehicle",
+      "requirements": [
+        "item-placement",
+        "native-passengers",
+        "water-transport",
+        "survival-recovery",
+        "unload-and-restart-persistence"
+      ],
+      "sources": [
+        "src/main/java/org/betterx/betterend/registry/block/EndWoodBlocks.java",
+        "src/main/java/org/betterx/betterend/complexmaterials/EndWoodenComplexMaterial.java",
+        "evidence/java/runtime-2026-11-02T05-13-25.746Z-0d8cb2ba.json.gz"
+      ],
+      "status": "Unproven",
+      "targetId": "betterend_bedrock:tenanea_boat",
+      "upstreamId": "betterend:tenanea_boat"
+    },
+    {
+      "associatedItemId": "betterend:tenanea_chest_boat",
+      "evidence": [],
+      "key": "vehicle/betterend:tenanea_chest_boat",
+      "kind": "vehicle",
+      "requirements": [
+        "item-placement",
+        "native-passengers",
+        "water-transport",
+        "survival-recovery",
+        "unload-and-restart-persistence",
+        "native-cargo-inventory",
+        "cargo-recovery",
+        "concurrent-access"
+      ],
+      "sources": [
+        "src/main/java/org/betterx/betterend/registry/block/EndWoodBlocks.java",
+        "src/main/java/org/betterx/betterend/complexmaterials/EndWoodenComplexMaterial.java",
+        "evidence/java/runtime-2026-11-02T05-13-25.746Z-0d8cb2ba.json.gz"
+      ],
+      "status": "Unproven",
+      "targetId": "betterend_bedrock:tenanea_chest_boat",
+      "upstreamId": "betterend:tenanea_chest_boat"
+    },
+    {
+      "associatedItemId": "betterend:umbrella_tree_boat",
+      "evidence": [],
+      "key": "vehicle/betterend:umbrella_tree_boat",
+      "kind": "vehicle",
+      "requirements": [
+        "item-placement",
+        "native-passengers",
+        "water-transport",
+        "survival-recovery",
+        "unload-and-restart-persistence"
+      ],
+      "sources": [
+        "src/main/java/org/betterx/betterend/registry/block/EndWoodBlocks.java",
+        "src/main/java/org/betterx/betterend/complexmaterials/EndWoodenComplexMaterial.java",
+        "evidence/java/runtime-2026-11-02T05-13-25.746Z-0d8cb2ba.json.gz"
+      ],
+      "status": "Unproven",
+      "targetId": "betterend_bedrock:umbrella_tree_boat",
+      "upstreamId": "betterend:umbrella_tree_boat"
+    },
+    {
+      "associatedItemId": "betterend:umbrella_tree_chest_boat",
+      "evidence": [],
+      "key": "vehicle/betterend:umbrella_tree_chest_boat",
+      "kind": "vehicle",
+      "requirements": [
+        "item-placement",
+        "native-passengers",
+        "water-transport",
+        "survival-recovery",
+        "unload-and-restart-persistence",
+        "native-cargo-inventory",
+        "cargo-recovery",
+        "concurrent-access"
+      ],
+      "sources": [
+        "src/main/java/org/betterx/betterend/registry/block/EndWoodBlocks.java",
+        "src/main/java/org/betterx/betterend/complexmaterials/EndWoodenComplexMaterial.java",
+        "evidence/java/runtime-2026-11-02T05-13-25.746Z-0d8cb2ba.json.gz"
+      ],
+      "status": "Unproven",
+      "targetId": "betterend_bedrock:umbrella_tree_chest_boat",
+      "upstreamId": "betterend:umbrella_tree_chest_boat"
     }
   ],
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "sourceCommit": "5a25059ef4fd77409024a2919fb0a0098388104f"
 }

@@ -1,0 +1,84 @@
+import groovy.json.JsonOutput
+import java.security.MessageDigest
+
+// Applied only to a pinned source copy beneath the Bedrock workspace.
+def workspaceArgument = gradle.startParameter.projectProperties.get('bedrockWorkspace')
+if (!workspaceArgument) {
+    throw new GradleException('Pass -PbedrockWorkspace=<absolute bedrock directory> for the reference build.')
+}
+def workspace = new File(workspaceArgument).canonicalFile
+def referenceRoot = new File(workspace, '.work/java-reference').canonicalFile
+def expectedProject = new File(referenceRoot, 'source').canonicalFile
+def nestedModules = new File(referenceRoot, 'dependency-jars')
+def exportsDirectory = new File(referenceRoot, 'exports')
+
+def sha256 = { File input ->
+    def digest = MessageDigest.getInstance('SHA-256')
+    input.withInputStream { stream ->
+        byte[] buffer = new byte[65536]
+        int count
+        while ((count = stream.read(buffer)) != -1) digest.update(buffer, 0, count)
+    }
+    digest.digest().encodeHex().toString()
+}
+
+gradle.beforeProject { project ->
+    if (project == project.rootProject && project.projectDir.canonicalFile != expectedProject) {
+        throw new GradleException('Reference init script refuses a project outside the owned pinned-source copy.')
+    }
+    project.configurations.configureEach {
+        resolutionStrategy.dependencySubstitution {
+            substitute module('org.betterx:worldweaver') using module('de.ambertation:worldweaver:26.301.2')
+        }
+    }
+    project.plugins.withId('java') {
+        if (!nestedModules.isDirectory()) throw new GradleException('Verified WorldWeaver nested compile modules are missing.')
+        project.dependencies.add('compileOnly', project.files(project.fileTree(nestedModules) { include '*.jar' }))
+    }
+    project.afterEvaluate {
+        if (project != project.rootProject) return
+        def exporter = project.sourceSets.create('bedrockReference') {
+            java.srcDir new File(workspace, 'java-exporter/src/main/java')
+            resources.srcDir new File(workspace, 'java-exporter/src/main/resources')
+            compileClasspath += project.sourceSets.main.output + project.sourceSets.main.compileClasspath
+            runtimeClasspath += project.sourceSets.main.runtimeClasspath
+        }
+        project.loom.mods.create('betterend_reference_exporter') {
+            sourceSet exporter
+        }
+        project.tasks.register('bedrockReferenceExporterJar', org.gradle.api.tasks.bundling.Jar) {
+            group = 'build'
+            description = 'Builds the separate production registry exporter without modifying the BetterEnd artifact.'
+            dependsOn exporter.classesTaskName
+            archiveBaseName = 'betterend-reference-exporter'
+            archiveVersion = '0.1.0'
+            destinationDirectory = exportsDirectory
+            from exporter.output
+            from new File(expectedProject, 'LICENSE')
+        }
+        project.tasks.register('bedrockReferenceClasspath') {
+            group = 'verification'
+            description = 'Records the exact compiled reference classpath and dependency digests without running gameplay tests.'
+            dependsOn project.tasks.named('classes')
+            doLast {
+                exportsDirectory.mkdirs()
+                def compileFiles = project.sourceSets.main.compileClasspath.files.findAll { it.isFile() }.sort { it.absolutePath }
+                def runtimeFiles = project.sourceSets.main.runtimeClasspath.files.findAll { it.isFile() }.sort { it.absolutePath }
+                def pluginFiles = project.buildscript.configurations.classpath.files.findAll { it.isFile() }.sort { it.absolutePath }
+                def record = { File file -> [file: file.absolutePath, bytes: file.length(), sha256: sha256(file)] }
+                def output = [
+                        schemaVersion: 1,
+                        sourceCommit: '5a25059ef4fd77409024a2919fb0a0098388104f',
+                        minecraftVersion: project.minecraft_version,
+                        betterEndVersion: project.mod_version,
+                        sourceProfile: 'pinned-checked-in-resources-before-datagen',
+                        worldWeaverSubstitution: [requested: 'org.betterx:worldweaver:26.301.2', resolved: 'de.ambertation:worldweaver:26.301.2'],
+                        compileClasspath: compileFiles.collect(record),
+                        runtimeClasspath: runtimeFiles.collect(record),
+                        pluginClasspath: pluginFiles.collect(record)
+                ]
+                new File(exportsDirectory, 'build-classpath.json').text = JsonOutput.prettyPrint(JsonOutput.toJson(output)) + '\n'
+            }
+        }
+    }
+}

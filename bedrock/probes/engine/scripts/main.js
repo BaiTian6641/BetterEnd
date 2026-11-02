@@ -1,6 +1,7 @@
 import {
   BlockPermutation, BlockTypes, ItemStack, ItemTypes, ScriptEventSource, system, world,
 } from '@minecraft/server';
+import { installInventoryObservers, inventoryActions, runInventoryProbe } from './inventory.js';
 
 const blockId = 'betterend_probe:flavolite';
 const itemId = 'betterend_probe:thallasium_ingot';
@@ -31,6 +32,10 @@ async function run(request) {
   if (typeof request.requestId !== 'string' || !/^[a-zA-Z0-9_-]{1,64}$/.test(request.requestId)) throw new Error('Invalid request ID');
   if (world.getAllPlayers().length !== 0) throw new Error('Automated mutation probes require an empty disposable server');
   const action = request.action;
+  if (inventoryActions.includes(action)) {
+    emit(await runInventoryProbe(request));
+    return;
+  }
   if (!['scan', 'place', 'inspect', 'board'].includes(action)) throw new Error('Unknown action');
   const dimensionName = request.dimension ?? 'the_end';
   if (!['the_end', 'overworld', 'nether'].includes(dimensionName)) throw new Error('Unknown dimension');
@@ -96,6 +101,7 @@ async function run(request) {
 
 system.beforeEvents.startup.subscribe(() => emit({ phase: 'startup' }));
 world.afterEvents.worldLoad.subscribe(() => {
+  installInventoryObservers(emit);
   ready = true;
   emit({ phase: 'worldLoad', tick: system.currentTick, seed: world.seed, players: world.getAllPlayers().length, blockRegistered: BlockTypes.get(blockId) !== undefined, itemRegistered: ItemTypes.get(itemId) !== undefined });
 });

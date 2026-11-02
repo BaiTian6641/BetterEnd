@@ -1,13 +1,14 @@
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { createWriteStream } from 'node:fs';
-import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { constants, createWriteStream } from 'node:fs';
+import { copyFile, cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { StringDecoder } from 'node:string_decoder';
 import { fileURLToPath } from 'node:url';
 import { buildProbe } from './build-probe.mjs';
 import { readAttempts, recordAttempt, summarizeAttempts } from './evidence.mjs';
 import { hashFile, inside, stableJson } from './source-files.mjs';
+import { assertInventoryObservation } from '../probes/inventory/verify.mjs';
 
 const bedrockRoot = fileURLToPath(new URL('../', import.meta.url));
 
@@ -23,6 +24,7 @@ function argumentsFor(args) {
 }
 
 export function assertObservation(request, result) {
+  if (request.action.startsWith('inventory-')) return assertInventoryObservation(request, result);
   const id = 'betterend_probe:flavolite';
   if (result.players !== 0 || result.item?.typeId !== 'betterend_probe:thallasium_ingot' || result.item.amount !== 1) throw new Error('Incorrect headless/item readback');
   if (result.action !== request.action || result.dimension !== `minecraft:${request.dimension ?? 'the_end'}` || !Array.isArray(result.records)) throw new Error('Probe response does not match its requested scenario');
@@ -85,6 +87,23 @@ async function configure(root, marker, identity) {
   await writeFile(path.join(worldRoot, 'world_resource_packs.json'), stableJson([{ pack_id: identity.resourceHeader, version: identity.version }]));
 }
 
+async function retainBuild(outputRoot, manifest) {
+  const retained = [];
+  await mkdir(path.join(bedrockRoot, 'evidence/packs'), { recursive: true });
+  for (const [name, extension] of [['BetterEnd-Probes.mcaddon', 'mcaddon'], ['build-manifest.json', 'manifest.json']]) {
+    const relative = `evidence/packs/${manifest.archive.sha256}.${extension}`;
+    const source = path.join(outputRoot, name);
+    const destination = inside(bedrockRoot, relative);
+    try {
+      await copyFile(source, destination, constants.COPYFILE_EXCL);
+    } catch (error) {
+      if (error.code !== 'EEXIST' || await hashFile(source) !== await hashFile(destination)) throw new Error(`Cannot retain unchanged diagnostic artifact: ${relative}`, { cause: error });
+    }
+    retained.push(relative);
+  }
+  return retained;
+}
+
 async function main(args) {
   const options = argumentsFor(args);
   const engineRoot = inside(bedrockRoot, options['--engine']);
@@ -93,9 +112,11 @@ async function main(args) {
   if (marker.existingPlayerWorld !== false || marker.expectedBuild !== expectedBuild || typeof marker.worldName !== 'string') throw new Error('Engine ownership marker does not authorize this disposable run');
   const request = JSON.parse(await readFile(inside(bedrockRoot, options['--request']), 'utf8'));
   request.requestId = randomUUID();
-  const prior = summarizeAttempts(await readAttempts(bedrockRoot), 'ENG-001');
-  if (prior.requiresUserDecision) throw new Error('ENG-001 requires user intervention before another runtime probe');
+  const gateId = request.action.startsWith('inventory-') ? 'INV-001' : 'ENG-001';
+  const prior = summarizeAttempts(await readAttempts(bedrockRoot), gateId);
+  if (prior.requiresUserDecision) throw new Error(`${gateId} requires user intervention before another runtime probe`);
   const { outputRoot, manifest } = await buildProbe();
+  const retainedPacks = await retainBuild(outputRoot, manifest);
   for (const [sourceName, destinationName] of [['behavior_pack', 'behavior_packs/betterend_probe'], ['resource_pack', 'resource_packs/betterend_probe']]) {
     const destination = inside(engineRoot, destinationName);
     await rm(destination, { recursive: true, force: true });
@@ -187,11 +208,11 @@ async function main(args) {
   const receipt = { schemaVersion: 1, scope: 'supporting-server-side-evidence-not-full-capability-certification', expectedBuild, observedBuild: version, executableSha256, packageSha256: manifest.archive.sha256, request, events, exit, forcedTermination, failure, clientRenderingVerified: false, certifiesAllPlatforms: false };
   await writeFile(inside(bedrockRoot, resultRelative), stableJson(receipt));
   await recordAttempt(bedrockRoot, {
-    gateId: 'ENG-001', result: failure ? 'fail' : 'pass', method: 'automated', profile: `bds-${expectedBuild}-stable-probe`,
-    scenario: `${request.action} server-side probe supporting CAP-001/CAP-002; not client or full-gate certification`,
+    gateId, result: failure ? 'fail' : 'pass', method: 'automated', profile: `bds-${expectedBuild}-stable-probe`,
+    scenario: `${request.action} server-side capability probe; not client UI/rendering or full-gate certification`,
     observed: failure ?? 'Expected native state readback and clean BDS stop observed',
     command: ['node', 'bedrock/tools/run-bds-probe.mjs', ...args], exitCode: failure ? 1 : 0,
-    artifacts: [logRelative, resultRelative],
+    artifacts: [logRelative, resultRelative, ...retainedPacks],
   });
   console.log(JSON.stringify({ result: failure ? 'fail' : 'pass', receipt: resultRelative, observedBuild: version, failure, clientRenderingVerified: false }, null, 2));
   if (failure) process.exitCode = 1;

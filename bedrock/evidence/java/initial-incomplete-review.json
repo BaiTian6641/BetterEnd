@@ -1,0 +1,13 @@
+{
+  "gateId": "JAVA-002",
+  "result": "fail",
+  "method": "manual",
+  "operator": "assistant: inspection of the actual production-server output and retained server log",
+  "profile": "java-26.3-production-no-vault",
+  "scenario": "Initial live registry/default-component export before the corrected runner existed",
+  "observed": "Production profile true; 728 blocks, 850 items, 27 entity types and 27 biomes. Export explicitly incomplete: three direct-holder block_transformer components rejected reference-only encoding. Server also logged invalid empty resource prefixes. This is the first failed JAVA-002 attempt, retained before applying the corrected export.",
+  "artifacts": [
+    "evidence/java/runtime-001-incomplete.json.gz",
+    "evidence/java/runtime-001-incomplete.log"
+  ]
+}
