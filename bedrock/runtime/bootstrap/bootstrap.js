@@ -491,30 +491,36 @@ export class BetterEndRuntime {
   // ============================================================================
 
   /**
+   * Computes the native C++ feature_rules biome region for outer-End `(x, z)`
+   * using the exact 256x256 cell formula in `biome_<id>_surface_rule.json`.
+   */
+  _lookupNativeCellRegion(x, z) {
+    const cellX = Math.floor(x / 256);
+    const cellZ = Math.floor(z / 256);
+    const idx = Math.abs(cellX * 73 + cellZ * 199) % REGION_CATALOGUE.length;
+    return REGION_CATALOGUE[idx] ?? REGION_CATALOGUE[0];
+  }
+
+  /**
    * Finds a deterministic outer-End coordinate (`|x| > 1024 || |z| > 1024`) belonging
    * to `targetRegionId`.
    */
   _findRegionCoordinate(targetRegionId) {
-    const targetRegion = REGIONS_BY_ID.get(targetRegionId);
-    const probeY = targetRegion?.layer === "cave" ? 28 : 70;
-    for (let ring = 1280; ring <= 8192; ring += 192) {
-      for (let angleStep = 0; angleStep < 24; angleStep++) {
-        const angle = (angleStep / 24) * Math.PI * 2;
-        const x = Math.round(Math.cos(angle) * ring);
-        const z = Math.round(Math.sin(angle) * ring);
-        if (Math.abs(x) <= 1080 && Math.abs(z) <= 1080) continue;
-        const lookup = this.regionService.lookup("minecraft:the_end", x, probeY, z);
-        if (
-          lookup.effectiveRegion?.id === targetRegionId ||
-          lookup.surfaceRegion?.id === targetRegionId ||
-          lookup.caveRegion?.id === targetRegionId ||
-          lookup.aerialRegion?.id === targetRegionId
-        ) {
-          return { x, y: 68, z };
+    for (let radiusCells = 5; radiusCells <= 24; radiusCells++) {
+      for (let cx = -radiusCells; cx <= radiusCells; cx++) {
+        for (let cz = -radiusCells; cz <= radiusCells; cz++) {
+          if (Math.abs(cx) !== radiusCells && Math.abs(cz) !== radiusCells) continue;
+          const x = cx * 256 + 128;
+          const z = cz * 256 + 128;
+          if (Math.abs(x) <= 1080 && Math.abs(z) <= 1080) continue;
+          const region = this._lookupNativeCellRegion(x, z);
+          if (region.id === targetRegionId) {
+            return { x, y: 68, z };
+          }
         }
       }
     }
-    return { x: 1400, y: 68, z: 1400 };
+    return { x: 1408, y: 68, z: 1408 };
   }
 
   /**
@@ -543,103 +549,30 @@ export class BetterEndRuntime {
   }
 
   /**
-   * Decorates a 16x16 outer-End chunk in the live `minecraft:the_end` dimension,
-   * converting vanilla `minecraft:end_stone` surfaces into the Voronoi region's
-   * exact surface palette and placing regional trees, bushes, flowers, and crystals.
+   * Ensures a safe landing on a Guidebook teleport to `(cx, cy, cz)`:
+   * - If a natural End island already exists at `(cx, cz)` (decorated natively by C++
+   *   `feature_rules`), leaves the natural terrain untouched and teleports the player
+   *   onto its surface.
+   * - Only if `(cx, cz)` is over open void (`topY < 40`) does it construct a seamless
+   *   21x21 BetterEnd biome island so the player never falls into the void.
    */
-  _decorateLiveChunk(dimension, chunkX, chunkZ) {
-    if (!dimension || typeof dimension.getBlock !== "function") return 0;
-    const minX = chunkX * 16;
-    const minZ = chunkZ * 16;
-    if (this.regionService.isProtectedCenter("minecraft:the_end", minX + 8, minZ + 8)) {
-      return 0;
-    }
-
-    let placedCount = 0;
-    for (let dx = 0; dx < 16; dx += 2) {
-      for (let dz = 0; dz < 16; dz += 2) {
-        const x = minX + dx;
-        const z = minZ + dz;
-        const lookup = this.regionService.lookup("minecraft:the_end", x, 70, z);
-        const region = lookup.effectiveRegion;
-        if (!region || lookup.protectedCenter) continue;
-
-        let topY = -1;
-        try {
-          if (typeof dimension.getTopmostBlock === "function") {
-            const topBlk = dimension.getTopmostBlock({ x, z }, 110);
-            if (topBlk && topBlk.typeId === "minecraft:end_stone" && topBlk.location.y >= 40) {
-              topY = topBlk.location.y;
-            }
-          } else {
-            for (let y = 84; y >= 48; y -= 2) {
-              const blk = dimension.getBlock({ x, y, z });
-              if (blk && blk.typeId === "minecraft:end_stone") {
-                topY = y;
-                break;
-              }
-            }
-          }
-        } catch {
-          continue;
-        }
-
-        if (topY < 40) continue;
-        const { topBlock, underBlock, rng } = this._chooseSurfaceBlocks(region, x, z);
-
-        try {
-          // Paint 2x2 patch on the surface so the entire chunk is covered smoothly
-          for (let ox = 0; ox < 2; ox++) {
-            for (let oz = 0; oz < 2; oz++) {
-              const b = dimension.getBlock({ x: x + ox, y: topY, z: z + oz });
-              if (b && b.typeId === "minecraft:end_stone" && topBlock !== "minecraft:end_stone") {
-                b.setType(topBlock);
-                placedCount++;
-              }
-              if (underBlock !== "minecraft:end_stone") {
-                const ub = dimension.getBlock({ x: x + ox, y: topY - 1, z: z + oz });
-                if (ub && ub.typeId === "minecraft:end_stone") {
-                  ub.setType(underBlock);
-                }
-              }
-            }
-          }
-
-          // Place regional vegetation / trees / crystals on top
-          const regFeatures = region.features ?? [];
-          if (regFeatures.length > 0 && rng.nextInt(5) === 0) {
-            const featId = regFeatures[rng.nextInt(regFeatures.length)];
-            const placements = synthesizeAnchorPlacements(
-              {
-                anchorId: `live:${x},${topY + 1},${z}`,
-                featureId: featId,
-                position: { x, y: topY + 1, z }
-              },
-              this.regionService.effectiveSeed
+  _generateBiomeIslandAt(dimension, cx, cy, cz, regionId, player = null) {
+    if (!dimension || typeof dimension.getBlock !== "function") return;
+    try {
+      if (typeof dimension.getTopmostBlock === "function") {
+        const existingTop = dimension.getTopmostBlock({ x: Math.trunc(cx), z: Math.trunc(cz) }, 120);
+        if (existingTop && existingTop.location.y >= 40) {
+          if (player && typeof player.teleport === "function") {
+            player.teleport(
+              { x: Math.trunc(cx) + 0.5, y: existingTop.location.y + 2, z: Math.trunc(cz) + 0.5 },
+              { dimension }
             );
-            for (const p of placements) {
-              const target = dimension.getBlock({ x: p.x, y: p.y, z: p.z });
-              if (target && (target.typeId === "minecraft:air" || target.typeId === "minecraft:end_stone")) {
-                target.setType(p.blockId);
-                placedCount++;
-              }
-            }
           }
-        } catch {
-          // Ignore unloaded neighbor block access
+          return;
         }
       }
-    }
-    return placedCount;
-  }
+    } catch {}
 
-  /**
-   * Builds a lush 21x21 BetterEnd biome island around `(cx, cy, cz)` for `regionId`
-   * so teleporting to any of the 27 regions always lands the player on a complete,
-   * richly decorated BetterEnd island even if vanilla End had a void gap there.
-   */
-  _generateBiomeIslandAt(dimension, cx, cy, cz, regionId) {
-    if (!dimension || typeof dimension.getBlock !== "function") return;
     const region = REGIONS_BY_ID.get(regionId) ?? REGION_CATALOGUE[0];
     const radius = 10;
 
@@ -752,9 +685,9 @@ export class BetterEndRuntime {
         } catch {}
       }
 
-      // Generate the biome island after a short tick delay so the destination chunk is loaded
+      // Ensure safe landing after a short tick delay once the destination chunk is loaded
       const runGenerate = () => {
-        this._generateBiomeIslandAt(endDim, target.x, target.y, target.z, chosen.id);
+        this._generateBiomeIslandAt(endDim, target.x, target.y, target.z, chosen.id, player);
         this.generationService.enqueuePlayerApproach(
           player.id ?? "player",
           "minecraft:the_end",
@@ -1106,7 +1039,8 @@ export class BetterEndRuntime {
             } catch {}
           }
         } else {
-          const regionId = lookup.effectiveRegion?.id ?? "foggy_mushroomland";
+          const nativeRegion = this._lookupNativeCellRegion(loc.x, loc.z);
+          const regionId = nativeRegion?.id ?? lookup.effectiveRegion?.id ?? "foggy_mushroomland";
           const pres = this.presentationService.updatePlayerPresentation({
             playerId: pid,
             dimension: "minecraft:the_end",
@@ -1120,7 +1054,7 @@ export class BetterEndRuntime {
           if (this._tickCounter % 4 === 0) {
             try {
               player.onScreenDisplay?.setActionBar?.(
-                `§dBetterEnd §8| §b${formatTitle(regionId)} §7(${lookup.effectiveRegion?.layer ?? "surface"})`
+                `§dBetterEnd §8| §b${formatTitle(regionId)} §7(${nativeRegion?.layer ?? "surface"})`
               );
             } catch {}
           }
@@ -1128,22 +1062,6 @@ export class BetterEndRuntime {
           this.generationService.enqueuePlayerApproach(pid, "minecraft:the_end", loc, {
             radiusCells: 1
           });
-
-          // Decorate 16x16 chunks around the player in the outer End
-          const centerChunkX = Math.floor(loc.x / 16);
-          const centerChunkZ = Math.floor(loc.z / 16);
-          for (let dx = -1; dx <= 1; dx++) {
-            for (let dz = -1; dz <= 1; dz++) {
-              const cx = centerChunkX + dx;
-              const cz = centerChunkZ + dz;
-              const chunkKey = `${cx},${cz}`;
-              if (!this._decoratedLiveChunks.has(chunkKey)) {
-                this._decoratedLiveChunks.add(chunkKey);
-                this._decorateLiveChunk(dim, cx, cz);
-                break;
-              }
-            }
-          }
         }
       }
     }

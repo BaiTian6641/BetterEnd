@@ -4,7 +4,12 @@ import { fileURLToPath } from 'node:url';
 import { buildRecipeHyperedgeGraph } from './recipes.mjs';
 import { loadLockedRuntime } from './runtime-reconciliation.mjs';
 import { compareText } from './source-files.mjs';
-import { compileAllModelsAndAssets, normalizeModelId } from './model-compiler.mjs';
+import { compileAllModelsAndAssets, getGeometryIdForModel, normalizeModelId } from './model-compiler.mjs';
+import {
+  FEATURES_BY_CATEGORY,
+  FEATURES_BY_ID,
+  REGION_CATALOGUE,
+} from '../runtime/regions/region-catalogue.js';
 import {
   AURORA_PALETTE,
   BULB_LANTERN_COLORS,
@@ -416,30 +421,32 @@ function extractTextureShortName(rawTex, fallbackShortName) {
     return `betterend_${rawTex.slice('betterend:item/'.length)}`;
   }
   if (rawTex.startsWith('minecraft:block/')) {
-    return rawTex.slice('minecraft:block/'.length);
+    return `betterend_mc_${rawTex.slice('minecraft:block/'.length)}`;
   }
   return `betterend_${fallbackShortName}`;
 }
 
-function buildMaterialInstances(blockEntry, flatModel, stateProps = {}) {
+function buildMaterialInstances(blockEntry, flatModel, stateProps = {}, geoDoc = null, terrainTextureData = null) {
   const shortName = blockEntry.id.split(':')[1];
   const renderMethod = classifyRenderMethod(blockEntry, flatModel);
   const tintOverride = resolveTintTextureOverride(shortName, stateProps);
+  const isBulbLantern = tintOverride && shortName.includes('_bulb_lantern_');
 
   const textures = flatModel?.textures ?? {};
-  const primaryTex =
-    tintOverride ??
-    extractTextureShortName(
-      textures.all ??
-        textures.cross ??
-        textures.side ??
-        textures.front ??
-        textures.top ??
-        textures.texture ??
-        textures.particle ??
-        Object.values(textures)[0],
-      shortName,
-    );
+  const fallbackPrimary = extractTextureShortName(
+    textures.all ??
+      textures.cross ??
+      textures.side ??
+      textures.front ??
+      textures.top ??
+      textures.texture ??
+      textures.wall ??
+      textures.bars ??
+      textures.particle ??
+      Object.values(textures)[0],
+    shortName,
+  );
+  const primaryTex = tintOverride ?? fallbackPrimary;
 
   const instances = {
     '*': {
@@ -448,48 +455,94 @@ function buildMaterialInstances(blockEntry, flatModel, stateProps = {}) {
     },
   };
 
-  if (!tintOverride) {
-    for (const [slotName, rawTex] of Object.entries(textures)) {
-      if (typeof rawTex === 'string' && !rawTex.startsWith('#')) {
-        instances[slotName] = {
-          texture: extractTextureShortName(rawTex, shortName),
+  for (const [slotName, rawTex] of Object.entries(textures)) {
+    if (typeof rawTex === 'string' && !rawTex.startsWith('#')) {
+      const useTint = tintOverride && (!isBulbLantern || slotName === 'glow' || slotName === 'cross');
+      instances[slotName] = {
+        texture: useTint ? tintOverride : extractTextureShortName(rawTex, shortName),
+        render_method: renderMethod,
+      };
+    }
+  }
+
+  if (!tintOverride && flatModel?.geometryKind === 'full_block') {
+    const elFaces = flatModel.elements?.[0]?.faces ?? {};
+    for (const dir of ['up', 'down', 'north', 'south', 'east', 'west']) {
+      const faceTex = elFaces[dir]?.resolvedTexture;
+      if (faceTex && !String(faceTex).startsWith('#')) {
+        instances[dir] = {
+          texture: extractTextureShortName(faceTex, shortName),
           render_method: renderMethod,
         };
       }
     }
 
-    if (flatModel?.geometryKind === 'unit_cube') {
-      const topTex = textures.top ?? textures.end ?? textures.up;
-      const bottomTex = textures.bottom ?? textures.end ?? textures.down;
-      const sideTex = textures.side;
-      const frontTex = textures.front ?? textures.north;
-      if (topTex) {
-        instances.up = {
-          texture: extractTextureShortName(topTex, shortName),
-          render_method: renderMethod,
-        };
+    const topTex = textures.top ?? textures.end ?? textures.up;
+    const bottomTex = textures.bottom ?? textures.end ?? textures.down;
+    const sideTex = textures.side;
+    const frontTex = textures.front ?? textures.north;
+    if (topTex && !instances.up) {
+      instances.up = {
+        texture: extractTextureShortName(topTex, shortName),
+        render_method: renderMethod,
+      };
+    }
+    if (bottomTex && !instances.down) {
+      instances.down = {
+        texture: extractTextureShortName(bottomTex, shortName),
+        render_method: renderMethod,
+      };
+    }
+    if (sideTex) {
+      const sideInstance = {
+        texture: extractTextureShortName(sideTex, shortName),
+        render_method: renderMethod,
+      };
+      if (!instances.north) instances.north = sideInstance;
+      if (!instances.south) instances.south = sideInstance;
+      if (!instances.east) instances.east = sideInstance;
+      if (!instances.west) instances.west = sideInstance;
+    }
+    if (frontTex) {
+      instances.north = {
+        texture: extractTextureShortName(frontTex, shortName),
+        render_method: renderMethod,
+      };
+    }
+  }
+
+  // Ensure every material_instance name referenced inside the custom .geo.json exists in instances
+  if (geoDoc) {
+    const bones = geoDoc['minecraft:geometry']?.[0]?.bones ?? [];
+    for (const bone of bones) {
+      for (const cube of bone.cubes ?? []) {
+        for (const faceUv of Object.values(cube.uv ?? {})) {
+          const matName = faceUv?.material_instance;
+          if (matName && !instances[matName]) {
+            const rawSlot = textures[matName];
+            instances[matName] = {
+              texture:
+                rawSlot && typeof rawSlot === 'string' && !rawSlot.startsWith('#')
+                  ? extractTextureShortName(rawSlot, shortName)
+                  : primaryTex,
+              render_method: renderMethod,
+            };
+          }
+        }
       }
-      if (bottomTex) {
-        instances.down = {
-          texture: extractTextureShortName(bottomTex, shortName),
-          render_method: renderMethod,
-        };
-      }
-      if (sideTex) {
-        const sideInstance = {
-          texture: extractTextureShortName(sideTex, shortName),
-          render_method: renderMethod,
-        };
-        instances.north = sideInstance;
-        instances.south = sideInstance;
-        instances.east = sideInstance;
-        instances.west = sideInstance;
-      }
-      if (frontTex) {
-        instances.north = {
-          texture: extractTextureShortName(frontTex, shortName),
-          render_method: renderMethod,
-        };
+    }
+  }
+
+  // Validate against terrainTextureData if available so no missing texture key is ever emitted
+  if (terrainTextureData) {
+    const validPrimary = terrainTextureData[primaryTex]
+      ? primaryTex
+      : terrainTextureData[fallbackPrimary]
+        ? fallbackPrimary
+        : 'betterend_mc_end_stone';
+    for (const inst of Object.values(instances)) {
+      if (!terrainTextureData[inst.texture]) {
+        inst.texture = validPrimary;
       }
     }
   }
@@ -666,23 +719,36 @@ function buildBoneVisibilityForMultipart(blockEntry, partition) {
   return null;
 }
 
-function buildGeometryComponent(blockEntry, flatModel, partition) {
-  const shortName = blockEntry.id.split(':')[1];
-  const boneVisibility = buildBoneVisibilityForMultipart(blockEntry, partition);
+function buildGeometryComponent(blockEntry, flatModel, partition, geometries) {
   let identifier = 'minecraft:geometry.full_block';
 
   if (flatModel && (flatModel.geometryKind === 'custom' || flatModel.geometryKind === 'cross')) {
-    const modelShort = flatModel.id.split(':')[1].replace(/\//g, '_');
-    identifier = `geometry.betterend.${modelShort}`;
-  } else if (boneVisibility) {
-    identifier = `geometry.betterend.block_${shortName}`;
+    const candidate = getGeometryIdForModel(flatModel);
+    if (!geometries || geometries.has(candidate)) {
+      identifier = candidate;
+    }
   }
 
-  if (boneVisibility) {
-    return {
-      identifier,
-      bone_visibility: boneVisibility,
-    };
+  if (identifier !== 'minecraft:geometry.full_block') {
+    const rawVis = buildBoneVisibilityForMultipart(blockEntry, partition);
+    const geoDoc = geometries?.get(identifier);
+    if (rawVis && geoDoc) {
+      const existingBones = new Set(
+        (geoDoc['minecraft:geometry']?.[0]?.bones ?? []).map(b => b.name),
+      );
+      const filteredVis = Object.create(null);
+      for (const [boneKey, expr] of Object.entries(rawVis)) {
+        if (existingBones.has(boneKey)) {
+          filteredVis[boneKey] = expr;
+        }
+      }
+      if (Object.keys(filteredVis).length > 0) {
+        return {
+          identifier,
+          bone_visibility: filteredVis,
+        };
+      }
+    }
   }
   return { identifier };
 }
@@ -714,6 +780,7 @@ export function compileBlocks(registrations, modelAssets) {
   const forwardStateMap = new Map();
   const reverseStateMap = new Map();
   const blockPartitions = new Map();
+  const terrainTextureData = modelAssets.terrainTextureJson?.texture_data ?? null;
 
   for (const blockEntry of registrations.blocks ?? []) {
     const { props } = extractBlockPropertiesAndStates(blockEntry);
@@ -724,6 +791,11 @@ export function compileBlocks(registrations, modelAssets) {
     const firstRecord = blockEntry.stateSnapshot?.records?.[0];
 
     for (const partition of partitions) {
+      if (partition.partitionIndex > 0 && modelAssets.blocksJson) {
+        modelAssets.blocksJson[partition.bedrockBlockId] =
+          modelAssets.blocksJson[blockEntry.id] ?? { sound: 'stone' };
+      }
+
       const defaultState = partition.states[0];
       const defaultResolved = resolveStateModelAndRotation(
         blockstateDef,
@@ -764,6 +836,14 @@ export function compileBlocks(registrations, modelAssets) {
       const mapColorKey = blockEntry.properties?.mapColor ?? 'STONE';
       const mapColorHex = MAP_COLOR_HEX[mapColorKey] ?? '#707070';
 
+      const baseGeo = buildGeometryComponent(
+        blockEntry,
+        defaultResolved.flatModel,
+        partition,
+        modelAssets.geometries,
+      );
+      const baseGeoDoc = modelAssets.geometries?.get(baseGeo.identifier) ?? null;
+
       const baseComponents = {
         'minecraft:collision_box': collisionBox,
         'minecraft:selection_box': selectionBox,
@@ -776,11 +856,13 @@ export function compileBlocks(registrations, modelAssets) {
             ? false
             : { explosion_resistance: Math.max(0, explosionResistance) },
         'minecraft:map_color': mapColorHex,
-        'minecraft:geometry': buildGeometryComponent(blockEntry, defaultResolved.flatModel, partition),
+        'minecraft:geometry': baseGeo,
         'minecraft:material_instances': buildMaterialInstances(
           blockEntry,
           defaultResolved.flatModel,
           defaultState.properties,
+          baseGeoDoc,
+          terrainTextureData,
         ),
       };
 
@@ -842,12 +924,21 @@ export function compileBlocks(registrations, modelAssets) {
             st.properties,
             modelAssets.flattenedModels,
           );
+          const permGeo = buildGeometryComponent(
+            blockEntry,
+            resolved.flatModel,
+            partition,
+            modelAssets.geometries,
+          );
+          const permGeoDoc = modelAssets.geometries?.get(permGeo.identifier) ?? null;
           const permComponents = {
-            'minecraft:geometry': buildGeometryComponent(blockEntry, resolved.flatModel, partition),
+            'minecraft:geometry': permGeo,
             'minecraft:material_instances': buildMaterialInstances(
               blockEntry,
               resolved.flatModel,
               st.properties,
+              permGeoDoc,
+              terrainTextureData,
             ),
             'minecraft:light_emission': computeStateLuminance(
               blockEntry,
@@ -1664,13 +1755,19 @@ export function compileEntitiesAndFeatures(registrations, resources) {
     }
   }
 
-  // Native End Features & Feature Rules (1.13.0) with outer-End protection
+  // Native End Biomes (1.26.30), Features & Feature Rules (1.13.0) with outer-End protection
+  const biomes = new Map();
   const features = new Map();
   const featureRules = new Map();
+  const knownBlockIds = new Set((registrations.blocks ?? []).map(b => b.id));
+  knownBlockIds.add('minecraft:end_stone');
+
   const nativeOres = [
     { id: 'ender_ore', block: 'betterend:ender_ore', count: 4, minY: 16, maxY: 64 },
     { id: 'amber_ore', block: 'betterend:amber_ore', count: 5, minY: 20, maxY: 72 },
     { id: 'thallasium_ore', block: 'betterend:thallasium_ore', count: 8, minY: 12, maxY: 80 },
+    { id: 'flavolite_layer', block: 'betterend:flavolite', count: 12, minY: 20, maxY: 72 },
+    { id: 'violecite_layer', block: 'betterend:violecite', count: 12, minY: 20, maxY: 72 },
   ];
 
   for (const ore of nativeOres) {
@@ -1717,7 +1814,334 @@ export function compileEntitiesAndFeatures(registrations, resources) {
     });
   }
 
+  // All valid BetterEnd soil / ground blocks
+  const allSoilBlocks = [
+    'minecraft:end_stone',
+    'betterend:end_moss',
+    'betterend:end_mycelium',
+    'betterend:amber_moss',
+    'betterend:pink_moss',
+    'betterend:chorus_nylium',
+    'betterend:cave_moss',
+    'betterend:crystal_moss',
+    'betterend:shadow_grass',
+    'betterend:jungle_moss',
+    'betterend:sangnum',
+    'betterend:rutiscus',
+    'betterend:endstone_dust',
+    'betterend:sulphuric_rock',
+    'betterend:brimstone',
+    'betterend:flavolite',
+    'betterend:violecite',
+    'betterend:umbralith',
+    'betterend:pallidium_full',
+    'betterend:virid_jadestone',
+    'betterend:azure_jadestone',
+    'betterend:sandy_jadestone',
+    'betterend:dense_snow',
+  ].filter(b => knownBlockIds.has(b));
+
+  const ensureSurfaceBlockFeature = blockId => {
+    const validBlock = knownBlockIds.has(blockId) ? blockId : 'betterend:end_moss';
+    const shortBlock = validBlock.replace(':', '_');
+    const featId = `betterend:surface_block_${shortBlock}_feature`;
+    const fileKey = `features/surface_block_${shortBlock}_feature.json`;
+    if (!features.has(fileKey)) {
+      features.set(fileKey, {
+        format_version: BEDROCK_FEATURE_FORMAT_VERSION,
+        'minecraft:single_block_feature': {
+          description: {
+            identifier: featId,
+          },
+          places_block: validBlock,
+          enforce_placement_rules: false,
+          enforce_survivability_rules: false,
+          may_replace: ['minecraft:end_stone'],
+          may_attach_to: {
+            top: ['minecraft:air', 'minecraft:chorus_plant', 'minecraft:chorus_flower'],
+          },
+        },
+      });
+    }
+    return featId;
+  };
+
+  const ensureFloraBlockFeature = blockId => {
+    const validBlock = knownBlockIds.has(blockId) ? blockId : 'betterend:creeping_moss';
+    const shortBlock = validBlock.split(':')[1];
+    const featId = `betterend:flora_${shortBlock}_feature`;
+    const fileKey = `features/flora_${shortBlock}_feature.json`;
+    if (!features.has(fileKey)) {
+      features.set(fileKey, {
+        format_version: BEDROCK_FEATURE_FORMAT_VERSION,
+        'minecraft:single_block_feature': {
+          description: {
+            identifier: featId,
+          },
+          places_block: validBlock,
+          enforce_placement_rules: false,
+          enforce_survivability_rules: false,
+          may_replace: ['minecraft:air', 'minecraft:chorus_plant', 'minecraft:chorus_flower'],
+          may_attach_to: {
+            bottom: allSoilBlocks,
+          },
+        },
+      });
+    }
+    return featId;
+  };
+
+  // Emit native tree features for all 11 BetterEnd tree species
+  const treeFeatureIds = new Map();
+  for (const treeDesc of FEATURES_BY_CATEGORY.trees ?? []) {
+    const palette = (treeDesc.palette ?? []).filter(b => knownBlockIds.has(b));
+    const trunkBlock =
+      palette.find(b => b.endsWith('_log') || b.endsWith('_stem') || b.endsWith('_bark')) ??
+      palette[0] ??
+      'betterend:mossy_glowshroom_log';
+    const leafBlock =
+      palette.find(
+        b =>
+          b.endsWith('_leaves') ||
+          b.endsWith('_cap') ||
+          b.endsWith('_cap_purple') ||
+          b.endsWith('_membrane'),
+      ) ??
+      palette[1] ??
+      trunkBlock;
+    const featId = `betterend:tree_${treeDesc.id}_feature`;
+    treeFeatureIds.set(treeDesc.id, featId);
+    features.set(`features/tree_${treeDesc.id}_feature.json`, {
+      format_version: BEDROCK_FEATURE_FORMAT_VERSION,
+      'minecraft:tree_feature': {
+        description: {
+          identifier: featId,
+        },
+        acacia_trunk: {
+          trunk_width: 1,
+          trunk_height: {
+            base: 6,
+            intervals: [3, 2],
+            min_height_for_canopy: 4,
+          },
+          trunk_block: trunkBlock,
+          trunk_lean: {
+            allow_diagonal_growth: true,
+            lean_height: { range_min: 2, range_max: 4 },
+            lean_steps: { range_min: 2, range_max: 4 },
+            lean_length: { range_min: 1, range_max: 2 },
+          },
+        },
+        random_spread_canopy: {
+          canopy_height: 3,
+          canopy_radius: 3,
+          leaf_placement_attempts: 50,
+          leaf_blocks: [[leafBlock, 4]],
+        },
+        base_block: [allSoilBlocks[1] ?? 'minecraft:end_stone'],
+        may_grow_on: allSoilBlocks,
+        may_replace: [
+          'minecraft:air',
+          'minecraft:chorus_plant',
+          'minecraft:chorus_flower',
+          leafBlock,
+        ],
+        may_grow_through: allSoilBlocks,
+      },
+    });
+  }
+
+  // Emit all 27 Native Biomes + Native Surface/Flora/Tree Features & Feature Rules
+  for (const [idx, region] of REGION_CATALOGUE.entries()) {
+    // 1. Native Biome definition (format_version 1.26.30)
+    biomes.set(`biomes/${region.id}.biome.json`, {
+      format_version: '1.26.30',
+      'minecraft:biome': {
+        description: {
+          identifier: `betterend:${region.id}`,
+        },
+        components: {
+          'minecraft:climate': {
+            downfall: 0.5,
+            snow_accumulation: [0.0, 0.125],
+            temperature: 0.5,
+          },
+          'minecraft:surface_builder': {
+            builder: {
+              type: 'minecraft:the_end',
+            },
+          },
+          'minecraft:tags': {
+            tags: ['the_end', 'betterend', region.id, `betterend_${region.layer}`],
+          },
+        },
+      },
+    });
+
+    const cellCond = `((math.abs(variable.originx + 8) > 1024 || math.abs(variable.originz + 8) > 1024) && math.mod(math.abs(math.floor((variable.originx + 8) / 256) * 73 + math.floor((variable.originz + 8) / 256) * 199), 27) == ${idx})`;
+
+    // 2. Native Surface Replacement (16x16 fixed_grid covering 100% of chunk columns)
+    const primaryTop =
+      region.surface?.topBlock && region.surface.topBlock !== 'minecraft:end_stone'
+        ? region.surface.topBlock
+        : region.surface?.altTopBlock ?? 'betterend:end_moss';
+    const altTop =
+      region.surface?.altTopBlock && region.surface.altTopBlock !== primaryTop
+        ? region.surface.altTopBlock
+        : null;
+
+    const primarySurfaceFeat = ensureSurfaceBlockFeature(primaryTop);
+    let surfaceTargetFeat = primarySurfaceFeat;
+    if (altTop) {
+      const altSurfaceFeat = ensureSurfaceBlockFeature(altTop);
+      const choiceId = `betterend:biome_${region.id}_surface_choice_feature`;
+      features.set(`features/biome_${region.id}_surface_choice_feature.json`, {
+        format_version: BEDROCK_FEATURE_FORMAT_VERSION,
+        'minecraft:weighted_random_feature': {
+          description: { identifier: choiceId },
+          features: [
+            [primarySurfaceFeat, 70],
+            [altSurfaceFeat, 30],
+          ],
+        },
+      });
+      surfaceTargetFeat = choiceId;
+    }
+
+    const gridFeatId = `betterend:biome_${region.id}_surface_grid_feature`;
+    features.set(`features/biome_${region.id}_surface_grid_feature.json`, {
+      format_version: BEDROCK_FEATURE_FORMAT_VERSION,
+      'minecraft:scatter_feature': {
+        description: {
+          identifier: gridFeatId,
+        },
+        iterations: 256,
+        coordinate_eval_order: 'zyx',
+        x: { distribution: 'fixed_grid', extent: [0, 15] },
+        z: { distribution: 'fixed_grid', extent: [0, 15] },
+        y: 'query.heightmap(variable.worldx, variable.worldz) - 1',
+        project_input_to_floor: false,
+        places_feature: surfaceTargetFeat,
+      },
+    });
+
+    featureRules.set(`feature_rules/biome_${region.id}_surface_rule.json`, {
+      format_version: BEDROCK_FEATURE_FORMAT_VERSION,
+      'minecraft:feature_rules': {
+        description: {
+          identifier: `betterend:biome_${region.id}_surface_rule`,
+          places_feature: gridFeatId,
+        },
+        conditions: {
+          placement_pass: 'surface_pass',
+          'minecraft:biome_filter': [
+            { test: 'has_biome_tag', operator: '==', value: 'the_end' },
+          ],
+        },
+        distribution: {
+          iterations: `${cellCond} ? 1 : 0`,
+          x: 0,
+          y: 0,
+          z: 0,
+        },
+      },
+    });
+
+    // 3. Native Flora & Crystal Scatter in after_surface_pass
+    const floraBlocks = [];
+    const regionTrees = [];
+    for (const fId of region.features ?? []) {
+      if (treeFeatureIds.has(fId)) {
+        regionTrees.push(treeFeatureIds.get(fId));
+        continue;
+      }
+      const desc = FEATURES_BY_ID.get(fId);
+      if (
+        desc &&
+        (desc.category === 'plants_foliage' ||
+          desc.category === 'water_aquatic' ||
+          desc.category === 'caves')
+      ) {
+        for (const blk of desc.palette ?? []) {
+          if (
+            blk.startsWith('betterend:') &&
+            knownBlockIds.has(blk) &&
+            !blk.endsWith('_bark') &&
+            !blk.endsWith('_log') &&
+            !blk.endsWith('_stem') &&
+            !floraBlocks.includes(blk)
+          ) {
+            floraBlocks.push(blk);
+          }
+        }
+      }
+    }
+    if (floraBlocks.length === 0) {
+      floraBlocks.push('betterend:creeping_moss', 'betterend:amber_grass');
+    }
+
+    const weightedFlora = floraBlocks.slice(0, 8).map(blk => [ensureFloraBlockFeature(blk), 10]);
+    const biomeFloraFeatId = `betterend:biome_${region.id}_flora_feature`;
+    features.set(`features/biome_${region.id}_flora_feature.json`, {
+      format_version: BEDROCK_FEATURE_FORMAT_VERSION,
+      'minecraft:weighted_random_feature': {
+        description: {
+          identifier: biomeFloraFeatId,
+        },
+        features: weightedFlora,
+      },
+    });
+
+    featureRules.set(`feature_rules/biome_${region.id}_flora_rule.json`, {
+      format_version: BEDROCK_FEATURE_FORMAT_VERSION,
+      'minecraft:feature_rules': {
+        description: {
+          identifier: `betterend:biome_${region.id}_flora_rule`,
+          places_feature: biomeFloraFeatId,
+        },
+        conditions: {
+          placement_pass: 'after_surface_pass',
+          'minecraft:biome_filter': [
+            { test: 'has_biome_tag', operator: '==', value: 'the_end' },
+          ],
+        },
+        distribution: {
+          iterations: `${cellCond} ? 28 : 0`,
+          x: { distribution: 'uniform', extent: [0, 16] },
+          y: 'query.heightmap(variable.worldx, variable.worldz)',
+          z: { distribution: 'uniform', extent: [0, 16] },
+        },
+      },
+    });
+
+    // 4. Native Tree / Giant Mushroom Scatter in after_surface_pass
+    if (regionTrees.length > 0) {
+      featureRules.set(`feature_rules/biome_${region.id}_tree_rule.json`, {
+        format_version: BEDROCK_FEATURE_FORMAT_VERSION,
+        'minecraft:feature_rules': {
+          description: {
+            identifier: `betterend:biome_${region.id}_tree_rule`,
+            places_feature: regionTrees[0],
+          },
+          conditions: {
+            placement_pass: 'after_surface_pass',
+            'minecraft:biome_filter': [
+              { test: 'has_biome_tag', operator: '==', value: 'the_end' },
+            ],
+          },
+          distribution: {
+            iterations: `${cellCond} ? 3 : 0`,
+            x: { distribution: 'uniform', extent: [0, 16] },
+            y: 'query.heightmap(variable.worldx, variable.worldz)',
+            z: { distribution: 'uniform', extent: [0, 16] },
+          },
+        },
+      });
+    }
+  }
+
   return {
+    biomes,
     serverEntities,
     clientEntities,
     entityGeometries,

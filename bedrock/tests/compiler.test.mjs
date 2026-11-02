@@ -264,7 +264,68 @@ test('Content compiler lowers all 728 blocks (22,385 states), 850 items, 879 rec
         assert.ok(box.origin[2] + box.size[2] <= 8.001);
       }
     }
+
+    // Verify geometry, bone_visibility, material_instances, terrain_texture, and blocks.json sound
+    const checkGeoAndMaterials = (comp, ctxLabel) => {
+      const geo = comp['minecraft:geometry'];
+      const matInst = comp['minecraft:material_instances'];
+      if (geo) {
+        if (geo.identifier !== 'minecraft:geometry.full_block') {
+          const geoDoc = compiled.modelAssets.geometries.get(geo.identifier);
+          assert.ok(geoDoc, `Missing geometry ${geo.identifier} in ${ctxLabel}`);
+          const boneNames = new Set(
+            (geoDoc['minecraft:geometry']?.[0]?.bones ?? []).map(b => b.name),
+          );
+          for (const visBone of Object.keys(geo.bone_visibility ?? {})) {
+            assert.ok(
+              boneNames.has(visBone),
+              `Missing bone_visibility bone '${visBone}' in ${geo.identifier} (${ctxLabel})`,
+            );
+          }
+          for (const bone of geoDoc['minecraft:geometry']?.[0]?.bones ?? []) {
+            for (const cube of bone.cubes ?? []) {
+              for (const faceUv of Object.values(cube.uv ?? {})) {
+                if (faceUv?.material_instance) {
+                  assert.ok(
+                    matInst?.[faceUv.material_instance],
+                    `Missing material_instance '${faceUv.material_instance}' for ${geo.identifier} in ${ctxLabel}`,
+                  );
+                }
+              }
+            }
+          }
+        }
+      }
+      if (matInst) {
+        for (const [slotKey, inst] of Object.entries(matInst)) {
+          assert.ok(
+            compiled.modelAssets.terrainTextureJson.texture_data[inst.texture],
+            `Missing terrain_texture.json entry '${inst.texture}' for slot '${slotKey}' in ${ctxLabel}`,
+          );
+        }
+      }
+    };
+
+    checkGeoAndMaterials(blockDef.components, filePath);
+    for (const [pIdx, perm] of perms.entries()) {
+      checkGeoAndMaterials(perm.components, `${filePath}#perm${pIdx}`);
+    }
+
+    const blockSound = compiled.modelAssets.blocksJson[blockDef.description.identifier]?.sound;
+    assert.ok(
+      blockSound && blockSound !== 'normal',
+      `Invalid or missing sound '${blockSound}' for ${blockDef.description.identifier}`,
+    );
   }
+
+  // Ensure zero unprefixed vanilla keys in terrain_texture.json
+  for (const tKey of Object.keys(compiled.modelAssets.terrainTextureJson.texture_data)) {
+    assert.ok(
+      tKey.startsWith('betterend_'),
+      `Unprefixed key '${tKey}' in terrain_texture.json would overwrite vanilla atlas entry`,
+    );
+  }
+  assert.equal(compiled.entitiesAndFeatures.biomes.size, 27);
 
   // Verify bijective round-trip across ALL 22,385 states
   for (const [javaKey, record] of compiled.blocks.forwardStateMap) {

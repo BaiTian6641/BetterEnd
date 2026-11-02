@@ -286,6 +286,17 @@ function defaultFaceUv(faceDir, from, to) {
   }
 }
 
+export function getGeometryIdForModel(flattenedModel, { variantRotationX = 0, variantRotationY = 0 } = {}) {
+  const cleanSuffix = flattenedModel.id
+    .replace(/^[a-z0-9_.-]+:/iu, '')
+    .replace(/^block\//iu, '')
+    .replace(/[^a-z0-9_]/giu, '_');
+  const rotSuffix = (variantRotationX || variantRotationY)
+    ? `_rx${((variantRotationX % 360) + 360) % 360}_ry${((variantRotationY % 360) + 360) % 360}`
+    : '';
+  return `geometry.betterend.${cleanSuffix}${rotSuffix}`;
+}
+
 export function convertModelToBedrockGeometry(flattenedModel, {
   geometryIdentifier = null,
   variantRotationX = 0,
@@ -296,10 +307,7 @@ export function convertModelToBedrockGeometry(flattenedModel, {
     .replace(/^[a-z0-9_.-]+:/iu, '')
     .replace(/^block\//iu, '')
     .replace(/[^a-z0-9_]/giu, '_');
-  const rotSuffix = (variantRotationX || variantRotationY)
-    ? `_rx${((variantRotationX % 360) + 360) % 360}_ry${((variantRotationY % 360) + 360) % 360}`
-    : '';
-  const identifier = geometryIdentifier ?? `geometry.betterend.${cleanSuffix}${rotSuffix}`;
+  const identifier = geometryIdentifier ?? getGeometryIdForModel(flattenedModel, { variantRotationX, variantRotationY });
 
   if (flattenedModel.geometryKind === 'cross' && flattenedModel.elements.length === 0) {
     return {
@@ -358,8 +366,9 @@ export function convertModelToBedrockGeometry(flattenedModel, {
   let minZ = -8;
   let maxZ = 8;
 
+  const effectiveBoneName = cleanSuffix.endsWith('_wall_post') ? 'post' : boneName;
   const rootBone = {
-    name: boneName,
+    name: effectiveBoneName,
     pivot: [0, 8, 0],
     rotation: [variantRotationX, variantRotationY, 0],
     cubes: [],
@@ -408,8 +417,8 @@ export function convertModelToBedrockGeometry(flattenedModel, {
         el.rotation.axis === 'z' ? -angle : 0,
       ];
       childBones.push({
-        name: `${boneName}_el_${idx}`,
-        parent: boneName,
+        name: `${effectiveBoneName}_el_${idx}`,
+        parent: effectiveBoneName,
         pivot,
         rotation: rot,
         cubes: [cube],
@@ -417,6 +426,41 @@ export function convertModelToBedrockGeometry(flattenedModel, {
     } else {
       rootBone.cubes.push(cube);
     }
+  }
+
+  // Synthesize directional arm bones for multipart walls, fences, and bars
+  if (cleanSuffix.endsWith('_wall_post')) {
+    const matInst = 'wall';
+    const makeArmUv = () => ({
+      down: { uv: [5, 0], uv_size: [6, 4], material_instance: matInst },
+      up: { uv: [5, 0], uv_size: [6, 4], material_instance: matInst },
+      north: { uv: [5, 2], uv_size: [6, 14], material_instance: matInst },
+      south: { uv: [5, 2], uv_size: [6, 14], material_instance: matInst },
+      west: { uv: [0, 2], uv_size: [4, 14], material_instance: matInst },
+      east: { uv: [0, 2], uv_size: [4, 14], material_instance: matInst },
+    });
+    childBones.push(
+      { name: 'north', pivot: [0, 8, 0], cubes: [{ origin: [-3, 0, -8], size: [6, 14, 4], uv: makeArmUv() }] },
+      { name: 'south', pivot: [0, 8, 0], cubes: [{ origin: [-3, 0, 4], size: [6, 14, 4], uv: makeArmUv() }] },
+      { name: 'east', pivot: [0, 8, 0], cubes: [{ origin: [4, 0, -3], size: [4, 14, 6], uv: makeArmUv() }] },
+      { name: 'west', pivot: [0, 8, 0], cubes: [{ origin: [-8, 0, -3], size: [4, 14, 6], uv: makeArmUv() }] },
+    );
+  } else if (cleanSuffix.endsWith('_fence_post') || cleanSuffix.endsWith('_bars_post')) {
+    const matInst = cleanSuffix.endsWith('_bars_post') ? 'bars' : 'texture';
+    const makeRailUv = () => ({
+      down: { uv: [7, 0], uv_size: [2, 6], material_instance: matInst },
+      up: { uv: [7, 0], uv_size: [2, 6], material_instance: matInst },
+      north: { uv: [7, 6], uv_size: [2, 9], material_instance: matInst },
+      south: { uv: [7, 6], uv_size: [2, 9], material_instance: matInst },
+      west: { uv: [0, 6], uv_size: [6, 9], material_instance: matInst },
+      east: { uv: [0, 6], uv_size: [6, 9], material_instance: matInst },
+    });
+    childBones.push(
+      { name: 'north', pivot: [0, 8, 0], cubes: [{ origin: [-1, 6, -8], size: [2, 9, 6], uv: makeRailUv() }] },
+      { name: 'south', pivot: [0, 8, 0], cubes: [{ origin: [-1, 6, 2], size: [2, 9, 6], uv: makeRailUv() }] },
+      { name: 'east', pivot: [0, 8, 0], cubes: [{ origin: [2, 6, -1], size: [6, 9, 2], uv: makeRailUv() }] },
+      { name: 'west', pivot: [0, 8, 0], cubes: [{ origin: [-8, 6, -1], size: [6, 9, 2], uv: makeRailUv() }] },
+    );
   }
 
   const bones = rootBone.cubes.length > 0 ? [rootBone, ...childBones] : [rootBone, ...childBones];
@@ -531,13 +575,15 @@ export function buildRegionVisualPresets(registrations) {
     const atmoId = `betterend:atmo_${shortName}`;
     const gradingId = `betterend:grading_${shortName}`;
 
-    biomesClient.biomes[shortName] = {
+    const clientBiomeEntry = {
       water_surface_color: waterColor,
       water_surface_transparency: 0.65,
       water_fog_color: waterFogColor,
       water_fog_distance: 24,
       fog_identifier: fogId,
     };
+    biomesClient.biomes[shortName] = clientBiomeEntry;
+    biomesClient.biomes[`betterend:${shortName}`] = clientBiomeEntry;
 
     const fogEnd = Math.max(24, Math.round(160 / Math.max(0.5, fogDensity)));
     const fogStart = Math.max(4, Math.round(fogEnd * 0.25));
@@ -782,6 +828,18 @@ export async function compileAllModelsAndAssets({ repoRoot = defaultRepoRoot } =
       geometries.set(geoId, geo);
     }
   }
+  for (const [, bsDef] of flattenedBlockstates) {
+    for (const choice of [...(bsDef.variants ?? []), ...(bsDef.multipartRules ?? [])]) {
+      const flat = choice.flattened;
+      if (flat && (flat.geometryKind === 'custom' || flat.geometryKind === 'cross')) {
+        const geo = convertModelToBedrockGeometry(flat);
+        const geoId = geo['minecraft:geometry'][0].description.identifier;
+        if (!geometries.has(geoId)) {
+          geometries.set(geoId, geo);
+        }
+      }
+    }
+  }
 
   // Build terrain_texture.json and item_texture.json
   const terrainTextureData = Object.create(null);
@@ -858,14 +916,28 @@ export async function compileAllModelsAndAssets({ repoRoot = defaultRepoRoot } =
             polished_andesite: 'textures/blocks/stone_andesite_smooth',
             polished_diorite: 'textures/blocks/stone_diorite_smooth',
             polished_granite: 'textures/blocks/stone_granite_smooth',
-            purpur_pillar_top: 'textures/blocks/purpur_block_top',
-            purpur_block: 'textures/blocks/purpur_block_bottom',
-            purpur_pillar_side: 'textures/blocks/purpur_block_side',
+            purpur_pillar_top: 'textures/blocks/purpur_pillar_top',
+            purpur_block: 'textures/blocks/purpur_block',
+            purpur_pillar_side: 'textures/blocks/purpur_pillar',
             quartz_pillar_top: 'textures/blocks/quartz_block_lines_top',
+            quartz_block_bottom: 'textures/blocks/quartz_block_bottom',
             quartz_block_side: 'textures/blocks/quartz_block_side',
             quartz_pillar_side: 'textures/blocks/quartz_block_lines',
             end_stone: 'textures/blocks/end_stone',
-            water_still: 'textures/blocks/water_still',
+            obsidian: 'textures/blocks/obsidian',
+            water_still: 'textures/blocks/water_still_grey',
+            composter_compost: 'textures/blocks/composter_compost',
+            composter_ready: 'textures/blocks/composter_ready',
+            ladder: 'textures/blocks/ladder',
+            black_wool: 'textures/blocks/wool_colored_black',
+            brown_wool: 'textures/blocks/wool_colored_brown',
+            cyan_wool: 'textures/blocks/wool_colored_cyan',
+            gray_wool: 'textures/blocks/wool_colored_gray',
+            light_blue_wool: 'textures/blocks/wool_colored_light_blue',
+            magenta_wool: 'textures/blocks/wool_colored_magenta',
+            pink_wool: 'textures/blocks/wool_colored_pink',
+            purple_wool: 'textures/blocks/wool_colored_purple',
+            white_wool: 'textures/blocks/wool_colored_white',
           };
           resolvedTexPath = aliasMap[vanillaBlockTex] ?? `textures/blocks/${vanillaBlockTex}`;
         }
@@ -874,22 +946,37 @@ export async function compileAllModelsAndAssets({ repoRoot = defaultRepoRoot } =
     itemTextureData[key] = { textures: resolvedTexPath };
   }
 
-  // Register vanilla terrain texture aliases referenced by BetterEnd block models
+  // Register namespaced vanilla terrain texture aliases referenced by BetterEnd block models
+  // (using betterend_mc_* keys so vanilla terrain_texture.json keys like purpur_block are never overwritten)
   const vanillaTerrainAliases = {
     polished_andesite: 'textures/blocks/stone_andesite_smooth',
     polished_diorite: 'textures/blocks/stone_diorite_smooth',
     polished_granite: 'textures/blocks/stone_granite_smooth',
-    purpur_pillar_top: 'textures/blocks/purpur_block_top',
-    purpur_block: 'textures/blocks/purpur_block_bottom',
-    purpur_pillar_side: 'textures/blocks/purpur_block_side',
+    purpur_pillar_top: 'textures/blocks/purpur_pillar_top',
+    purpur_block: 'textures/blocks/purpur_block',
+    purpur_pillar_side: 'textures/blocks/purpur_pillar',
     quartz_pillar_top: 'textures/blocks/quartz_block_lines_top',
+    quartz_block_bottom: 'textures/blocks/quartz_block_bottom',
     quartz_block_side: 'textures/blocks/quartz_block_side',
     quartz_pillar_side: 'textures/blocks/quartz_block_lines',
     end_stone: 'textures/blocks/end_stone',
-    water_still: 'textures/blocks/water_still',
+    obsidian: 'textures/blocks/obsidian',
+    water_still: 'textures/blocks/water_still_grey',
+    composter_compost: 'textures/blocks/composter_compost',
+    composter_ready: 'textures/blocks/composter_ready',
+    ladder: 'textures/blocks/ladder',
+    black_wool: 'textures/blocks/wool_colored_black',
+    brown_wool: 'textures/blocks/wool_colored_brown',
+    cyan_wool: 'textures/blocks/wool_colored_cyan',
+    gray_wool: 'textures/blocks/wool_colored_gray',
+    light_blue_wool: 'textures/blocks/wool_colored_light_blue',
+    magenta_wool: 'textures/blocks/wool_colored_magenta',
+    pink_wool: 'textures/blocks/wool_colored_pink',
+    purple_wool: 'textures/blocks/wool_colored_purple',
+    white_wool: 'textures/blocks/wool_colored_white',
   };
   for (const [aliasKey, aliasPath] of Object.entries(vanillaTerrainAliases)) {
-    terrainTextureData[aliasKey] = { textures: aliasPath };
+    terrainTextureData[`betterend_mc_${aliasKey}`] = { textures: aliasPath };
   }
 
   // Register pre-baked tint variations in terrain_texture.json
@@ -936,11 +1023,39 @@ export async function compileAllModelsAndAssets({ repoRoot = defaultRepoRoot } =
     texture_data: itemTextureData,
   };
 
+  const VALID_BEDROCK_BLOCK_SOUNDS = new Set([
+    'stone', 'wood', 'gravel', 'grass', 'metal', 'glass', 'cloth', 'sand',
+    'snow', 'ladder', 'anvil', 'slime', 'fungus', 'stem', 'nylium', 'roots',
+    'shroomlight', 'amethyst_block', 'lantern', 'chain', 'copper', 'sculk',
+    'netherrack', 'bone_block', 'wart_block', 'netherite', 'coral',
+  ]);
+  const SOUND_REMAP = {
+    netherite_block: 'netherite',
+    shelf_mushroom: 'wood',
+    'path:block.stone.break': 'grass',
+    lily_pad: 'grass',
+    vine: 'grass',
+    wet_grass: 'grass',
+    crop: 'grass',
+    bamboo: 'wood',
+    bamboo_sapling: 'wood',
+    wool: 'cloth',
+    honey_block: 'slime',
+    scaffolding: 'ladder',
+    sweet_berry_bush: 'grass',
+    weeping_vines: 'roots',
+    twisting_vines: 'roots',
+    NETHER_WART: 'wart_block',
+    nether_wart: 'wart_block',
+  };
+
   const blocksJson = {
     format_version: [1, 1, 0],
   };
   for (const block of registrations.blocks ?? []) {
-    const sound = (block.properties?.sound ?? 'stone').toLowerCase();
+    const rawSound = (block.properties?.sound ?? 'stone').toLowerCase();
+    const mapped = SOUND_REMAP[rawSound] ?? rawSound;
+    const sound = VALID_BEDROCK_BLOCK_SOUNDS.has(mapped) ? mapped : 'stone';
     blocksJson[block.id] = {
       sound,
     };
