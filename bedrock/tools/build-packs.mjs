@@ -87,7 +87,7 @@ export const PACK_PROFILES = Object.freeze({
       { module_name: '@minecraft/server-ui', version: '2.1.0' },
       { module_name: '@minecraft/server-graphics', version: '1.0.0-beta' },
     ]),
-    rpCapabilities: Object.freeze(['pbr', 'experimental_custom_biomes']),
+    rpCapabilities: Object.freeze(['pbr']),
     entryModule: './bootstrap/main-experimental-vv.js',
     includeExperimentalVvEntry: true,
   }),
@@ -476,13 +476,11 @@ function buildProfilePackMaps({
   );
   rp.set('point_lights/global.json', jsonBytes(compiled.modelAssets.localLightingJson));
 
-  if (profileConfig.includeExperimentalVvEntry) {
-    for (const [rel, doc] of compiled.modelAssets.visualPresets.atmospherics) {
-      rp.set(rel, jsonBytes(doc));
-    }
-    for (const [rel, doc] of compiled.modelAssets.visualPresets.colorGrading) {
-      rp.set(rel, jsonBytes(doc));
-    }
+  for (const [rel, doc] of compiled.modelAssets.visualPresets.atmospherics) {
+    rp.set(rel, jsonBytes(doc));
+  }
+  for (const [rel, doc] of compiled.modelAssets.visualPresets.colorGrading) {
+    rp.set(rel, jsonBytes(doc));
   }
 
   // 8. Sound Definitions & Localization
