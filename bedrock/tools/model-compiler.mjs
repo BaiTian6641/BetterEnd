@@ -359,6 +359,47 @@ export function convertModelToBedrockGeometry(flattenedModel, {
     };
   }
 
+  if (flattenedModel.elements.length === 0) {
+    const matInst = Object.keys(flattenedModel.textures ?? {})[0] || 'particle';
+    const makeBoxUv = (w, h, d) => ({
+      down: { uv: [0, 0], uv_size: [w, d], material_instance: matInst },
+      up: { uv: [0, 0], uv_size: [w, d], material_instance: matInst },
+      north: { uv: [0, 0], uv_size: [w, h], material_instance: matInst },
+      south: { uv: [0, 0], uv_size: [w, h], material_instance: matInst },
+      west: { uv: [0, 0], uv_size: [d, h], material_instance: matInst },
+      east: { uv: [0, 0], uv_size: [d, h], material_instance: matInst },
+    });
+    const fallbackCubes = cleanSuffix.endsWith('_chest')
+      ? [
+          { origin: [-7, 0, -7], size: [14, 14, 14], uv: makeBoxUv(14, 14, 14) },
+          { origin: [-1, 7, -8], size: [2, 4, 1], uv: makeBoxUv(2, 4, 1) },
+        ]
+      : [{ origin: [-8, 0, -8], size: [16, 16, 16], uv: makeBoxUv(16, 16, 16) }];
+    return {
+      format_version: '1.12.0',
+      'minecraft:geometry': [
+        {
+          description: {
+            identifier,
+            texture_width: 16,
+            texture_height: 16,
+            visible_bounds_width: 2,
+            visible_bounds_height: 2,
+            visible_bounds_offset: [0, 0.5, 0],
+          },
+          bones: [
+            {
+              name: boneName,
+              pivot: [0, 8, 0],
+              rotation: [variantRotationX, variantRotationY, 0],
+              cubes: fallbackCubes,
+            },
+          ],
+        },
+      ],
+    };
+  }
+
   let minX = -8;
   let maxX = 8;
   let minY = 0;
@@ -379,7 +420,11 @@ export function convertModelToBedrockGeometry(flattenedModel, {
     const [x1, y1, z1] = el.from;
     const [x2, y2, z2] = el.to;
     const origin = [8 - x2, y1, z1 - 8];
-    const size = [Math.max(0, x2 - x1), Math.max(0, y2 - y1), Math.max(0, z2 - z1)];
+    const size = [
+      Math.max(0.05, x2 - x1),
+      Math.max(0.05, y2 - y1),
+      Math.max(0.05, z2 - z1),
+    ];
 
     minX = Math.min(minX, origin[0]);
     maxX = Math.max(maxX, origin[0] + size[0]);
@@ -463,7 +508,139 @@ export function convertModelToBedrockGeometry(flattenedModel, {
     );
   }
 
-  const bones = rootBone.cubes.length > 0 ? [rootBone, ...childBones] : [rootBone, ...childBones];
+  const bones = [rootBone, ...childBones];
+
+  // Enforce Bedrock 1.26.40 schematic bounds:
+  // 1) Must overlap interior of unit cube X in [-7.5, 7.5], Y in [0.5, 15.5], Z in [-7.5, 7.5]
+  // 2) Total span on all axes (including rotated bones and any 90-deg block transformation) <= 27px (< 30px = 1 + 14/16ths)
+  const computeWorstCaseBounds = () => {
+    let bMinX = Infinity;
+    let bMaxX = -Infinity;
+    let bMinY = Infinity;
+    let bMaxY = -Infinity;
+    let bMinZ = Infinity;
+    let bMaxZ = -Infinity;
+    for (const b of bones) {
+      const rot = b.rotation ?? [0, 0, 0];
+      const piv = b.pivot ?? [0, 8, 0];
+      const rad = rot.map(a => (a * Math.PI) / 180);
+      for (const c of b.cubes ?? []) {
+        const [ox, oy, oz] = c.origin;
+        const [sx, sy, sz] = c.size;
+        for (const sign of [1, -1]) {
+          for (const dx of [0, sx]) {
+            for (const dy of [0, sy]) {
+              for (const dz of [0, sz]) {
+                let x = ox + dx - piv[0];
+                let y = oy + dy - piv[1];
+                let z = oz + dz - piv[2];
+                if (rad[0]) {
+                  const s = sign * Math.sin(rad[0]);
+                  const co = Math.cos(rad[0]);
+                  const ny = y * co - z * s;
+                  const nz = y * s + z * co;
+                  y = ny;
+                  z = nz;
+                }
+                if (rad[1]) {
+                  const s = sign * Math.sin(rad[1]);
+                  const co = Math.cos(rad[1]);
+                  const nx = x * co + z * s;
+                  const nz = -x * s + z * co;
+                  x = nx;
+                  z = nz;
+                }
+                if (rad[2]) {
+                  const s = sign * Math.sin(rad[2]);
+                  const co = Math.cos(rad[2]);
+                  const nx = x * co - y * s;
+                  const ny = x * s + y * co;
+                  x = nx;
+                  y = ny;
+                }
+                x += piv[0];
+                y += piv[1];
+                z += piv[2];
+                bMinX = Math.min(bMinX, x);
+                bMaxX = Math.max(bMaxX, x);
+                bMinY = Math.min(bMinY, y);
+                bMaxY = Math.max(bMaxY, y);
+                bMinZ = Math.min(bMinZ, z);
+                bMaxZ = Math.max(bMaxZ, z);
+              }
+            }
+          }
+        }
+      }
+    }
+    return { bMinX, bMaxX, bMinY, bMaxY, bMinZ, bMaxZ };
+  };
+
+  let bounds = computeWorstCaseBounds();
+  const shiftX = bounds.bMaxX < -7.5 ? -7.5 - bounds.bMaxX : bounds.bMinX > 7.5 ? 7.5 - bounds.bMinX : 0;
+  const shiftY = bounds.bMaxY < 0.5 ? 0.5 - bounds.bMaxY : bounds.bMinY > 15.5 ? 15.5 - bounds.bMinY : 0;
+  const shiftZ = bounds.bMaxZ < -7.5 ? -7.5 - bounds.bMaxZ : bounds.bMinZ > 7.5 ? 7.5 - bounds.bMinZ : 0;
+  if (shiftX !== 0 || shiftY !== 0 || shiftZ !== 0) {
+    for (const b of bones) {
+      if (b.pivot) {
+        b.pivot = [
+          Number((b.pivot[0] + shiftX).toFixed(4)),
+          Number((b.pivot[1] + shiftY).toFixed(4)),
+          Number((b.pivot[2] + shiftZ).toFixed(4)),
+        ];
+      }
+      for (const c of b.cubes ?? []) {
+        c.origin = [
+          Number((c.origin[0] + shiftX).toFixed(4)),
+          Number((c.origin[1] + shiftY).toFixed(4)),
+          Number((c.origin[2] + shiftZ).toFixed(4)),
+        ];
+      }
+    }
+    bounds = computeWorstCaseBounds();
+  }
+
+  const maxDistFromCenter = Math.max(
+    Math.abs(bounds.bMinX),
+    Math.abs(bounds.bMaxX),
+    Math.abs(bounds.bMinY - 8),
+    Math.abs(bounds.bMaxY - 8),
+    Math.abs(bounds.bMinZ),
+    Math.abs(bounds.bMaxZ),
+  );
+  if (maxDistFromCenter > 13.5 && Number.isFinite(maxDistFromCenter)) {
+    const scale = 13.5 / maxDistFromCenter;
+    for (const b of bones) {
+      if (b.pivot) {
+        b.pivot = [
+          Number((b.pivot[0] * scale).toFixed(4)),
+          Number((8 + (b.pivot[1] - 8) * scale).toFixed(4)),
+          Number((b.pivot[2] * scale).toFixed(4)),
+        ];
+      }
+      for (const c of b.cubes ?? []) {
+        c.origin = [
+          Number((c.origin[0] * scale).toFixed(4)),
+          Number((8 + (c.origin[1] - 8) * scale).toFixed(4)),
+          Number((c.origin[2] * scale).toFixed(4)),
+        ];
+        c.size = [
+          Number(Math.max(0.05, c.size[0] * scale).toFixed(4)),
+          Number(Math.max(0.05, c.size[1] * scale).toFixed(4)),
+          Number(Math.max(0.05, c.size[2] * scale).toFixed(4)),
+        ];
+      }
+    }
+    bounds = computeWorstCaseBounds();
+  }
+
+  minX = Math.min(-8, bounds.bMinX);
+  maxX = Math.max(8, bounds.bMaxX);
+  minY = Math.min(0, bounds.bMinY);
+  maxY = Math.max(16, bounds.bMaxY);
+  minZ = Math.min(-8, bounds.bMinZ);
+  maxZ = Math.max(8, bounds.bMaxZ);
+
   const boundsWidth = Math.max(2, Math.ceil(Math.max(maxX - minX, maxZ - minZ) / 16) + 1);
   const boundsHeight = Math.max(2, Math.ceil((maxY - minY) / 16) + 1);
 

@@ -91,10 +91,11 @@ export function synthesizeAnchorPlacements(anchor, worldSeedBigInt, clipBounds =
   const descriptor = FEATURES_BY_ID.get(anchor.featureId);
   if (!descriptor) return [];
 
-  const palette = descriptor.palette ?? {};
-  const primary = palette.primary ?? "betterend:end_moss";
-  const secondary = palette.secondary ?? primary;
-  const accent = palette.accent ?? secondary;
+  const palette = descriptor.palette ?? [];
+  const isArr = Array.isArray(palette);
+  const primary = (isArr ? palette[0] : palette.primary) ?? "betterend:end_moss";
+  const secondary = (isArr ? palette[1] : palette.secondary) ?? primary;
+  const accent = (isArr ? palette[2] : palette.accent) ?? secondary;
 
   const placements = [];
   const ax = Math.trunc(anchor.position.x);
@@ -130,9 +131,9 @@ export function synthesizeAnchorPlacements(anchor, worldSeedBigInt, clipBounds =
   };
 
   const category = descriptor.category;
-  if (category === "structure") {
-    // Base platform + central pillar / shrine / spire motif
-    const r = Math.min(6, Math.max(2, Math.floor((descriptor.radius ?? 12) / 4)));
+  if (category === "structure" || category === "structures") {
+    // Multi-block landmark / spire / giant mushroom / ice star / eternal portal motif
+    const r = Math.min(5, Math.max(2, Math.floor((descriptor.radius ?? 12) / 4)));
     for (let dx = -r; dx <= r; dx++) {
       for (let dz = -r; dz <= r; dz++) {
         if (dx * dx + dz * dz <= r * r) {
@@ -140,13 +141,20 @@ export function synthesizeAnchorPlacements(anchor, worldSeedBigInt, clipBounds =
         }
       }
     }
-    const height = 4 + (rng.nextInt(5) & 3);
+    const height = 6 + (rng.nextInt(5) & 3);
     for (let dy = 0; dy < height; dy++) {
       pushPlacement(ax, ay + dy, az, primary, "structure_core");
     }
-    pushPlacement(ax, ay + height, az, accent, "structure_apex");
-  } else if (category === "tree") {
-    const trunkHeight = 4 + rng.nextInt(4);
+    for (let dx = -2; dx <= 2; dx++) {
+      for (let dz = -2; dz <= 2; dz++) {
+        if (dx * dx + dz * dz <= 5) {
+          pushPlacement(ax + dx, ay + height, az + dz, secondary, "structure_canopy");
+        }
+      }
+    }
+    pushPlacement(ax, ay + height + 1, az, accent, "structure_apex");
+  } else if (category === "tree" || category === "trees") {
+    const trunkHeight = 6 + rng.nextInt(5);
     for (let dy = 0; dy < trunkHeight; dy++) {
       pushPlacement(ax, ay + dy, az, primary, "tree_trunk");
     }
@@ -154,32 +162,44 @@ export function synthesizeAnchorPlacements(anchor, worldSeedBigInt, clipBounds =
       for (let dz = -2; dz <= 2; dz++) {
         if (Math.abs(dx) + Math.abs(dz) <= 3) {
           pushPlacement(ax + dx, ay + trunkHeight, az + dz, secondary, "tree_canopy");
+          if (Math.abs(dx) <= 1 && Math.abs(dz) <= 1) {
+            pushPlacement(ax + dx, ay + trunkHeight + 1, az + dz, secondary, "tree_canopy_upper");
+          }
         }
       }
     }
-    pushPlacement(ax, ay + trunkHeight + 1, az, accent, "tree_crown");
-  } else if (category === "bush") {
+    pushPlacement(ax, ay + trunkHeight - 1, az + 1, accent, "tree_crown");
+  } else if (category === "bush" || category === "bushes") {
     pushPlacement(ax, ay, az, primary, "bush_stem");
     pushPlacement(ax + 1, ay, az, secondary, "bush_foliage");
     pushPlacement(ax - 1, ay, az, secondary, "bush_foliage");
     pushPlacement(ax, ay, az + 1, secondary, "bush_foliage");
     pushPlacement(ax, ay, az - 1, secondary, "bush_foliage");
-    pushPlacement(ax, ay + 1, az, accent, "bush_top");
+    pushPlacement(ax, ay + 1, az, secondary, "bush_top");
   } else if (category === "vine" || category === "sky_plant") {
     const length = 2 + rng.nextInt(3);
     for (let dy = 0; dy < length; dy++) {
       const block = dy === length - 1 ? accent : primary;
       pushPlacement(ax, ay - dy, az, block, "hanging_vine");
     }
-  } else if (category === "ore" || category === "crystal_formation") {
+  } else if (category === "ore" || category === "crystal_formation" || category === "ores_layers") {
     pushPlacement(ax, ay, az, primary, "mineral_core");
     pushPlacement(ax + 1, ay, az, secondary, "mineral_vein");
     pushPlacement(ax, ay - 1, az, secondary, "mineral_vein");
     pushPlacement(ax, ay + 1, az, accent, "mineral_tip");
-  } else if (category === "column" || category === "lake_geyser" || category === "floating_island") {
-    const height = 2 + rng.nextInt(3);
+  } else if (
+    category === "column" ||
+    category === "lake_geyser" ||
+    category === "floating_island" ||
+    category === "terrain_features"
+  ) {
+    const height = 4 + rng.nextInt(5);
     for (let dy = 0; dy < height; dy++) {
       pushPlacement(ax, ay + dy, az, primary, "formation_body");
+      if (dy < 2) {
+        pushPlacement(ax + 1, ay + dy, az, primary, "formation_buttress");
+        pushPlacement(ax, ay + dy, az + 1, primary, "formation_buttress");
+      }
     }
     pushPlacement(ax, ay + height, az, accent, "formation_cap");
   } else {

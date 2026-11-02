@@ -327,6 +327,99 @@ test('Content compiler lowers all 728 blocks (22,385 states), 850 items, 879 rec
   }
   assert.equal(compiled.entitiesAndFeatures.biomes.size, 27);
 
+  // Verify every emitted block geometry obeys Bedrock schematic bounds (<= 30px span, >= 1 cube, overlaps unit cube)
+  for (const [geoId, geoDoc] of compiled.modelAssets.geometries) {
+    const bones = geoDoc['minecraft:geometry']?.[0]?.bones ?? [];
+    let cubeCount = 0;
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+    let minZ = Infinity;
+    let maxZ = -Infinity;
+    for (const b of bones) {
+      const rot = b.rotation ?? [0, 0, 0];
+      const piv = b.pivot ?? [0, 8, 0];
+      const rad = rot.map(a => (a * Math.PI) / 180);
+      for (const c of b.cubes ?? []) {
+        cubeCount += 1;
+        const [ox, oy, oz] = c.origin;
+        const [sx, sy, sz] = c.size;
+        for (const sign of [1, -1]) {
+          for (const dx of [0, sx]) {
+            for (const dy of [0, sy]) {
+              for (const dz of [0, sz]) {
+                let x = ox + dx - piv[0];
+                let y = oy + dy - piv[1];
+                let z = oz + dz - piv[2];
+                if (rad[0]) {
+                  const s = sign * Math.sin(rad[0]);
+                  const co = Math.cos(rad[0]);
+                  const ny = y * co - z * s;
+                  const nz = y * s + z * co;
+                  y = ny;
+                  z = nz;
+                }
+                if (rad[1]) {
+                  const s = sign * Math.sin(rad[1]);
+                  const co = Math.cos(rad[1]);
+                  const nx = x * co + z * s;
+                  const nz = -x * s + z * co;
+                  x = nx;
+                  z = nz;
+                }
+                if (rad[2]) {
+                  const s = sign * Math.sin(rad[2]);
+                  const co = Math.cos(rad[2]);
+                  const nx = x * co - y * s;
+                  const ny = x * s + y * co;
+                  x = nx;
+                  y = ny;
+                }
+                x += piv[0];
+                y += piv[1];
+                z += piv[2];
+                minX = Math.min(minX, x);
+                maxX = Math.max(maxX, x);
+                minY = Math.min(minY, y);
+                maxY = Math.max(maxY, y);
+                minZ = Math.min(minZ, z);
+                maxZ = Math.max(maxZ, z);
+              }
+            }
+          }
+        }
+      }
+    }
+    assert.ok(cubeCount >= 1, `Geometry ${geoId} must have at least 1 cube`);
+    assert.ok(maxX - minX <= 29.5, `Geometry ${geoId} X span ${maxX - minX} exceeds 1 + 14/16ths`);
+    assert.ok(maxY - minY <= 29.5, `Geometry ${geoId} Y span ${maxY - minY} exceeds 1 + 14/16ths`);
+    assert.ok(maxZ - minZ <= 29.5, `Geometry ${geoId} Z span ${maxZ - minZ} exceeds 1 + 14/16ths`);
+    assert.ok(maxX > -7.9 && minX < 7.9, `Geometry ${geoId} outside unit cube on X`);
+    assert.ok(maxY > 0.1 && minY < 15.9, `Geometry ${geoId} outside unit cube on Y`);
+    assert.ok(maxZ > -7.9 && minZ < 7.9, `Geometry ${geoId} outside unit cube on Z`);
+  }
+
+  // Verify curated biome flora features never place solid stone/nest/petal cubes on the ground
+  const forbiddenFloraFeatures = new Set([
+    'betterend:flora_cave_moss_feature',
+    'betterend:flora_virid_jadestone_feature',
+    'betterend:flora_azure_jadestone_feature',
+    'betterend:flora_sandy_jadestone_feature',
+    'betterend:flora_silk_moth_nest_feature',
+    'betterend:flora_hydralux_petal_block_feature',
+  ]);
+  for (const [fKey, fJson] of compiled.entitiesAndFeatures.features) {
+    if (fKey.endsWith('_flora_feature.json')) {
+      for (const [subFeat] of fJson['minecraft:weighted_random_feature']?.features ?? []) {
+        assert.ok(
+          !forbiddenFloraFeatures.has(subFeat),
+          `Biome flora feature ${fKey} must not place solid block ${subFeat}`,
+        );
+      }
+    }
+  }
+
   // Verify bijective round-trip across ALL 22,385 states
   for (const [javaKey, record] of compiled.blocks.forwardStateMap) {
     const forwardLookup = compiled.blocks.lookupBedrockState(record.javaBlockId, record.javaProperties);

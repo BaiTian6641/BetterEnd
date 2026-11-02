@@ -347,6 +347,14 @@ function classifyRenderMethod(blockEntry, flatModel) {
     return 'blend';
   }
   if (
+    flatModel?.geometryKind === 'full_block' &&
+    !shortName.includes('leaves') &&
+    !className.includes('Leaves') &&
+    !shortName.includes('sponge_wet')
+  ) {
+    return 'opaque';
+  }
+  if (
     flatModel?.geometryKind === 'cross' ||
     blockEntry.stateSnapshot?.collisionShape === 'empty' ||
     shortName.includes('leaves') ||
@@ -625,17 +633,42 @@ function resolveStateModelAndRotation(blockstateDef, stateProps, flattenedModels
   if (!blockstateDef) {
     return { flatModel: null, x: 0, y: 0 };
   }
+  const isNonEmptyModel = m => m && (m.geometryKind === 'cross' || (m.elements?.length ?? 0) > 0);
   if (Array.isArray(blockstateDef.variants) && blockstateDef.variants.length > 0) {
     for (const v of blockstateDef.variants) {
       if (evaluateVariantMatch(v.statePredicate, stateProps)) {
+        const flatModel = v.flattened ?? flattenedModels.get(v.modelId) ?? null;
+        if (isNonEmptyModel(flatModel)) {
+          return {
+            flatModel,
+            x: Number(v.x ?? 0),
+            y: Number(v.y ?? 0),
+          };
+        }
+        const fallbackProps = { ...stateProps, top: 'false', half: 'bottom' };
+        for (const fv of blockstateDef.variants) {
+          if (evaluateVariantMatch(fv.statePredicate, fallbackProps)) {
+            const fModel = fv.flattened ?? flattenedModels.get(fv.modelId) ?? null;
+            if (isNonEmptyModel(fModel)) {
+              return {
+                flatModel: fModel,
+                x: Number(fv.x ?? 0),
+                y: Number(fv.y ?? 0),
+              };
+            }
+          }
+        }
         return {
-          flatModel: v.flattened ?? flattenedModels.get(v.modelId) ?? null,
+          flatModel,
           x: Number(v.x ?? 0),
           y: Number(v.y ?? 0),
         };
       }
     }
-    const first = blockstateDef.variants[0];
+    const first =
+      blockstateDef.variants.find(v =>
+        isNonEmptyModel(v.flattened ?? flattenedModels.get(v.modelId)),
+      ) ?? blockstateDef.variants[0];
     return {
       flatModel: first.flattened ?? flattenedModels.get(first.modelId) ?? null,
       x: Number(first.x ?? 0),
@@ -643,7 +676,10 @@ function resolveStateModelAndRotation(blockstateDef, stateProps, flattenedModels
     };
   }
   if (Array.isArray(blockstateDef.multipartRules) && blockstateDef.multipartRules.length > 0) {
-    const first = blockstateDef.multipartRules[0];
+    const first =
+      blockstateDef.multipartRules.find(r =>
+        isNonEmptyModel(r.flattened ?? flattenedModels.get(r.modelId)),
+      ) ?? blockstateDef.multipartRules[0];
     return {
       flatModel: first.flattened ?? flattenedModels.get(first.modelId) ?? null,
       x: Number(first.x ?? 0),
@@ -796,7 +832,14 @@ export function compileBlocks(registrations, modelAssets) {
           modelAssets.blocksJson[blockEntry.id] ?? { sound: 'stone' };
       }
 
-      const defaultState = partition.states[0];
+      const defaultState =
+        partition.states.find(
+          s =>
+            s.properties.top !== 'true' &&
+            s.properties.half !== 'upper' &&
+            s.properties.half !== 'top' &&
+            s.properties.waterlogged !== 'true',
+        ) ?? partition.states[0];
       const defaultResolved = resolveStateModelAndRotation(
         blockstateDef,
         defaultState.properties,
@@ -1857,9 +1900,6 @@ export function compileEntitiesAndFeatures(registrations, resources) {
           enforce_placement_rules: false,
           enforce_survivability_rules: false,
           may_replace: ['minecraft:end_stone'],
-          may_attach_to: {
-            top: ['minecraft:air', 'minecraft:chorus_plant', 'minecraft:chorus_flower'],
-          },
         },
       });
     }
@@ -1891,6 +1931,48 @@ export function compileEntitiesAndFeatures(registrations, resources) {
     return featId;
   };
 
+  // Curated per-biome surface ground-cover flora (only cross/plant/flower/mushroom/crystal-shard blocks; never solid stone/nest/petal/leaf cubes)
+  const BIOME_SURFACE_FLORA = {
+    foggy_mushroomland: ['betterend:umbrella_moss', 'betterend:creeping_moss', 'betterend:cyan_moss', 'betterend:blue_vine_seed', 'betterend:glowing_pillar_seed'],
+    chorus_forest: ['betterend:chorus_grass', 'betterend:chorus_mushroom_seed', 'betterend:tail_moss', 'betterend:purple_polypore'],
+    dust_wastelands: ['betterend:amber_grass'],
+    megalake: ['betterend:umbrella_moss', 'betterend:creeping_moss', 'betterend:cyan_moss', 'betterend:end_lotus_flower', 'betterend:end_lily_seed'],
+    crystal_mountains: ['betterend:crystal_grass', 'betterend:aurora_crystal'],
+    shadow_forest: ['betterend:shadow_plant', 'betterend:murkweed', 'betterend:needlegrass', 'betterend:shadow_berry', 'betterend:twisted_moss'],
+    amber_land: ['betterend:amber_grass', 'betterend:bulb_moss', 'betterend:lanceleaf_seed', 'betterend:glowing_pillar_seed', 'betterend:amber_root_seed'],
+    blossoming_spires: ['betterend:bushy_grass', 'betterend:blossom_berry_seed', 'betterend:twisted_moss', 'betterend:twisted_umbrella_moss', 'betterend:bulb_vine_seed'],
+    sulphur_springs: ['betterend:sulphur_crystal', 'betterend:tube_worm', 'betterend:charnia_orange', 'betterend:charnia_green'],
+    umbrella_jungle: ['betterend:jungle_grass', 'betterend:twisted_umbrella_moss', 'betterend:small_jellyshroom', 'betterend:jungle_fern', 'betterend:cyan_moss'],
+    glowing_grasslands: ['betterend:blooming_cooksonia', 'betterend:salteago', 'betterend:vaiolush_fern', 'betterend:fracturn', 'betterend:lumecorn_seed', 'betterend:umbrella_moss', 'betterend:creeping_moss'],
+    dragon_graveyards: ['betterend:globulagus', 'betterend:clawfern', 'betterend:small_amaranita_mushroom', 'betterend:amaranita_fur'],
+    dry_shrubland: ['betterend:orango', 'betterend:aeridium', 'betterend:lutebus', 'betterend:lamellarium', 'betterend:ruscus'],
+    lantern_woods: ['betterend:aeridium', 'betterend:lamellarium', 'betterend:bolux_mushroom', 'betterend:ruscus', 'betterend:flamaea', 'betterend:filalux_wings'],
+    umbra_valley: ['betterend:inflexia', 'betterend:flammalix'],
+    megalake_grove: ['betterend:umbrella_moss', 'betterend:creeping_moss', 'betterend:cyan_moss', 'betterend:end_lotus_flower'],
+    painted_mountains: ['betterend:amber_grass', 'betterend:orango'],
+    neon_oasis: ['betterend:neon_cactus', 'betterend:umbrella_moss', 'betterend:creeping_moss', 'betterend:cyan_moss'],
+    ice_starfield: ['betterend:emerald_ice', 'betterend:ancient_emerald_ice'],
+    flower_islets: ['betterend:aeridium', 'betterend:lamellarium', 'betterend:bolux_mushroom', 'betterend:orango', 'betterend:globulagus', 'betterend:clawfern', 'betterend:inflexia', 'betterend:flammalix', 'betterend:small_amaranita_mushroom'],
+    waterfall_ponds: ['betterend:blooming_cooksonia', 'betterend:salteago', 'betterend:vaiolush_fern', 'betterend:fracturn', 'betterend:umbrella_moss', 'betterend:creeping_moss', 'betterend:cyan_moss'],
+    empty_end_cave: ['betterend:cave_grass', 'betterend:smaragdant_crystal_shard'],
+    empty_smaragdant_cave: ['betterend:smaragdant_crystal_shard', 'betterend:cave_grass'],
+    lush_smaragdant_cave: ['betterend:smaragdant_crystal_shard', 'betterend:cave_grass', 'betterend:cave_bush'],
+    empty_aurora_cave: ['betterend:aurora_crystal', 'betterend:crystal_grass'],
+    lush_aurora_cave: ['betterend:aurora_crystal', 'betterend:cave_bush', 'betterend:cave_grass'],
+    jade_cave: ['betterend:cave_grass', 'betterend:smaragdant_crystal_shard'],
+  };
+
+  const BIOME_FLORA_DENSITY = {
+    dust_wastelands: 2,
+    painted_mountains: 3,
+    ice_starfield: 2,
+    empty_end_cave: 4,
+    jade_cave: 4,
+    umbra_valley: 12,
+    sulphur_springs: 10,
+    dry_shrubland: 16,
+  };
+
   // Emit native tree features for all 11 BetterEnd tree species
   const treeFeatureIds = new Map();
   for (const treeDesc of FEATURES_BY_CATEGORY.trees ?? []) {
@@ -1920,22 +2002,22 @@ export function compileEntitiesAndFeatures(registrations, resources) {
         acacia_trunk: {
           trunk_width: 1,
           trunk_height: {
-            base: 6,
-            intervals: [3, 2],
-            min_height_for_canopy: 4,
+            base: 9,
+            intervals: [4, 3],
+            min_height_for_canopy: 5,
           },
           trunk_block: trunkBlock,
           trunk_lean: {
             allow_diagonal_growth: true,
-            lean_height: { range_min: 2, range_max: 4 },
+            lean_height: { range_min: 3, range_max: 6 },
             lean_steps: { range_min: 2, range_max: 4 },
-            lean_length: { range_min: 1, range_max: 2 },
+            lean_length: { range_min: 1, range_max: 3 },
           },
         },
         random_spread_canopy: {
-          canopy_height: 3,
-          canopy_radius: 3,
-          leaf_placement_attempts: 50,
+          canopy_height: 4,
+          canopy_radius: 4,
+          leaf_placement_attempts: 90,
           leaf_blocks: [[leafBlock, 4]],
         },
         base_block: [allSoilBlocks[1] ?? 'minecraft:end_stone'],
@@ -1980,7 +2062,7 @@ export function compileEntitiesAndFeatures(registrations, resources) {
 
     const cellCond = `((math.abs(variable.originx + 8) > 1024 || math.abs(variable.originz + 8) > 1024) && math.mod(math.abs(math.floor((variable.originx + 8) / 256) * 73 + math.floor((variable.originz + 8) / 256) * 199), 27) == ${idx})`;
 
-    // 2. Native Surface Replacement (16x16 fixed_grid covering 100% of chunk columns)
+    // 2. Native Surface Replacement (16x16x3 vertical column covering top 3 layers of every column so slopes have zero end_stone rings)
     const primaryTop =
       region.surface?.topBlock && region.surface.topBlock !== 'minecraft:end_stone'
         ? region.surface.topBlock
@@ -2008,6 +2090,23 @@ export function compileEntitiesAndFeatures(registrations, resources) {
       surfaceTargetFeat = choiceId;
     }
 
+    const colFeatId = `betterend:biome_${region.id}_surface_col_feature`;
+    features.set(`features/biome_${region.id}_surface_col_feature.json`, {
+      format_version: BEDROCK_FEATURE_FORMAT_VERSION,
+      'minecraft:scatter_feature': {
+        description: {
+          identifier: colFeatId,
+        },
+        iterations: 3,
+        coordinate_eval_order: 'zyx',
+        x: 0,
+        z: 0,
+        y: { distribution: 'fixed_grid', extent: [-2, 0] },
+        project_input_to_floor: false,
+        places_feature: surfaceTargetFeat,
+      },
+    });
+
     const gridFeatId = `betterend:biome_${region.id}_surface_grid_feature`;
     features.set(`features/biome_${region.id}_surface_grid_feature.json`, {
       format_version: BEDROCK_FEATURE_FORMAT_VERSION,
@@ -2021,7 +2120,7 @@ export function compileEntitiesAndFeatures(registrations, resources) {
         z: { distribution: 'fixed_grid', extent: [0, 15] },
         y: 'query.heightmap(variable.worldx, variable.worldz) - 1',
         project_input_to_floor: false,
-        places_feature: surfaceTargetFeat,
+        places_feature: colFeatId,
       },
     });
 
@@ -2047,37 +2146,20 @@ export function compileEntitiesAndFeatures(registrations, resources) {
       },
     });
 
-    // 3. Native Flora & Crystal Scatter in after_surface_pass
-    const floraBlocks = [];
+    // 3. Native Curated Flora Scatter in after_surface_pass
+    const curatedFlora = (BIOME_SURFACE_FLORA[region.id] ?? ['betterend:creeping_moss', 'betterend:amber_grass']).filter(
+      blk => knownBlockIds.has(blk),
+    );
+    const floraBlocks = curatedFlora.length > 0 ? curatedFlora : ['betterend:creeping_moss'];
+
     const regionTrees = [];
     for (const fId of region.features ?? []) {
       if (treeFeatureIds.has(fId)) {
         regionTrees.push(treeFeatureIds.get(fId));
-        continue;
-      }
-      const desc = FEATURES_BY_ID.get(fId);
-      if (
-        desc &&
-        (desc.category === 'plants_foliage' ||
-          desc.category === 'water_aquatic' ||
-          desc.category === 'caves')
-      ) {
-        for (const blk of desc.palette ?? []) {
-          if (
-            blk.startsWith('betterend:') &&
-            knownBlockIds.has(blk) &&
-            !blk.endsWith('_bark') &&
-            !blk.endsWith('_log') &&
-            !blk.endsWith('_stem') &&
-            !floraBlocks.includes(blk)
-          ) {
-            floraBlocks.push(blk);
-          }
-        }
       }
     }
-    if (floraBlocks.length === 0) {
-      floraBlocks.push('betterend:creeping_moss', 'betterend:amber_grass');
+    if (region.id === 'flower_islets' && treeFeatureIds.has('large_amaranita')) {
+      regionTrees.push(treeFeatureIds.get('large_amaranita'));
     }
 
     const weightedFlora = floraBlocks.slice(0, 8).map(blk => [ensureFloraBlockFeature(blk), 10]);
@@ -2092,6 +2174,7 @@ export function compileEntitiesAndFeatures(registrations, resources) {
       },
     });
 
+    const floraDensity = BIOME_FLORA_DENSITY[region.id] ?? 24;
     featureRules.set(`feature_rules/biome_${region.id}_flora_rule.json`, {
       format_version: BEDROCK_FEATURE_FORMAT_VERSION,
       'minecraft:feature_rules': {
@@ -2106,7 +2189,7 @@ export function compileEntitiesAndFeatures(registrations, resources) {
           ],
         },
         distribution: {
-          iterations: `${cellCond} ? 28 : 0`,
+          iterations: `${cellCond} ? ${floraDensity} : 0`,
           x: { distribution: 'uniform', extent: [0, 16] },
           y: 'query.heightmap(variable.worldx, variable.worldz)',
           z: { distribution: 'uniform', extent: [0, 16] },
@@ -2130,7 +2213,7 @@ export function compileEntitiesAndFeatures(registrations, resources) {
             ],
           },
           distribution: {
-            iterations: `${cellCond} ? 3 : 0`,
+            iterations: `${cellCond} ? 8 : 0`,
             x: { distribution: 'uniform', extent: [0, 16] },
             y: 'query.heightmap(variable.worldx, variable.worldz)',
             z: { distribution: 'uniform', extent: [0, 16] },

@@ -604,13 +604,24 @@ export class BetterEndRuntime {
                 airBlk.setType("minecraft:air");
               }
             }
-          } else if (distSq >= 9 && distSq <= (radius - 2) * (radius - 2) && rng.nextInt(6) === 0) {
-            const customFeatures = (region.features ?? []).filter(
-              (f) => !["crashed_ship", "tunel_cave", "cave_surface_coat", "ender_ore", "amber_ore", "thallasium_ore", "flavolite_layer", "violecite_layer"].includes(f)
+          } else if (distSq >= 9 && distSq <= (radius - 2) * (radius - 2) && rng.nextInt(7) === 0) {
+            const customFeatures = [...(region.structures ?? []), ...(region.features ?? [])].filter(
+              (f) =>
+                ![
+                  "crashed_ship",
+                  "tunel_cave",
+                  "cave_surface_coat",
+                  "ender_ore",
+                  "amber_ore",
+                  "thallasium_ore",
+                  "flavolite_layer",
+                  "violecite_layer",
+                  "silk_moth_nest",
+                  "hydralux"
+                ].includes(f)
             );
-            const pool = customFeatures.length > 0 ? customFeatures : region.features ?? [];
-            if (pool.length > 0) {
-              const featId = pool[rng.nextInt(pool.length)];
+            if (customFeatures.length > 0) {
+              const featId = customFeatures[rng.nextInt(customFeatures.length)];
               const placements = synthesizeAnchorPlacements(
                 {
                   anchorId: `island:${x},${cy + 1},${z}`,
@@ -632,6 +643,108 @@ export class BetterEndRuntime {
         }
       }
     }
+  }
+
+  /**
+   * Lightweight landmark-only decorator for natural End chunks:
+   * - Never touches ground surface blocks (C++ surface_pass handles 100% of ground 3 layers deep).
+   * - Clears stray vanilla Chorus stems in non-chorus biomes.
+   * - Places 1 authentic multi-block BetterEnd landmark/structure per chunk (`structures`, `trees`, `bushes`, `terrain_features`).
+   */
+  _decorateChunkLandmarks(dimension, chunkX, chunkZ) {
+    if (!dimension || typeof dimension.getTopmostBlock !== "function") return;
+    const baseX = chunkX * 16;
+    const baseZ = chunkZ * 16;
+    const centerX = baseX + 8;
+    const centerZ = baseZ + 8;
+    if (Math.abs(centerX) <= 1024 && Math.abs(centerZ) <= 1024) return;
+
+    const region = this._lookupNativeCellRegion(centerX, centerZ);
+    if (!region) return;
+
+    // 1. Clear stray vanilla Chorus plants in non-chorus biomes
+    if (region.id !== "chorus_forest") {
+      for (let sx = 2; sx < 16; sx += 4) {
+        for (let sz = 2; sz < 16; sz += 4) {
+          try {
+            const top = dimension.getTopmostBlock({ x: baseX + sx, z: baseZ + sz }, 120);
+            if (top && (top.typeId === "minecraft:chorus_flower" || top.typeId === "minecraft:chorus_plant")) {
+              const topY = top.location.y;
+              for (let dy = 0; dy >= -18; dy--) {
+                const b = dimension.getBlock({ x: baseX + sx, y: topY + dy, z: baseZ + sz });
+                if (!b || (b.typeId !== "minecraft:chorus_plant" && b.typeId !== "minecraft:chorus_flower")) break;
+                b.setType("minecraft:air");
+              }
+            }
+          } catch {}
+        }
+      }
+    }
+
+    // 2. Place 1 multi-block BetterEnd landmark / structure in the chunk if solid ground exists
+    const landmarkPool = [...(region.structures ?? []), ...(region.features ?? [])].filter((fId) => {
+      if (
+        [
+          "crashed_ship",
+          "tunel_cave",
+          "cave_surface_coat",
+          "ender_ore",
+          "amber_ore",
+          "thallasium_ore",
+          "flavolite_layer",
+          "violecite_layer",
+          "silk_moth_nest",
+          "hydralux",
+          "end_lake",
+          "end_lake_rare",
+          "megalake"
+        ].includes(fId)
+      ) {
+        return false;
+      }
+      const desc = FEATURES_BY_ID.get(fId);
+      return (
+        desc &&
+        (desc.category === "structures" ||
+          desc.category === "trees" ||
+          desc.category === "bushes" ||
+          desc.category === "terrain_features")
+      );
+    });
+    if (landmarkPool.length === 0) return;
+
+    const seed = MHelper.getSeed3D(this.regionService.effectiveSeed, chunkX, chunkZ, 77);
+    const rng = new JavaRandom(seed);
+    if (rng.nextInt(2) !== 0) return;
+
+    const ax = baseX + 4 + rng.nextInt(8);
+    const az = baseZ + 4 + rng.nextInt(8);
+    try {
+      const topBlk = dimension.getTopmostBlock({ x: ax, z: az }, 120);
+      if (!topBlk || topBlk.location.y < 42) return;
+      const topY = topBlk.location.y;
+      const featId = landmarkPool[rng.nextInt(landmarkPool.length)];
+      const placements = synthesizeAnchorPlacements(
+        {
+          anchorId: `chunk:${chunkX},${chunkZ}:${featId}`,
+          featureId: featId,
+          position: { x: ax, y: topY + 1, z: az }
+        },
+        this.regionService.effectiveSeed
+      );
+      for (const p of placements) {
+        if (p.role === "structure_base") continue;
+        const target = dimension.getBlock({ x: p.x, y: p.y, z: p.z });
+        if (
+          target &&
+          (target.typeId === "minecraft:air" ||
+            target.typeId === "minecraft:chorus_plant" ||
+            target.typeId === "minecraft:chorus_flower")
+        ) {
+          target.setType(p.blockId);
+        }
+      }
+    } catch {}
   }
 
   // ============================================================================
@@ -1062,6 +1175,26 @@ export class BetterEndRuntime {
           this.generationService.enqueuePlayerApproach(pid, "minecraft:the_end", loc, {
             radiusCells: 1
           });
+
+          // Decorate 1 nearby chunk per tick with multi-block BetterEnd landmarks & clear stray Chorus stems
+          const pChunkX = Math.floor(loc.x / 16);
+          const pChunkZ = Math.floor(loc.z / 16);
+          for (let r = 0; r <= 3; r++) {
+            let decoratedOne = false;
+            for (let dcx = -r; dcx <= r && !decoratedOne; dcx++) {
+              for (let dcz = -r; dcz <= r && !decoratedOne; dcz++) {
+                const cx = pChunkX + dcx;
+                const cz = pChunkZ + dcz;
+                const key = `${cx},${cz}`;
+                if (!this._decoratedLiveChunks.has(key)) {
+                  this._decoratedLiveChunks.add(key);
+                  this._decorateChunkLandmarks(dim, cx, cz);
+                  decoratedOne = true;
+                }
+              }
+            }
+            if (decoratedOne) break;
+          }
         }
       }
     }
