@@ -817,4 +817,61 @@ test('Stage 2 flora, canopy vines, wall/log plants, aquatic plants, and directio
   assert.ok(featureRules.has('feature_rules/dragon_bone_block_ore_feature_rule.json'), 'dragon_bone_block_ore rule emitted');
 });
 
+test('Stage 3 cave formations, cave flora, and aerial island ecosystems (Flower Islets & Waterfall Ponds)', () => {
+  const collectBlocks = (featureId, seeds = 8) => {
+    const blocks = new Set();
+    const voxels = [];
+    for (let s = 1; s <= seeds; s += 1) {
+      const out = generateBetterEndFeatureVoxels(featureId, { x: 0, y: 0, z: 0 }, s * 1999);
+      for (const v of out) {
+        blocks.add(v.blockId);
+        voxels.push(v);
+      }
+    }
+    return { blocks, voxels };
+  };
+
+  // Aurora cave grotto: ceiling rubinea, magnula, cave_pumpkin + floor cave_grass, cave_bush, crystal_moss_cover
+  const auroraGrotto = collectBlocks('aurora_cave_grotto');
+  assert.ok(auroraGrotto.blocks.has('betterend:rubinea'), 'aurora_cave_grotto hangs rubinea');
+  assert.ok(auroraGrotto.blocks.has('betterend:magnula'), 'aurora_cave_grotto hangs magnula');
+  assert.ok(auroraGrotto.blocks.has('betterend:cave_pumpkin'), 'aurora_cave_grotto hangs cave_pumpkin');
+  assert.ok(auroraGrotto.blocks.has('betterend:cave_pumpkin_seed'), 'aurora_cave_grotto hangs cave_pumpkin_seed');
+  assert.ok(auroraGrotto.blocks.has('betterend:cave_grass'), 'aurora_cave_grotto places cave_grass');
+  assert.ok(auroraGrotto.blocks.has('betterend:cave_bush'), 'aurora_cave_grotto places cave_bush');
+  assert.ok(auroraGrotto.blocks.has('betterend:crystal_moss_cover'), 'aurora_cave_grotto places crystal_moss_cover');
+
+  // Smaragdant cave grotto: ceiling & floor smaragdant_crystal_shard (facing up/down, waterlogged false), rubinea, cave_grass, cave_bush
+  const smaragdantGrotto = collectBlocks('smaragdant_cave_grotto');
+  assert.ok(smaragdantGrotto.blocks.has('betterend:rubinea'), 'smaragdant_cave_grotto hangs rubinea');
+  assert.ok(smaragdantGrotto.blocks.has('betterend:cave_grass'), 'smaragdant_cave_grotto places cave_grass');
+  assert.ok(smaragdantGrotto.blocks.has('betterend:cave_bush'), 'smaragdant_cave_grotto places cave_bush');
+  const shards = smaragdantGrotto.voxels.filter(v => v.blockId === 'betterend:smaragdant_crystal_shard');
+  assert.ok(shards.length >= 2, 'smaragdant_cave_grotto places smaragdant_crystal_shard');
+  assert.ok(shards.some(v => v.states?.facing === 'up' && v.states?.waterlogged === false), 'floor crystal shards face up');
+  assert.ok(shards.some(v => v.states?.facing === 'down' && v.states?.waterlogged === false), 'ceiling crystal shards face down');
+
+  // Flower Islets floating island (small_island_flower): sangnum, pallidium_full, amaranita mushroom, flower flora, ruscus, vines
+  const flowerIsland = collectBlocks('small_island_flower', 6);
+  assert.ok(flowerIsland.blocks.has('betterend:sangnum'), 'small_island_flower has sangnum');
+  assert.ok(flowerIsland.blocks.has('betterend:pallidium_full'), 'small_island_flower has pallidium_full');
+  assert.ok(flowerIsland.blocks.has('betterend:amaranita_cap'), 'small_island_flower has amaranita patch mushroom');
+  assert.ok(flowerIsland.blocks.has('betterend:large_amaranita_mushroom'), 'small_island_flower has large_amaranita_mushroom');
+  assert.ok(flowerIsland.blocks.has('betterend:ruscus'), 'small_island_flower attaches ruscus');
+  assert.ok(flowerIsland.blocks.has('betterend:aeridium') || flowerIsland.blocks.has('betterend:orango'), 'small_island_flower scatters flower islets flora');
+
+  // Waterfall Ponds floating island (small_island): water pool, lumecorn, cyan_moss, glowing flora
+  const pondIsland = collectBlocks('small_island', 6);
+  assert.ok(pondIsland.blocks.has('betterend:end_moss'), 'small_island has end_moss');
+  assert.ok(pondIsland.blocks.has('minecraft:water'), 'small_island has waterfall pond water');
+  assert.ok(pondIsland.blocks.has('betterend:lumecorn'), 'small_island has lumecorn');
+  assert.ok(pondIsland.blocks.has('betterend:cyan_moss'), 'small_island attaches cyan_moss');
+  assert.ok(pondIsland.blocks.has('betterend:blooming_cooksonia') || pondIsland.blocks.has('betterend:salteago'), 'small_island scatters pond flora');
+
+  // Pre-registered cave/aerial flora features
+  const shardFeat = featureIndex.get('betterend:flora_smaragdant_crystal_shard_feature');
+  assert.deepEqual(shardFeat?.body?.places_block?.states, { 'betterend:facing': 'up', 'betterend:waterlogged': false });
+});
+
+
 

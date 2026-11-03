@@ -2647,8 +2647,10 @@ export function generateSmallFloatingIsland(grid, ox, oy, oz, rng, isFlowerIslet
 
   const coatNoise = new OpenSimplexNoise(rng.nextInt());
   const underPositions = [];
+  const topPositions = [];
   island.addPostProcess((info) => {
     if (info.getStateUp().blockId === "minecraft:air") {
+      topPositions.push({ x: info.x, y: info.y + 1, z: info.z });
       if (isFlowerIslets) {
         if (rng.nextFloat() < 0.55) {
           return { blockId: "betterend:sangnum", states: {} };
@@ -2696,6 +2698,82 @@ export function generateSmallFloatingIsland(grid, ox, oy, oz, rng, isFlowerIslet
         );
       }
     }
+  }
+
+  // Top-surface ecosystem for Flower Islets vs Waterfall Ponds floating islands
+  if (isFlowerIslets) {
+    const centerTop = topPositions.find((p) => p.x === ox && p.z === oz) ?? topPositions[0];
+    if (centerTop) {
+      generateAmaranitaPatchMushroom(grid, centerTop.x, centerTop.y, centerTop.z, rng);
+    }
+    const secondTop = topPositions.find((p) => Math.hypot(p.x - ox, p.z - oz) >= 2.2 && Math.hypot(p.x - ox, p.z - oz) <= 3.5);
+    if (secondTop && !grid.has(secondTop.x, secondTop.y, secondTop.z)) {
+      generateLargeAmaranita(grid, secondTop.x, secondTop.y, secondTop.z, rng);
+    }
+    const flowerFlora = [
+      "betterend:aeridium",
+      "betterend:lamellarium",
+      "betterend:bolux_mushroom",
+      "betterend:orango",
+      "betterend:globulagus",
+      "betterend:clawfern",
+      "betterend:inflexia",
+      "betterend:flammalix",
+      "betterend:small_amaranita_mushroom"
+    ];
+    for (const t of topPositions) {
+      if (grid.has(t.x, t.y, t.z) || Math.hypot(t.x - ox, t.z - oz) < 1.8) continue;
+      if (rng.nextInt(3) === 0) {
+        const fBlk = flowerFlora[rng.nextInt(flowerFlora.length)];
+        const fStates =
+          fBlk === "betterend:small_amaranita_mushroom"
+            ? { age: rng.nextInt(4) }
+            : {};
+        grid.set(t.x, t.y, t.z, fBlk, fStates, "feature_primary");
+      }
+    }
+    decorateTreeLogsAndCanopy(grid, ox, oy, oz, rng, {
+      logMatch: (id) =>
+        id === "betterend:sangnum" ||
+        id === "betterend:pallidium_full" ||
+        id === "minecraft:end_stone",
+      wallPlants: ["betterend:ruscus"],
+      wallChance: 0.16
+    });
+  } else {
+    // Waterfall Ponds floating island: central pool + waterfall lip + lumecorn + glowing flora
+    for (const t of topPositions) {
+      const dist = Math.hypot(t.x - ox, t.z - oz);
+      if (dist <= 2.6 || (t.z === oz && t.x > ox && dist <= radius - 0.5)) {
+        grid.set(t.x, t.y - 2, t.z, "betterend:endstone_dust", {}, "structure_base");
+        grid.set(t.x, t.y - 1, t.z, "minecraft:water", {}, "structure_core");
+      }
+    }
+    const bankTop = topPositions.find((p) => p.x === ox - 3 && p.z === oz);
+    if (bankTop && !grid.has(bankTop.x, bankTop.y, bankTop.z)) {
+      generateLumecorn(grid, bankTop.x, bankTop.y, bankTop.z, rng);
+    }
+    const pondFlora = [
+      "betterend:blooming_cooksonia",
+      "betterend:salteago",
+      "betterend:vaiolush_fern",
+      "betterend:fracturn",
+      "betterend:umbrella_moss",
+      "betterend:creeping_moss"
+    ];
+    for (const t of topPositions) {
+      const below = grid.get(t.x, t.y - 1, t.z);
+      if (!below || below.blockId !== "betterend:end_moss" || grid.has(t.x, t.y, t.z)) continue;
+      if (rng.nextInt(3) === 0) {
+        const fBlk = pondFlora[rng.nextInt(pondFlora.length)];
+        grid.set(t.x, t.y, t.z, fBlk, {}, "feature_primary");
+      }
+    }
+    decorateTreeLogsAndCanopy(grid, ox, oy, oz, rng, {
+      logMatch: (id) => id === "betterend:end_moss" || id === "minecraft:end_stone",
+      wallPlants: ["betterend:cyan_moss"],
+      wallChance: 0.16
+    });
   }
 }
 
@@ -3064,7 +3142,7 @@ export function generateCaveGrotto(grid, ox, oy, oz, rng, kind = "aurora") {
         continue;
       }
 
-      // Find ceiling Y to hang stalactites or rubinea
+      // Find ceiling Y to hang stalactites, rubinea, magnula, or cave pumpkins
       let ceilY = -1;
       for (let y = ry; y >= 3; y--) {
         if (grid.has(ox + dx, oy + y, oz + dz) && !grid.has(ox + dx, oy + y - 1, oz + dz)) {
@@ -3072,7 +3150,28 @@ export function generateCaveGrotto(grid, ox, oy, oz, rng, kind = "aurora") {
           break;
         }
       }
-      if (ceilY >= 3 && rng.nextInt(4) === 0) {
+      if (ceilY >= 3 && (isAurora || isSmaragdant) && rng.nextInt(5) === 0) {
+        if (isAurora && rng.nextInt(4) === 0 && ceilY >= 4) {
+          grid.set(ox + dx, oy + ceilY, oz + dz, "betterend:cave_pumpkin_seed", { age: 3 }, "hanging_vine");
+          grid.set(ox + dx, oy + ceilY - 1, oz + dz, "betterend:cave_pumpkin", { small: false }, "hanging_vine");
+        } else if (isSmaragdant && rng.nextInt(4) === 0) {
+          grid.set(
+            ox + dx,
+            oy + ceilY,
+            oz + dz,
+            "betterend:smaragdant_crystal_shard",
+            { facing: "down", waterlogged: false },
+            "formation_tip"
+          );
+        } else {
+          const vineBlk = isAurora && rng.nextBoolean() ? "betterend:magnula" : "betterend:rubinea";
+          const vLen = MHelper.randRange(2, Math.min(4, ceilY - 1), rng);
+          for (let i = 0; i < vLen; i++) {
+            const shape = i === vLen - 1 ? "bottom" : i === 0 ? "top" : "middle";
+            grid.set(ox + dx, oy + ceilY - i, oz + dz, vineBlk, { shape }, "hanging_vine");
+          }
+        }
+      } else if (ceilY >= 3 && rng.nextInt(4) === 0) {
         const sLen = MHelper.randRange(2, Math.min(4, ceilY - 1), rng);
         for (let i = 0; i < sLen; i++) {
           grid.set(
@@ -3084,22 +3183,64 @@ export function generateCaveGrotto(grid, ox, oy, oz, rng, kind = "aurora") {
             "formation_tip"
           );
         }
-      } else if (r2 >= 5 && rng.nextInt(6) === 0) {
-        // Floor stalagmite or crystal shard
-        if (isSmaragdant && rng.nextBoolean()) {
-          grid.set(ox + dx, oy, oz + dz, "betterend:smaragdant_crystal_shard", {}, "formation_tip");
-        } else {
-          const fLen = MHelper.randRange(2, 3, rng);
-          for (let i = 0; i < fLen; i++) {
+      }
+
+      // Floor stalagmite, crystal shard, cave_grass, cave_bush, or crystal_moss_cover
+      const floorVoxel = grid.get(ox + dx, oy - 1, oz + dz);
+      if (r2 >= 5 && !grid.has(ox + dx, oy, oz + dz) && floorVoxel) {
+        if (rng.nextInt(6) === 0) {
+          if (isSmaragdant && rng.nextBoolean()) {
             grid.set(
               ox + dx,
-              oy + i,
+              oy,
               oz + dz,
-              stalactiteBlk,
-              { size: Math.min(7, fLen - 1 - i), is_floor: true, waterlogged: false },
-              "formation_body"
+              "betterend:smaragdant_crystal_shard",
+              { facing: "up", waterlogged: false },
+              "formation_tip"
+            );
+          } else {
+            const fLen = MHelper.randRange(2, 3, rng);
+            for (let i = 0; i < fLen; i++) {
+              grid.set(
+                ox + dx,
+                oy + i,
+                oz + dz,
+                stalactiteBlk,
+                { size: Math.min(7, fLen - 1 - i), is_floor: true, waterlogged: false },
+                "formation_body"
+              );
+            }
+          }
+        } else if (
+          (isAurora || isSmaragdant) &&
+          floorVoxel.blockId === "betterend:cave_moss" &&
+          rng.nextInt(3) === 0
+        ) {
+          if (rng.nextInt(4) === 0) {
+            grid.set(ox + dx, oy, oz + dz, "betterend:cave_bush", {}, "bush_foliage");
+          } else {
+            grid.set(
+              ox + dx,
+              oy,
+              oz + dz,
+              "betterend:cave_grass",
+              { rotation: rng.nextInt(4) },
+              "feature_primary"
             );
           }
+        } else if (
+          isAurora &&
+          floorVoxel.blockId === "betterend:crystal_moss" &&
+          rng.nextInt(2) === 0
+        ) {
+          grid.set(
+            ox + dx,
+            oy,
+            oz + dz,
+            "betterend:crystal_moss_cover",
+            { down: true, up: false, north: false, south: false, east: false, west: false },
+            "feature_primary"
+          );
         }
       }
     }
@@ -3363,6 +3504,9 @@ export function generateBetterEndFeatureVoxels(featureId, seedOrRng, ox = 0, oy 
     case "small_island":
     case "biome_island":
       generateSmallFloatingIsland(grid, ox, oy, oz, rng, false);
+      break;
+    case "small_island_flower":
+      generateSmallFloatingIsland(grid, ox, oy, oz, rng, true);
       break;
     case "megalake":
     case "megalake_small":

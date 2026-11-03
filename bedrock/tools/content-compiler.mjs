@@ -3839,6 +3839,12 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
     jade_cave: ['betterend:cave_grass', 'betterend:smaragdant_crystal_shard'],
   };
 
+  for (const floraList of Object.values(BIOME_SURFACE_FLORA)) {
+    for (const blk of floraList) {
+      if (knownBlockIds.has(blk)) ensureFloraBlockFeature(blk);
+    }
+  }
+
   const BIOME_FLORA_DENSITY = {
     dust_wastelands: 2,
     painted_mountains: 3,
@@ -4080,7 +4086,7 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
     blossoming_spires: ['spire', 'floating_spire'],
     umbra_valley: ['umbralith_arch', 'thin_umbralith_arch'],
     dragon_graveyards: ['obsidian_pillar_basement', 'fallen_pillar', 'obsidian_boulder'],
-    flower_islets: ['small_island'],
+    flower_islets: ['small_island_flower'],
     waterfall_ponds: ['small_island'],
     empty_aurora_cave: ['aurora_cave_grotto'],
     lush_aurora_cave: ['aurora_cave_grotto'],
@@ -4171,7 +4177,7 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
       0,
       ...(resolvedStructures.proceduralVariants.get(procId) ?? []).map(metaFootprintArea),
     );
-  const AERIAL_PROC_IDS = new Set(['floating_spire', 'small_island']);
+  const AERIAL_PROC_IDS = new Set(['floating_spire', 'small_island', 'small_island_flower']);
   /** Biomes whose signature landmark gets its own dense, widely-spaced site layer. */
   const GIANT_LAYER_BIOMES = { foggy_mushroomland: 'giant_mossy_glowshroom' };
   /** BetterEnd `VegetationFeaturesProvider.registerVegetation(..., onEveryLayerMax(n))` densities. */
