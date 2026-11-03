@@ -515,13 +515,13 @@ export function convertVoxelsToMcStructure(voxels, blocksCompiler, { maxExtent =
 
 export const PROCEDURAL_FEATURE_SPECS = Object.freeze([
   // 11 BetterEnd Trees + Giant Mossy Glowshroom
-  { id: 'mossy_glowshroom', variants: 3, maxExtent: 32 },
-  { id: 'giant_mossy_glowshroom', variants: 2, maxExtent: 42 },
+  { id: 'mossy_glowshroom', variants: 8, maxExtent: 32 },
+  { id: 'giant_mossy_glowshroom', variants: 4, maxExtent: 42 },
   { id: 'pythadendron_tree', variants: 3, maxExtent: 32 },
   { id: 'lacugrove', variants: 3, maxExtent: 32 },
   { id: 'dragon_tree', variants: 3, maxExtent: 32 },
   { id: 'dragon_helix_tree', variants: 2, maxExtent: 32 },
-  { id: 'tenanea', variants: 3, maxExtent: 32 },
+  { id: 'tenanea', variants: 5, maxExtent: 32 },
   { id: 'helix_tree', variants: 3, maxExtent: 32 },
   { id: 'umbrella_tree', variants: 3, maxExtent: 34 },
   { id: 'jellyshroom', variants: 3, maxExtent: 28 },
@@ -556,9 +556,11 @@ export const PROCEDURAL_FEATURE_SPECS = Object.freeze([
   // 3D Crystals, Ice Stars, Spires, Arches, Geysers, Lakes, Boulders, Pillars, Floating Islands
   { id: 'big_aurora_crystal', variants: 3, maxExtent: 28 },
   { id: 'smaragdant_crystal', variants: 2, maxExtent: 20 },
-  { id: 'ice_star_small', variants: 2, maxExtent: 20 },
-  { id: 'ice_star', variants: 2, maxExtent: 28 },
-  { id: 'giant_ice_star', variants: 1, maxExtent: 34 },
+  { id: 'ice_star_small', variants: 3, maxExtent: 16 },
+  { id: 'ice_star', variants: 4, maxExtent: 36 },
+  // Too wide for a single feature placement (Bedrock only writes a 3x3-chunk window around the rule's chunk),
+  // so it is compiled as chunk-aligned 16x16 column tiles that each chunk places for itself.
+  { id: 'giant_ice_star', variants: 2, maxExtent: 90, tiled: { half: 2 } },
   { id: 'spire', variants: 2, maxExtent: 36 },
   { id: 'floating_spire', variants: 2, maxExtent: 36 },
   { id: 'umbralith_arch', variants: 2, maxExtent: 32 },
@@ -574,7 +576,65 @@ export const PROCEDURAL_FEATURE_SPECS = Object.freeze([
   { id: 'obsidian_pillar_basement', variants: 2, maxExtent: 22 },
   { id: 'fallen_pillar', variants: 2, maxExtent: 24 },
   { id: 'small_island', variants: 2, maxExtent: 24 },
+  { id: 'stalactite_cluster', variants: 2, maxExtent: 12 },
+  { id: 'stalactite_cluster_cavemoss', variants: 2, maxExtent: 12 },
+  { id: 'aurora_cave_grotto', variants: 2, maxExtent: 22 },
+  { id: 'smaragdant_cave_grotto', variants: 2, maxExtent: 22 },
+  { id: 'jade_cave_grotto', variants: 2, maxExtent: 22 },
 ]);
+
+/**
+ * Compiles a procedural feature that is wider than the single-chunk placement window into chunk-aligned
+ * tiles. The feature is generated once around the origin; world chunk `(siteChunk + dx, siteChunk + dz)`
+ * places tile `(dx, dz)` for `dx, dz in [-half, half]`. The anchor is fixed at the middle of the site
+ * chunk (local x/z = 8), so tile `(dx, dz)` owns the voxels with
+ * `x in [16 * dx - 8, 16 * dx + 8)` (same for z) and never leaves its own chunk.
+ *
+ * Each tile's `originOffset` is `[localX, y, localZ]`: the structure's corner relative to the chunk origin
+ * (x/z) and to the anchor height (y).
+ */
+function compileTiledProceduralFeature(spec, blocks, structureFiles, structureMeta) {
+  const half = spec.tiled.half;
+  const variants = [];
+  for (let vIdx = 0; vIdx < spec.variants; vIdx += 1) {
+    const seed = (vIdx + 1) * 0x9e3779b9;
+    const voxels = generateBetterEndFeatureVoxels(spec.id, seed);
+    const buckets = new Map();
+    for (const v of voxels) {
+      if (!v || !v.blockId) continue;
+      const x = Math.round(v.x);
+      const z = Math.round(v.z);
+      const dx = Math.floor((x + 8) / 16);
+      const dz = Math.floor((z + 8) / 16);
+      if (Math.abs(dx) > half || Math.abs(dz) > half) continue;
+      const key = `${dx},${dz}`;
+      if (!buckets.has(key)) buckets.set(key, { dx, dz, voxels: [] });
+      buckets.get(key).voxels.push(v);
+    }
+    const tiles = [];
+    for (const { dx, dz, voxels: tileVoxels } of [...buckets.values()].sort(
+      (a, b) => a.dx - b.dx || a.dz - b.dz,
+    )) {
+      const converted = convertVoxelsToMcStructure(tileVoxels, blocks, { maxExtent: 400 });
+      if (converted.paletteCount <= 1 && converted.size[0] === 1 && converted.size[1] === 1) continue;
+      const structId = `proc_${spec.id}_v${vIdx}_tile_${dx + half}_${dz + half}`;
+      const relPath = `structures/betterend/${structId}.mcstructure`;
+      structureFiles.set(relPath, converted.buffer);
+      const localX = converted.originOffset[0] - (16 * dx - 8);
+      const localZ = converted.originOffset[2] - (16 * dz - 8);
+      const meta = {
+        structureName: `betterend:${structId}`,
+        relPath,
+        size: converted.size,
+        originOffset: [localX, converted.originOffset[1], localZ],
+      };
+      structureMeta.set(structId, meta);
+      tiles.push({ dx, dz, meta });
+    }
+    variants.push({ variant: vIdx, tiles });
+  }
+  return { half, variants };
+}
 
 /**
  * Compiles all Java `.nbt` structures and procedural BetterEnd SDF/Spline structures into
@@ -662,7 +722,12 @@ export function compileAllMcStructures({ repoRoot = defaultRepoRoot, blocks }) {
 
   // 3. Compile all Procedural BetterEnd SDF/Spline Features into .mcstructure variants
   const proceduralVariants = new Map();
+  const tiledProcedural = new Map();
   for (const spec of PROCEDURAL_FEATURE_SPECS) {
+    if (spec.tiled) {
+      tiledProcedural.set(spec.id, compileTiledProceduralFeature(spec, blocks, structureFiles, structureMeta));
+      continue;
+    }
     const variants = [];
     for (let vIdx = 0; vIdx < spec.variants; vIdx += 1) {
       const seed = (vIdx + 1) * 0x9e3779b9;
@@ -690,5 +755,6 @@ export function compileAllMcStructures({ repoRoot = defaultRepoRoot, blocks }) {
     structureMeta,
     biomeNbtStructures,
     proceduralVariants,
+    tiledProcedural,
   };
 }

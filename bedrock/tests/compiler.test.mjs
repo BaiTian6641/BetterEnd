@@ -400,7 +400,7 @@ test('Content compiler lowers all 728 blocks (22,385 states), 850 items, 879 rec
     assert.ok(maxZ > -7.9 && minZ < 7.9, `Geometry ${geoId} outside unit cube on Z`);
   }
 
-  // Verify curated biome flora features never place solid stone/nest/petal cubes on the ground
+  // Verify curated biome flora features never place solid stone/nest/petal cubes or ceiling/wall-only plants on the ground
   const forbiddenFloraFeatures = new Set([
     'betterend:flora_cave_moss_feature',
     'betterend:flora_virid_jadestone_feature',
@@ -408,13 +408,15 @@ test('Content compiler lowers all 728 blocks (22,385 states), 850 items, 879 rec
     'betterend:flora_sandy_jadestone_feature',
     'betterend:flora_silk_moth_nest_feature',
     'betterend:flora_hydralux_petal_block_feature',
+    'betterend:flora_bulb_vine_seed_feature',
+    'betterend:flora_amaranita_fur_feature',
   ]);
   for (const [fKey, fJson] of compiled.entitiesAndFeatures.features) {
     if (fKey.endsWith('_flora_feature.json')) {
       for (const [subFeat] of fJson['minecraft:weighted_random_feature']?.features ?? []) {
         assert.ok(
           !forbiddenFloraFeatures.has(subFeat),
-          `Biome flora feature ${fKey} must not place solid block ${subFeat}`,
+          `Biome flora feature ${fKey} must not place solid or ceiling/wall-only block ${subFeat}`,
         );
       }
     }
@@ -481,17 +483,23 @@ test('Content compiler lowers all 728 blocks (22,385 states), 850 items, 879 rec
     assert.equal(recipeJson.format_version, BEDROCK_RECIPE_FORMAT_VERSION);
   }
 
-  // 4. Entities & Features (27 catalogue entities + 5 station carriers, 3 ore features + rules)
+  // 4. Entities & Features (27 catalogue entities + 5 station carriers, 6 spawn rules, 18 wearable attachables, 5 ore features + rules)
   assert.equal(compiled.counts.catalogueEntities, 27);
   assert.equal(compiled.counts.serverEntities, 32);
   assert.equal(compiled.counts.clientEntities, 27);
   assert.equal(compiled.entitiesAndFeatures.entityLootTables.size, 6);
+  assert.equal(compiled.entitiesAndFeatures.spawnRules.size, 6);
+  assert.equal(compiled.entitiesAndFeatures.attachables.size, 18);
 
   for (const [, serverEnt] of compiled.entitiesAndFeatures.serverEntities) {
     assert.equal(serverEnt.format_version, BEDROCK_SERVER_ENTITY_FORMAT_VERSION);
   }
   for (const [, clientEnt] of compiled.entitiesAndFeatures.clientEntities) {
     assert.equal(clientEnt.format_version, BEDROCK_CLIENT_ENTITY_FORMAT_VERSION);
+  }
+  for (const [, attachDoc] of compiled.entitiesAndFeatures.attachables) {
+    assert.equal(attachDoc.format_version, '1.10.0');
+    assert.ok(attachDoc['minecraft:attachable']?.description?.identifier?.startsWith('betterend:'));
   }
   for (const [, feat] of compiled.entitiesAndFeatures.features) {
     assert.equal(feat.format_version, BEDROCK_FEATURE_FORMAT_VERSION);

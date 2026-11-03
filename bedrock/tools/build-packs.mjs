@@ -389,6 +389,9 @@ function buildProfilePackMaps({
   for (const [rel, doc] of compiled.entitiesAndFeatures.entityLootTables) {
     bp.set(rel, jsonBytes(doc));
   }
+  for (const [rel, doc] of compiled.entitiesAndFeatures.spawnRules ?? []) {
+    bp.set(rel, jsonBytes(doc));
+  }
   for (const [rel, doc] of compiled.entitiesAndFeatures.biomes ?? []) {
     bp.set(rel, jsonBytes(doc));
   }
@@ -464,6 +467,9 @@ function buildProfilePackMaps({
     rp.set(rel, jsonBytes(doc));
   }
   for (const [rel, doc] of compiled.entitiesAndFeatures.animations) {
+    rp.set(rel, jsonBytes(doc));
+  }
+  for (const [rel, doc] of compiled.entitiesAndFeatures.attachables ?? []) {
     rp.set(rel, jsonBytes(doc));
   }
 

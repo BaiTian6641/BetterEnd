@@ -678,6 +678,7 @@ export class EquipmentService {
     const cleanVariant = String(variant)
       .replace(/^betterend:elytra_/, '')
       .replace(/^betterend:/, '')
+      .replace(/^elytra_/, '')
       .toLowerCase();
     const spec = this.elytraVariants[cleanVariant];
     if (!spec) {

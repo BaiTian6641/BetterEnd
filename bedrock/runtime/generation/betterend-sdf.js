@@ -1211,13 +1211,43 @@ export function generateTenanea(grid, ox, oy, oz, rng) {
     sphere.fillArea(grid, lx, ly, lz, lx - r, ly - r, lz - r, lx + r, ly + r, lz + r, "tree_canopy");
     grid.set(lx, ly, lz, "betterend:tenanea_bark", {}, "tree_trunk");
 
+    let placedNest = false;
     for (const sup of flowerSupports) {
       const above = grid.get(sup.x, sup.y + 1, sup.z);
-      if (above && above.blockId === "betterend:tenanea_leaves") {
-        const vLen = MHelper.randRange(3, 6, rng);
-        for (let k = 0; k < vLen; k++) {
-          const shape = k === vLen - 1 ? "bottom" : k === 0 ? "top" : "middle";
-          grid.set(sup.x, sup.y - k, sup.z, "betterend:tenanea_flowers", { shape }, "tree_crown");
+      if (above && above.blockId === "betterend:tenanea_leaves" && sup.y > oy + 3) {
+        if (!placedNest && rng.nextInt(5) === 0 && !grid.has(sup.x, sup.y - 1, sup.z)) {
+          const dir = HORIZONTAL_DIRS[rng.nextInt(4)].name;
+          grid.set(
+            sup.x,
+            sup.y,
+            sup.z,
+            "betterend:silk_moth_nest",
+            { facing: dir, active: false, fullness: 0 },
+            "tree_crown"
+          );
+          grid.set(
+            sup.x,
+            sup.y - 1,
+            sup.z,
+            "betterend:silk_moth_nest",
+            { facing: dir, active: true, fullness: rng.nextInt(4) },
+            "tree_crown"
+          );
+          placedNest = true;
+        } else if (rng.nextInt(4) === 0) {
+          const vLen = MHelper.randRange(2, 5, rng);
+          for (let k = 0; k < vLen; k++) {
+            if (sup.y - k <= oy + 1) break;
+            const shape = k === vLen - 1 ? "bottom" : k === 0 ? "top" : "middle";
+            grid.set(sup.x, sup.y - k, sup.z, "betterend:bulb_vine", { shape }, "tree_crown");
+          }
+        } else {
+          const vLen = MHelper.randRange(3, 6, rng);
+          for (let k = 0; k < vLen; k++) {
+            if (sup.y - k <= oy + 1) break;
+            const shape = k === vLen - 1 ? "bottom" : k === 0 ? "top" : "middle";
+            grid.set(sup.x, sup.y - k, sup.z, "betterend:tenanea_flowers", { shape }, "tree_crown");
+          }
         }
       }
     }
@@ -2487,10 +2517,46 @@ export function generateWaterLakeBasin(grid, ox, oy, oz, rng, radiusMin = 6, rad
         grid.set(ox + dx, oy + 1, oz + dz, "minecraft:air", {}, "structure_apex");
         grid.set(ox + dx, oy + 2, oz + dz, "minecraft:air", {}, "structure_apex");
         grid.set(ox + dx, oy + 3, oz + dz, "minecraft:air", {}, "structure_apex");
-        if (d <= r - 2.5 && rng.nextInt(16) === 0) {
+        if (d <= r - 2.5 && rng.nextInt(14) === 0) {
+          for (let wy = -depth + 1; wy <= 0; wy++) {
+            grid.set(
+              ox + dx,
+              oy + wy,
+              oz + dz,
+              "betterend:end_lotus_stem",
+              {
+                leaf: false,
+                shape: wy === -depth + 1 ? "bottom" : wy === 0 ? "top" : "middle",
+                waterlogged: true
+              },
+              "structure_core"
+            );
+          }
           grid.set(ox + dx, oy + 1, oz + dz, "betterend:end_lotus_flower", {}, "structure_apex");
-        } else if (d <= r - 2.0 && rng.nextInt(20) === 0) {
+        } else if (d <= r - 2.0 && rng.nextInt(16) === 0) {
+          for (let wy = -depth + 1; wy <= 0; wy++) {
+            grid.set(
+              ox + dx,
+              oy + wy,
+              oz + dz,
+              "betterend:end_lily",
+              { shape: wy === -depth + 1 ? "bottom" : "middle" },
+              "structure_core"
+            );
+          }
           grid.set(ox + dx, oy + 1, oz + dz, "betterend:end_lily", { shape: "top" }, "structure_apex");
+        } else if (depth >= 2 && rng.nextInt(8) === 0) {
+          const charnias = [
+            "betterend:charnia_cyan",
+            "betterend:charnia_light_blue",
+            "betterend:charnia_purple",
+            "betterend:charnia_red",
+            "betterend:charnia_green",
+            "betterend:charnia_orange",
+            "betterend:pond_anemone"
+          ];
+          const cBlk = charnias[rng.nextInt(charnias.length)];
+          grid.set(ox + dx, oy - depth + 1, oz + dz, cBlk, {}, "structure_core");
         }
       } else if (d <= r) {
         grid.set(ox + dx, oy - 1, oz + dz, "minecraft:end_stone", {}, "structure_base");
@@ -2643,6 +2709,173 @@ export function generateEndBridgeSegment(grid, ox, oy, oz, rng) {
       grid.set(ox + s, oy + rise, oz + w, brick, {}, "structure_core");
       if (Math.abs(w) === halfW && rng.nextFloat() < 0.8) {
         grid.set(ox + s, oy + rise + 1, oz + w, "betterend:end_stone_brick_wall", {}, "structure_canopy");
+      }
+    }
+  }
+}
+
+export function generateStalactiteCluster(grid, ox, oy, oz, rng, cavemoss = false) {
+  // Authentic StalactiteFeature.java / CaveFeatures.java stalagmite & stalactite cluster
+  const blk = cavemoss
+    ? "betterend:end_stone_stalactite_cavemoss"
+    : "betterend:end_stone_stalactite";
+  const baseBlk = cavemoss ? "betterend:cave_moss" : "betterend:violecite";
+  for (let dx = -3; dx <= 3; dx++) {
+    for (let dz = -3; dz <= 3; dz++) {
+      const dist = Math.hypot(dx, dz);
+      if (dist > 3.2) continue;
+      if (dist < 1.5 || rng.nextFloat() < 0.65) {
+        grid.set(ox + dx, oy - 1, oz + dz, baseBlk, {}, "formation_base");
+      }
+      if ((dx === 0 && dz === 0) || (dist <= 2.4 && rng.nextInt(3) === 0)) {
+        const h = dist < 1.0 ? MHelper.randRange(4, 7, rng) : MHelper.randRange(2, 4, rng);
+        for (let i = 0; i < h; i++) {
+          grid.set(
+            ox + dx,
+            oy + i,
+            oz + dz,
+            blk,
+            { size: Math.min(7, h - 1 - i), is_floor: true, waterlogged: false },
+            "formation_body"
+          );
+        }
+      }
+    }
+  }
+}
+
+export function generateCaveGrotto(grid, ox, oy, oz, rng, kind = "aurora") {
+  // Authentic RoundCaveFeature.java 3D vaulted cavern dome with hanging stalactites, floor stalagmites & crystal spires
+  const noise = new OpenSimplexNoise(rng.nextInt());
+  const rx = 8;
+  const ry = 7;
+  const rz = 8;
+  const isAurora = kind === "aurora";
+  const isSmaragdant = kind === "smaragdant";
+  const isJade = kind === "jade";
+
+  const stalactiteBlk =
+    isAurora || isSmaragdant
+      ? "betterend:end_stone_stalactite_cavemoss"
+      : "betterend:end_stone_stalactite";
+
+  for (let dx = -rx; dx <= rx; dx++) {
+    for (let dz = -rz; dz <= rz; dz++) {
+      for (let dy = -1; dy <= ry; dy++) {
+        const nx = dx / rx;
+        const ny = (dy - 1) / (ry - 1);
+        const nz = dz / rz;
+        const nVal = noise.eval((ox + dx) * 0.18, (oy + dy) * 0.18, (oz + dz) * 0.18) * 0.18;
+        const d = Math.sqrt(nx * nx + ny * ny + nz * nz) + nVal;
+
+        // Open archway entrances along X and Z axes so players can walk inside the glowing cavern
+        const isArchOpening =
+          dy >= 0 &&
+          dy <= 3 &&
+          ((Math.abs(dx) <= 2 && Math.abs(dz) >= rz - 3) ||
+            (Math.abs(dz) <= 2 && Math.abs(dx) >= rx - 3));
+        if (isArchOpening) continue;
+
+        if (dy === -1 && Math.hypot(dx / rx, dz / rz) <= 0.95) {
+          const floorBlk = isAurora
+            ? rng.nextInt(3) === 0
+              ? "betterend:crystal_moss"
+              : "betterend:cave_moss"
+            : isSmaragdant
+              ? rng.nextInt(3) === 0
+                ? "betterend:virid_jadestone"
+                : "betterend:cave_moss"
+              : isJade
+                ? ["betterend:virid_jadestone", "betterend:azure_jadestone", "betterend:sandy_jadestone"][
+                    Math.abs(dx + dz) % 3
+                  ]
+                : "betterend:flavolite";
+          grid.set(ox + dx, oy - 1, oz + dz, floorBlk, {}, "formation_base");
+        } else if (dy >= 0 && d >= 0.76 && d <= 1.04) {
+          let shellBlk = "betterend:violecite";
+          if (isAurora) {
+            shellBlk =
+              dy >= ry - 2 && rng.nextInt(3) === 0
+                ? "betterend:aurora_crystal"
+                : rng.nextInt(2) === 0
+                  ? "betterend:cave_moss"
+                  : "betterend:violecite";
+          } else if (isSmaragdant) {
+            shellBlk =
+              dy >= ry - 2 && rng.nextInt(3) === 0
+                ? "betterend:smaragdant_crystal"
+                : rng.nextInt(2) === 0
+                  ? "betterend:cave_moss"
+                  : "betterend:virid_jadestone";
+          } else if (isJade) {
+            const stripe = Math.abs(Math.floor(dy + noise.eval(dx * 0.2, dz * 0.2) * 2)) % 3;
+            shellBlk =
+              stripe === 0
+                ? "betterend:virid_jadestone"
+                : stripe === 1
+                  ? "betterend:azure_jadestone"
+                  : "betterend:sandy_jadestone";
+          } else {
+            shellBlk = rng.nextBoolean() ? "betterend:flavolite" : "betterend:violecite";
+          }
+          grid.set(ox + dx, oy + dy, oz + dz, shellBlk, {}, "formation_body");
+        }
+      }
+    }
+  }
+
+  // Hanging ceiling stalactites & glowing crystal columns inside the cavern
+  for (let dx = -rx + 2; dx <= rx - 2; dx++) {
+    for (let dz = -rz + 2; dz <= rz - 2; dz++) {
+      const r2 = dx * dx + dz * dz;
+      if (r2 > (rx - 2) * (rx - 2)) continue;
+      // Central crystal pillar in Aurora / Smaragdant caves
+      if (r2 <= 2 && (isAurora || isSmaragdant)) {
+        const crysBlk = isAurora ? "betterend:aurora_crystal" : "betterend:smaragdant_crystal";
+        const colH = r2 === 0 ? 5 : 3;
+        for (let y = 0; y < colH; y++) {
+          grid.set(ox + dx, oy + y, oz + dz, crysBlk, {}, "formation_tip");
+        }
+        continue;
+      }
+
+      // Find ceiling Y to hang stalactites or rubinea
+      let ceilY = -1;
+      for (let y = ry; y >= 3; y--) {
+        if (grid.has(ox + dx, oy + y, oz + dz) && !grid.has(ox + dx, oy + y - 1, oz + dz)) {
+          ceilY = y - 1;
+          break;
+        }
+      }
+      if (ceilY >= 3 && rng.nextInt(4) === 0) {
+        const sLen = MHelper.randRange(2, Math.min(4, ceilY - 1), rng);
+        for (let i = 0; i < sLen; i++) {
+          grid.set(
+            ox + dx,
+            oy + ceilY - i,
+            oz + dz,
+            stalactiteBlk,
+            { size: Math.min(7, sLen - 1 - i), is_floor: false, waterlogged: false },
+            "formation_tip"
+          );
+        }
+      } else if (r2 >= 5 && rng.nextInt(6) === 0) {
+        // Floor stalagmite or crystal shard
+        if (isSmaragdant && rng.nextBoolean()) {
+          grid.set(ox + dx, oy, oz + dz, "betterend:smaragdant_crystal_shard", {}, "formation_tip");
+        } else {
+          const fLen = MHelper.randRange(2, 3, rng);
+          for (let i = 0; i < fLen; i++) {
+            grid.set(
+              ox + dx,
+              oy + i,
+              oz + dz,
+              stalactiteBlk,
+              { size: Math.min(7, fLen - 1 - i), is_floor: true, waterlogged: false },
+              "formation_body"
+            );
+          }
+        }
       }
     }
   }
@@ -2861,13 +3094,16 @@ export function generateBetterEndFeatureVoxels(featureId, seedOrRng, ox = 0, oy 
       generateSmaragdantCrystal(grid, ox, oy, oz, rng);
       break;
     case "ice_star_small":
-      generateIceStar(grid, ox, oy, oz, rng, 3.0, 5.0, 7, 11);
+      // Java TerrainFeatureProvider: IceStarFeatureConfig(3, 5, 7, 12)
+      generateIceStar(grid, ox, oy, oz, rng, 3.0, 5.0, 7, 12);
       break;
     case "ice_star":
-      generateIceStar(grid, ox, oy, oz, rng, 5.0, 8.0, 10, 16);
+      // Java TerrainFeatureProvider: IceStarFeatureConfig(5, 15, 10, 25)
+      generateIceStar(grid, ox, oy, oz, rng, 5.0, 15.0, 10, 25);
       break;
     case "giant_ice_star":
-      generateIceStar(grid, ox, oy, oz, rng, 8.0, 11.5, 14, 22);
+      // Java GiantIceStarStructure: minSize 20, maxSize 35, 25..40 spikes (40-70 blocks across)
+      generateIceStar(grid, ox, oy, oz, rng, 20.0, 35.0, 25, 40);
       break;
     case "spire":
       generateSpire(grid, ox, oy, oz, rng, false);
@@ -2921,8 +3157,24 @@ export function generateBetterEndFeatureVoxels(featureId, seedOrRng, ox = 0, oy 
     case "eternal_portal":
       generateEternalPortalStructure(grid, ox, oy, oz);
       break;
+    case "end_Bridge":
     case "end_bridge":
       generateEndBridgeSegment(grid, ox, oy, oz, rng);
+      break;
+    case "stalactite_cluster":
+      generateStalactiteCluster(grid, ox, oy, oz, rng, false);
+      break;
+    case "stalactite_cluster_cavemoss":
+      generateStalactiteCluster(grid, ox, oy, oz, rng, true);
+      break;
+    case "aurora_cave_grotto":
+      generateCaveGrotto(grid, ox, oy, oz, rng, "aurora");
+      break;
+    case "smaragdant_cave_grotto":
+      generateCaveGrotto(grid, ox, oy, oz, rng, "smaragdant");
+      break;
+    case "jade_cave_grotto":
+      generateCaveGrotto(grid, ox, oy, oz, rng, "jade");
       break;
     case "end_stone_stalactite":
     case "end_stone_stalactite_cavemoss":
