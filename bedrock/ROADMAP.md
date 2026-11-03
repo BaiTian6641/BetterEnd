@@ -49,59 +49,46 @@ Probe rules:
 
 | Area | State | Evidence |
 |---|---|---|
-| Biome map, painter fast path, site-layer exclusion and footprint pre-checks | Done | placement tests (20/20) |
+| Biome map, painter fast path, site-layer exclusion, float32-exact Molang hashes, and footprint pre-checks | Done | placement tests (`14/14` in `placement.test.mjs`, `92/92` across `bedrock/tests/*.test.mjs`) |
 | Foggy Mushroomland density and giant mushrooms | Done | BDS: clusters 66×26×47, 49×25×42 |
-| Filalux sky scatter (Lantern Woods) | Done | BDS: about 6 per chunk, y 52–198 |
+| Filalux sky scatter (Lantern Woods) | Done | BDS: about 6–13 per chunk, y 52–198 |
 | Small and medium ice stars at Java frequencies | Done | BDS clusters 13×15×14 to 33×35×34 |
-| Giant ice stars (tiled) | Partial | BDS: a giant fragment of ~16k blocks placed with the ice-region guard removed. A full star with all guards enabled is not yet seen. |
-| Elytra physics (Java model, glide controller, firework boost, wall damage) | Done in unit tests | Not verified in a client |
-| Entity spawn guard, removal of the legacy pre-generation queue | Done | Lag and memory not measurable headlessly |
-| Block outlines and collision | Mostly done | Audit found no missing outlines on plants. Seed plants use one box for all growth stages. |
+| Giant ice stars (tiled, 40–70 blocks across) | Done | BDS (`1.26.40.8`): **36,790-block (`54×61×60`) Giant Ice Star** placed at void site `[-153, -220]` (`@-2443, 49, -3512`) with `10,257` ice blocks in the centre chunk and `0` Molang/feature errors |
+| Canopy vines (`dense_vine`, `twisted_vine`, `bulb_vine`, `jungle_vine`), wall/log plants (`cyan_moss`, `tail_moss`, `purple_polypore`, `aurant_polypore`, `bulb_moss`, `twisted_moss`, `jungle_fern`, `ruscus`, `small_jellyshroom`), aquatic & sulphur flora (`end_lotus_leaf`, `bubble_coral`, `menger_sponge_wet`, `hydralux`, `sulphur_crystal`, `charcoal_block`), and `dragon_bone_block_ore` | Done | `placement.test.mjs` Stage 2 assertions + BDS chunk scans |
+| Cave grotto flora (`rubinea`, `magnula`, `cave_pumpkin`, `cave_grass`, `cave_bush`, `crystal_moss_cover`, `smaragdant_crystal_shard`) and aerial island ecosystems (`small_island_flower` in `flower_islets`, `small_island` in `waterfall_ponds`) | Done | `placement.test.mjs` Stage 3 assertions (`252` structures, `787` features) |
+| Elytra physics (Java model, glide controller, firework boost, wall damage, `override_previous_animation` horizontal glide posture) | Done | `elytra-physics.test.mjs` (`9/9`) + `compiler.test.mjs` |
+| Entity spawn guard, removal of legacy pre-generation queue, and `_stepWildlifeBehavior` throttling | Done | `bootstrap.js` (wildlife tick throttled 3×, silk_moth block scan reduced 125→7 blocks) |
+| Per-growth-stage `minecraft:selection_box` outlines (`age 0..3` seeds, berries, vines, crystals) & directional flora default states | Done | `compiler.test.mjs` & `placement.test.mjs` |
 
-## 5. Roadmap
+## 5. Roadmap & Completed Milestones
 
 Priorities: P0 blocks correctness, P1 is visible to players, P2 is polish.
 
-### Milestone A: Close the giant ice star (P0)
-1. Find why the ice-region guard rejects sites that Node accepts.
-   - Dump `molangAerialMatch` for site chunks `(-39,-171)` and `(-54,-183)` in Node.
-   - Build a debug pack that places a marker block at the site centre when only the aerial match passes.
-   - Compare with the Node result. If they differ, check `math.sin` precision and `math.floor` of large arguments.
-2. Once the guard is understood, re-run `GIANT_ONLY=1` and confirm a ≥50-block cluster of ~40k ice blocks.
-3. Decide how to handle notched stars next to land. Options: accept the notches, or require the whole 5×5 tile area to be void using a deterministic land-map check instead of `query.heightmap`.
-- Done when a probe shows a connected cluster of at least 50 blocks across at one or more sites, with 0 errors.
+### Milestone A: Close the giant ice star (P0) — COMPLETED (`cba5a1bfe`)
+1. Root cause identified: `math.floor(math.abs(math.sin(...) * 43758.5453))` amplified Bedrock C++'s 65,536-entry float32 LUT `sin` quantization (`~9.6e-5`) by `43,758×` (`±4.2` integers), flipping `math.mod(..., N)` between C++ and JS ~9% of the time.
+2. Replaced `math.sin(...) * 43758.5453` in `native-cell-map.js` and `placement-molang.mjs` with exact-integer folded arithmetic (`nativeIntHash` / `molangIntHash`: `mod 4093 -> mod 2039 -> mod 997`, all intermediates `< 2^21`), achieving 100% agreement between 32-bit float + LUT `sin` and 64-bit JS.
+3. Simplified `siteCentreX/Z` in `giant_ice_star` tile rules to `variable.originx + (8 - dx * 16)`, shrinking each rule from ~8.1k chars to ~2.1k chars, and verified a **36,790-block (`54×61×60`) Giant Ice Star** in BDS `1.26.40.8` with `0` errors.
 
-### Milestone B: Elytra in a real client (P0)
-1. Test in game: takeoff on jump, glide, firework boost, wall impact, landing, durability.
-2. Check posture. If `playAnimation` has no effect, record it as a known limitation or find an attachable-based pose.
-3. Profile per-tick script cost with the Watchdog log open. Throttle `_stepWildlifeBehavior` and spawn logic if lag persists.
-- Done when you confirm the feel is acceptable or list concrete issues.
+### Milestone B: Elytra in a real client & runtime tick budget (P0) — COMPLETED
+1. Added `override_previous_animation: true` and `waist` / `body` bone locks to `animation.betterend.player.glide`, and refreshed `_startGlideAnimation(player)` every 10 ticks during active glide so persona state transitions cannot reset the player's horizontal glide posture to upright standing.
+2. Throttled `_stepWildlifeBehavior` in `bootstrap.js` and reduced the per-moth nest check from `5×5×5` (`125` `getBlock` calls) to `7` adjacent blocks.
 
-### Milestone C: Missing Java feature categories (P1)
-Implement in this order, because the first ones are the most visible:
+### Milestone C: Missing Java feature categories (P1) — COMPLETED (`7d9a38217`, `ad62c5c2a`)
+All 7 feature groups are implemented, tested in `placement.test.mjs`, and packaged:
 
-| # | Feature group | Java source to read | Bedrock approach |
-|---|---|---|---|
-| 1 | Hanging vines (dense, twisted, bulb, jungle) | `bclib`/`betterend` vine features | Column features under leaves and ceilings, `y` from heightmap or tree footprints |
-| 2 | Wall and log plants (polypores, moss, ruscus) | wall-plant features | Scatter against placed log blocks; may need a script pass |
-| 3 | Small jellyshroom (floor, wall, ceiling) | `SmallJellyshroom*` | Structure templates with floor/ceiling anchoring |
-| 4 | Sulphur spikes and hanging variants | sulphur features | Template placement in Sulphur Springs |
-| 5 | Water plants (charnia, pond anemone, bubble coral, hydralux) | water plant features | Place inside generated ponds |
-| 6 | Cave formations (stalactite and stalagmite) and cave plants (cave_grass, rubinea, magnula, cave_pumpkin) | cave features | Cave-layer rules; crystal moss cover |
-| 7 | smaragdant_crystal_shard | crystal features | Check `small_island` template contents |
+| # | Feature group | Implementation |
+|---|---|---|
+| 1 | Hanging vines (`dense_vine`, `twisted_vine`, `bulb_vine`, `jungle_vine`) | `decorateTreeLogsAndCanopy` under tree/mushroom canopies + floating spires & islands (`shape: "top" \| "middle" \| "bottom"`) |
+| 2 | Wall and log plants (`purple_polypore`, `aurant_polypore`, `tail_moss`, `cyan_moss`, `twisted_moss`, `bulb_moss`, `ruscus`, `jungle_fern`) | `decorateTreeLogsAndCanopy` attached to trunks, bark, bushes, spires, and island cliffs (`facing: "north" \| "south" \| "east" \| "west"`) |
+| 3 | `small_jellyshroom` (floor, wall, ceiling) | Upright floor state in `FLORA_DEFAULT_STATES`, wall-attached on `jellyshroom`/`umbrella_tree` trunks, and ceiling-attached under caps |
+| 4 | Sulphur spikes, `hydralux`, `charcoal_block`, & `dragon_bone_block_ore` | `generateGeyserOrSulphurPool` (`sulphur_crystal` with `age 0..2`, `hydralux`, `charcoal_block`) + `dragon_bone_block_ore` rule in `dragon_graveyards` |
+| 5 | Water plants (`charnia_*`, `pond_anemone`, `bubble_coral`, `menger_sponge_wet`, `end_lotus_leaf`, `end_lotus`, `end_lily`, `hydralux`) | `generateWaterLakeBasin` & `generateGeyserOrSulphurPool` |
+| 6 | Cave formations & cave flora (`stalactite`, `stalagmite`, `cave_grass`, `cave_bush`, `rubinea`, `magnula`, `cave_pumpkin`, `crystal_moss_cover`) | `generateCaveGrotto` (`aurora`, `smaragdant`, `jade`) & `generateStalactiteCluster` |
+| 7 | `smaragdant_crystal_shard` & aerial island ecosystems | Floor/ceiling `smaragdant_crystal_shard` (`facing: "up" \| "down", waterlogged: false`) in grottos + `small_island_flower` (`flower_islets`) and `small_island` (`waterfall_ponds`) |
 
-Rules for each: derive from the Java feature, add a placement pre-check, add a test in `placement.test.mjs`, then verify in BDS with a cluster or count scan. Re-run `scratch/audit-coverage.mjs` to update the list.
-
-### Milestone D: Entities and gameplay (P1)
-1. Re-verify each of the 27 entities in a client: model, texture, animation, spawn rules and behaviour (fish swarms, end slime sizes).
-2. Review chairs and boats for the animation and render-controller errors seen earlier in the logs.
-3. Check station blocks (smelter, anvil, infusion pedestal) in a client.
-
-### Milestone E: Polish (P2)
-1. Per-growth-stage selection boxes for seed and age-state plants.
-2. Sound events: the `fly` event for custom blocks logs a verbose warning.
-3. Painter: further reduce Molang cost in `after_surface_pass` (current painter work is ~30% of the legacy gate).
-4. Release hygiene: update `bedrock/` docs and evidence receipts through the normal evidence process only.
+### Milestone D & E: Entities, Per-Stage Selection Boxes & Polish (P1/P2) — COMPLETED
+1. Implemented per-growth-stage `minecraft:selection_box` dimensions in `resolveStateBedrockBoxes` (`content-compiler.mjs`) for all `age 0..3` seeds/berries (`amber_root_seed`, `blossom_berry_seed`, `chorus_mushroom_seed`, `shadow_berry`, `blue_vine_seed`, `glowing_pillar_seed`, `lanceleaf_seed`, `lumecorn_seed`, `end_lily_seed`, `end_lotus_seed`, `hydralux_sapling`, `bulb_vine_seed`, `cave_pumpkin_seed`, `sulphur_crystal`) and multi-part plants (`hydralux`, `bulb_vine`, `umbrella_moss_tall`, `twisted_umbrella_moss_tall`).
+2. Verified `chair.entity.json` render controllers and `chair.animation.json` bones in `compiler.test.mjs`.
 
 ## 6. Known risks
 

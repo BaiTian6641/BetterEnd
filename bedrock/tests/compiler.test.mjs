@@ -511,4 +511,33 @@ test('Content compiler lowers all 728 blocks (22,385 states), 850 items, 879 rec
       'Feature rule must enforce >1024 outer-End protection',
     );
   }
+
+  // 5. Per-growth-stage selection_box outlines for multi-stage seeds, berries, vines, and crystals
+  for (const seedBlock of [
+    'amber_root_seed',
+    'blossom_berry_seed',
+    'chorus_mushroom_seed',
+    'shadow_berry',
+    'blue_vine_seed',
+    'glowing_pillar_seed',
+    'lanceleaf_seed',
+    'lumecorn_seed',
+    'end_lily_seed',
+    'end_lotus_seed',
+    'hydralux_sapling',
+    'bulb_vine_seed',
+  ]) {
+    const def = compiled.blocks.blockJsonMap.get(`blocks/${seedBlock}.block.json`)['minecraft:block'];
+    const heights = new Set(
+      (def.permutations ?? []).map(p => p.components?.['minecraft:selection_box']?.size?.[1]),
+    );
+    assert.ok(heights.size >= 4, `${seedBlock} should have 4 distinct stage selection_box heights, got ${[...heights]}`);
+  }
+  const chairClient = compiled.entitiesAndFeatures.clientEntities.get('entity/chair.entity.json')['minecraft:client_entity'];
+  assert.ok(chairClient.description.render_controllers.length >= 1, 'chair client entity has render_controllers');
+  const chairAnim = compiled.entitiesAndFeatures.animations.get('animations/chair.animation.json').animations['animation.betterend.chair.idle'];
+  assert.ok(Object.keys(chairAnim.bones ?? {}).length >= 1, 'chair idle animation has bones');
+  const glideAnim = compiled.entitiesAndFeatures.animations.get('animations/elytra_wings.animation.json').animations['animation.betterend.player.glide'];
+  assert.equal(glideAnim.override_previous_animation, true, 'player glide animation overrides standing pose');
+  assert.ok(glideAnim.bones.waist && glideAnim.bones.body, 'player glide animation locks waist and body');
 });

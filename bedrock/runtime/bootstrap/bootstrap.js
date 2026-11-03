@@ -2530,27 +2530,33 @@ export class BetterEndRuntime {
             const bx = Math.floor(eloc.x);
             const by = Math.floor(eloc.y);
             const bz = Math.floor(eloc.z);
-            for (let dx = -2; dx <= 2; dx++) {
-              for (let dy = -2; dy <= 2; dy++) {
-                for (let dz = -2; dz <= 2; dz++) {
-                  const blk = dim.getBlock?.({ x: bx + dx, y: by + dy, z: bz + dz });
-                  const btype = String(blk?.typeId ?? "");
-                  if (
-                    btype === "betterend:silk_moth_nest" ||
-                    btype === "betterend:silk_moth_hive"
-                  ) {
-                    try {
-                      const states = blk.permutation?.getAllStates?.() ?? {};
-                      const fullness = Number(states["betterend:fullness"] ?? 0);
-                      if (fullness < 3) {
-                        this._setBlockWithStates(dim, blk.location, btype, {
-                          ...states,
-                          "betterend:fullness": fullness + 1
-                        });
-                      }
-                    } catch {}
+            const offsets = [
+              [0, 0, 0],
+              [1, 0, 0],
+              [-1, 0, 0],
+              [0, 1, 0],
+              [0, -1, 0],
+              [0, 0, 1],
+              [0, 0, -1]
+            ];
+            for (const [dx, dy, dz] of offsets) {
+              const blk = dim.getBlock?.({ x: bx + dx, y: by + dy, z: bz + dz });
+              const btype = String(blk?.typeId ?? "");
+              if (
+                btype === "betterend:silk_moth_nest" ||
+                btype === "betterend:silk_moth_hive"
+              ) {
+                try {
+                  const states = blk.permutation?.getAllStates?.() ?? {};
+                  const fullness = Number(states["betterend:fullness"] ?? 0);
+                  if (fullness < 3) {
+                    this._setBlockWithStates(dim, blk.location, btype, {
+                      ...states,
+                      "betterend:fullness": fullness + 1
+                    });
                   }
-                }
+                } catch {}
+                break;
               }
             }
           }
@@ -2729,6 +2735,7 @@ export class BetterEndRuntime {
     // Java wears the elytra by one durability point per second of flight.
     const glideTicks = (this._playerGlideTicks.get(pid) ?? 0) + 1;
     this._playerGlideTicks.set(pid, glideTicks);
+    if (glideTicks % 10 === 0) this._startGlideAnimation(player);
     if (glideTicks % 20 === 0) this._wearElytra(player);
   }
 
@@ -2934,7 +2941,9 @@ export class BetterEndRuntime {
           if (this._tickCounter % 8 === 0) {
             this._spawnBiomeWildlifeNearPlayer(player, dim, loc, regionId);
           }
-          this._stepWildlifeBehavior(dim, loc);
+          if (this._tickCounter % 3 === 0) {
+            this._stepWildlifeBehavior(dim, loc);
+          }
 
           // Chunk decoration (chorus clearing, script ponds) runs in the budgeted `_pumpDecorationQueue`.
         }

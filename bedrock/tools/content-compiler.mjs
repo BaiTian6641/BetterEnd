@@ -893,17 +893,147 @@ function findStateSnapshotRecord(blockEntry, stateProps) {
   return records[0];
 }
 
+const FLOOR_SEED_STAGE_BOXES = Object.freeze({
+  amber_root_seed: [
+    { origin: [-6, 0, -6], size: [12, 9, 12] },
+    { origin: [-6, 0, -6], size: [12, 12, 12] },
+    { origin: [-6, 0, -6], size: [12, 14, 12] },
+    { origin: [-6, 0, -6], size: [12, 16, 12] },
+  ],
+  blossom_berry_seed: [
+    { origin: [-4, 0, -4], size: [8, 5, 8] },
+    { origin: [-4, 0, -4], size: [8, 8, 8] },
+    { origin: [-5, 0, -5], size: [10, 11, 10] },
+    { origin: [-6, 0, -6], size: [12, 14, 12] },
+  ],
+  chorus_mushroom_seed: [
+    { origin: [-5, 0, -5], size: [10, 3, 10] },
+    { origin: [-6, 0, -6], size: [12, 4, 12] },
+    { origin: [-6, 0, -6], size: [12, 6, 12] },
+    { origin: [-7, 0, -7], size: [14, 9, 14] },
+  ],
+  shadow_berry: [
+    { origin: [-7, 0, -7], size: [14, 2, 14] },
+    { origin: [-7, 0, -7], size: [14, 4, 14] },
+    { origin: [-7, 0, -7], size: [14, 6, 14] },
+    { origin: [-7, 0, -7], size: [14, 8, 14] },
+  ],
+  blue_vine_seed: [
+    { origin: [-3, 0, -3], size: [6, 6, 6] },
+    { origin: [-4, 0, -4], size: [8, 8, 8] },
+    { origin: [-4, 0, -4], size: [8, 12, 8] },
+    { origin: [-5, 0, -5], size: [10, 15, 10] },
+  ],
+  glowing_pillar_seed: [
+    { origin: [-3, 0, -3], size: [6, 6, 6] },
+    { origin: [-3, 0, -3], size: [6, 8, 6] },
+    { origin: [-4, 0, -4], size: [8, 12, 8] },
+    { origin: [-5, 0, -5], size: [10, 15, 10] },
+  ],
+  lanceleaf_seed: [
+    { origin: [-3, 0, -3], size: [6, 9, 6] },
+    { origin: [-3, 0, -3], size: [6, 11, 6] },
+    { origin: [-4, 0, -4], size: [8, 13, 8] },
+    { origin: [-4, 0, -4], size: [8, 16, 8] },
+  ],
+  lumecorn_seed: [
+    { origin: [-4, 0, -4], size: [8, 8, 8] },
+    { origin: [-4, 0, -4], size: [8, 10, 8] },
+    { origin: [-4, 0, -4], size: [8, 13, 8] },
+    { origin: [-4, 0, -4], size: [8, 16, 8] },
+  ],
+  end_lily_seed: [
+    { origin: [-3, 0, -3], size: [6, 5, 6] },
+    { origin: [-3, 0, -3], size: [6, 7, 6] },
+    { origin: [-4, 0, -4], size: [8, 11, 8] },
+    { origin: [-4, 0, -4], size: [8, 13, 8] },
+  ],
+  end_lotus_seed: [
+    { origin: [-3, 0, -3], size: [6, 6, 6] },
+    { origin: [-3, 0, -3], size: [6, 9, 6] },
+    { origin: [-4, 0, -4], size: [8, 11, 8] },
+    { origin: [-4, 0, -4], size: [8, 14, 8] },
+  ],
+  hydralux_sapling: [
+    { origin: [-4, 0, -4], size: [8, 10, 8] },
+    { origin: [-4, 0, -4], size: [8, 12, 8] },
+    { origin: [-4, 0, -4], size: [8, 13, 8] },
+    { origin: [-4, 0, -4], size: [8, 14, 8] },
+  ],
+});
+
 function resolveStateBedrockBoxes(blockEntry, stateProps, resolved, isCenterXZ) {
   const shortName = blockEntry.id.split(':')[1] ?? '';
   const stateRec = findStateSnapshotRecord(blockEntry, stateProps);
   const invRotX = Number(resolved?.x ?? 0);
   const invRotY = Number(resolved?.y ?? 0);
+  const age = Math.max(0, Math.min(3, Number(stateProps.age ?? 0)));
 
-  // Ceiling-hanging seeds: outline box hugs the top of the block (y = 4..16) where the bulb hangs
-  if (shortName === 'bulb_vine_seed' || shortName === 'cave_pumpkin_seed') {
+  // Per-growth-stage selection boxes for floor seeds & berries (derived from cross-plane texture alpha bounds)
+  if (FLOOR_SEED_STAGE_BOXES[shortName]) {
     return {
       collisionBox: false,
-      selectionBox: { origin: [-4, 4, -4], size: [8, 12, 8] },
+      selectionBox: FLOOR_SEED_STAGE_BOXES[shortName][age],
+    };
+  }
+
+  // Ceiling-hanging seeds: per-stage outline box hugging the top of the block where the bulb/stem hangs
+  if (shortName === 'bulb_vine_seed') {
+    const bulbBoxes = [
+      { origin: [-3, 9, -3], size: [6, 7, 6] },
+      { origin: [-4, 6, -4], size: [8, 10, 8] },
+      { origin: [-5, 3, -5], size: [10, 13, 10] },
+      { origin: [-6, 1, -6], size: [12, 15, 12] },
+    ];
+    return {
+      collisionBox: false,
+      selectionBox: bulbBoxes[age],
+    };
+  }
+  if (shortName === 'cave_pumpkin_seed') {
+    return {
+      collisionBox: false,
+      selectionBox: age === 0 ? { origin: [-4, 4, -4], size: [8, 12, 8] } : { origin: [-4, 0, -4], size: [8, 16, 8] },
+    };
+  }
+
+  // Per-shape / per-stage multi-part plant & crystal boxes
+  if (shortName === 'sulphur_crystal' && invRotX === 0 && invRotY === 0) {
+    const crystalBoxes = [
+      { origin: [-5, 0, -5], size: [10, 5, 10] },
+      { origin: [-6, 0, -6], size: [12, 8, 12] },
+      { origin: [-7, 0, -7], size: [14, 9, 14] },
+    ];
+    return {
+      collisionBox: false,
+      selectionBox: crystalBoxes[Math.min(2, age)],
+    };
+  }
+  if (shortName === 'hydralux') {
+    const shape = String(stateProps.shape ?? 'vine');
+    const hydraluxBoxes = {
+      flower_big_top: { origin: [-4, 0, -4], size: [8, 10, 8] },
+      flower_small_top: { origin: [-5, 0, -5], size: [10, 8, 10] },
+      flower_big_bottom: { origin: [-6, 0, -6], size: [12, 16, 12] },
+      flower_small_bottom: { origin: [-5, 0, -5], size: [10, 16, 10] },
+    };
+    return {
+      collisionBox: false,
+      selectionBox: hydraluxBoxes[shape] ?? { origin: [-4, 0, -4], size: [8, 16, 8] },
+    };
+  }
+  if (shortName === 'bulb_vine') {
+    const isBottom = String(stateProps.shape ?? '') === 'bottom';
+    return {
+      collisionBox: false,
+      selectionBox: isBottom ? { origin: [-5, 4, -5], size: [10, 12, 10] } : { origin: [-6, 0, -6], size: [12, 16, 12] },
+    };
+  }
+  if (shortName === 'umbrella_moss_tall' || shortName === 'twisted_umbrella_moss_tall') {
+    const isTop = Boolean(stateProps.top === true || stateProps.top === 'true');
+    return {
+      collisionBox: false,
+      selectionBox: isTop ? { origin: [-6, 0, -6], size: [12, 14, 12] } : { origin: [-4, 0, -4], size: [8, 16, 8] },
     };
   }
 
@@ -3314,10 +3444,17 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
       },
       'animation.betterend.player.glide': {
         loop: true,
+        override_previous_animation: true,
         bones: {
           root: {
             position: [0.0, -10.0, 9.0],
             rotation: ['90.0 + q.target_x_rotation', 0.0, 0.0],
+          },
+          waist: {
+            rotation: [0.0, 0.0, 0.0],
+          },
+          body: {
+            rotation: [0.0, 0.0, 0.0],
           },
           head: {
             rotation: ['q.target_x_rotation - 45.0', 'q.target_y_rotation', 0.0],
