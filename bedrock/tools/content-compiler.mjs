@@ -3640,12 +3640,21 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
   const knownBlockIds = new Set((registrations.blocks ?? []).map(b => b.id));
   knownBlockIds.add('minecraft:end_stone');
 
+  const dragonGraveyardsIdx = REGION_CATALOGUE.findIndex(r => r.id === 'dragon_graveyards');
   const nativeOres = [
     { id: 'ender_ore', block: 'betterend:ender_ore', count: 4, minY: 16, maxY: 64 },
     { id: 'amber_ore', block: 'betterend:amber_ore', count: 5, minY: 20, maxY: 72 },
     { id: 'thallasium_ore', block: 'betterend:thallasium_ore', count: 8, minY: 12, maxY: 80 },
     { id: 'flavolite_layer', block: 'betterend:flavolite', count: 12, minY: 20, maxY: 72 },
     { id: 'violecite_layer', block: 'betterend:violecite', count: 12, minY: 20, maxY: 72 },
+    {
+      id: 'dragon_bone_block_ore',
+      block: 'betterend:mossy_dragon_bone',
+      count: 6,
+      minY: 24,
+      maxY: 72,
+      regionIdx: dragonGraveyardsIdx,
+    },
   ];
 
   for (const ore of nativeOres) {
@@ -3665,6 +3674,10 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
       },
     });
 
+    const oreGate =
+      ore.regionIdx !== undefined && ore.regionIdx >= 0
+        ? molangSurfaceRegionMatch(ore.regionIdx, CHUNK_CENTER_X, CHUNK_CENTER_Z)
+        : `(math.abs(variable.originx + 8) > 1024 || math.abs(variable.originz + 8) > 1024)`;
     featureRules.set(`feature_rules/${ore.id}_feature_rule.json`, {
       format_version: BEDROCK_FEATURE_FORMAT_VERSION,
       'minecraft:feature_rules': {
@@ -3683,7 +3696,7 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
           ],
         },
         distribution: {
-          iterations: `(math.abs(variable.originx + 8) > 1024 || math.abs(variable.originz + 8) > 1024) ? ${ore.count} : 0`,
+          iterations: `${oreGate} ? ${ore.count} : 0`,
           x: { distribution: 'uniform', extent: [0, 16] },
           y: { distribution: 'uniform', extent: [ore.minY, ore.maxY] },
           z: { distribution: 'uniform', extent: [0, 16] },
@@ -3741,19 +3754,48 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
     return featId;
   };
 
+  const FLORA_DEFAULT_STATES = {
+    'betterend:small_jellyshroom': { 'betterend:facing': 'up' },
+    'betterend:smaragdant_crystal_shard': {
+      'betterend:facing': 'up',
+      'betterend:waterlogged': false,
+    },
+    'betterend:sulphur_crystal': {
+      'betterend:age': 2,
+      'betterend:facing': 'up',
+      'betterend:waterlogged': false,
+    },
+    'betterend:crystal_moss_cover': {
+      'betterend:down': true,
+      'betterend:east': false,
+      'betterend:north': false,
+      'betterend:south': false,
+      'betterend:up': false,
+      'betterend:west': false,
+    },
+    'betterend:neon_cactus': {
+      'betterend:bottom': 'sand',
+      'betterend:facing': 'up',
+      'betterend:shape': 'top',
+    },
+  };
+
   const ensureFloraBlockFeature = blockId => {
     const validBlock = knownBlockIds.has(blockId) ? blockId : 'betterend:creeping_moss';
     const shortBlock = validBlock.split(':')[1];
     const featId = `betterend:flora_${shortBlock}_feature`;
     const fileKey = `features/flora_${shortBlock}_feature.json`;
     if (!features.has(fileKey)) {
+      const defaultStates = FLORA_DEFAULT_STATES[validBlock];
       features.set(fileKey, {
         format_version: BEDROCK_FEATURE_FORMAT_VERSION,
         'minecraft:single_block_feature': {
           description: {
             identifier: featId,
           },
-          places_block: validBlock,
+          places_block: defaultStates
+            ? { name: validBlock, states: defaultStates }
+            : validBlock,
           enforce_placement_rules: false,
           enforce_survivability_rules: false,
           may_replace: ['minecraft:air', 'minecraft:chorus_plant', 'minecraft:chorus_flower'],
@@ -3772,13 +3814,13 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
     chorus_forest: ['betterend:chorus_grass', 'betterend:chorus_mushroom_seed'],
     dust_wastelands: ['betterend:amber_grass'],
     megalake: ['betterend:umbrella_moss', 'betterend:creeping_moss', 'betterend:end_lotus_flower', 'betterend:jungle_grass'],
-    crystal_mountains: ['betterend:crystal_grass'],
+    crystal_mountains: ['betterend:crystal_grass', 'betterend:crystal_moss_cover'],
     shadow_forest: ['betterend:shadow_plant', 'betterend:murkweed', 'betterend:needlegrass', 'betterend:shadow_berry'],
     amber_land: ['betterend:amber_grass', 'betterend:lanceleaf_seed', 'betterend:glowing_pillar_seed', 'betterend:amber_root_seed'],
     blossoming_spires: ['betterend:bushy_grass', 'betterend:blossom_berry_seed', 'betterend:twisted_umbrella_moss'],
-    sulphur_springs: ['betterend:amber_grass', 'betterend:orango'],
+    sulphur_springs: ['betterend:amber_grass', 'betterend:orango', 'betterend:sulphur_crystal'],
     umbrella_jungle: ['betterend:jungle_grass', 'betterend:twisted_umbrella_moss', 'betterend:small_jellyshroom', 'betterend:umbrella_moss'],
-    glowing_grasslands: ['betterend:blooming_cooksonia', 'betterend:salteago', 'betterend:vaiolush_fern', 'betterend:fracturn', 'betterend:lumecorn_seed', 'betterend:umbrella_moss', 'betterend:creeping_moss'],
+    glowing_grasslands: ['betterend:blooming_cooksonia', 'betterend:salteago', 'betterend:vaiolush_fern', 'betterend:fracturn', 'betterend:lumecorn_seed', 'betterend:umbrella_moss', 'betterend:twisted_umbrella_moss', 'betterend:creeping_moss'],
     dragon_graveyards: ['betterend:globulagus', 'betterend:clawfern', 'betterend:small_amaranita_mushroom'],
     dry_shrubland: ['betterend:orango', 'betterend:aeridium', 'betterend:lutebus', 'betterend:lamellarium'],
     lantern_woods: ['betterend:aeridium', 'betterend:lamellarium', 'betterend:bolux_mushroom', 'betterend:orango', 'betterend:flamaea'],
@@ -4018,8 +4060,9 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
     blossoming_spires: ['tenanea_bush', 'twisted_umbrella_moss_double'],
     sulphur_springs: ['geyser', 'surface_vent', 'sulphur_hill'],
     umbrella_jungle: ['umbrella_moss_double', 'twisted_umbrella_moss_double'],
-    glowing_grasslands: ['lumecorn', 'umbrella_moss_double'],
+    glowing_grasslands: ['lumecorn', 'umbrella_moss_double', 'twisted_umbrella_moss_double'],
     dragon_graveyards: ['large_amaranita', 'small_amaranita'],
+    dry_shrubland: ['lucernia_bush'],
     lantern_woods: ['lucernia_bush'],
     neon_oasis: ['neon_cactus'],
     flower_islets: ['large_amaranita', 'small_amaranita'],

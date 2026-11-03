@@ -26,6 +26,7 @@ import {
   nativeSurfaceRegionIndex
 } from '../runtime/regions/native-cell-map.js';
 import { REGION_CATALOGUE } from '../runtime/regions/region-catalogue.js';
+import { generateBetterEndFeatureVoxels } from '../runtime/generation/betterend-sdf.js';
 import { createMolangContext, seededRandom } from './helpers/molang.mjs';
 
 // ---------------------------------------------------------------------------
@@ -726,4 +727,94 @@ test('32-bit float + LUT sin (Bedrock C++ Molang VM) agrees 100% with 64-bit JS 
     }
   }
 });
+
+test('Stage 2 flora, canopy vines, wall/log plants, aquatic plants, and directional flora default states', () => {
+  const collectBlocks = (featureId, seeds = 6) => {
+    const blocks = new Set();
+    const voxels = [];
+    for (let s = 1; s <= seeds; s += 1) {
+      const out = generateBetterEndFeatureVoxels(featureId, { x: 0, y: 0, z: 0 }, s * 1337);
+      for (const v of out) {
+        blocks.add(v.blockId);
+        voxels.push(v);
+      }
+    }
+    return { blocks, voxels };
+  };
+
+  // Canopy vines & wall/log attachments on trees/bushes/spires
+  const glowshroom = collectBlocks('mossy_glowshroom');
+  assert.ok(glowshroom.blocks.has('betterend:dense_vine'), 'mossy_glowshroom hangs dense_vine');
+  assert.ok(glowshroom.blocks.has('betterend:cyan_moss'), 'mossy_glowshroom attaches cyan_moss');
+
+  const pytha = collectBlocks('pythadendron_tree');
+  assert.ok(pytha.blocks.has('betterend:tail_moss'), 'pythadendron_tree attaches tail_moss');
+  assert.ok(pytha.blocks.has('betterend:purple_polypore'), 'pythadendron_tree attaches purple_polypore');
+
+  const dragonTree = collectBlocks('dragon_tree');
+  assert.ok(dragonTree.blocks.has('betterend:twisted_vine'), 'dragon_tree hangs twisted_vine');
+  assert.ok(dragonTree.blocks.has('betterend:tail_moss'), 'dragon_tree attaches tail_moss');
+
+  const tenanea = collectBlocks('tenanea');
+  assert.ok(tenanea.blocks.has('betterend:bulb_vine'), 'tenanea hangs bulb_vine');
+  assert.ok(tenanea.blocks.has('betterend:twisted_moss'), 'tenanea attaches twisted_moss');
+
+  const helix = collectBlocks('helix_tree');
+  assert.ok(helix.blocks.has('betterend:bulb_moss'), 'helix_tree attaches bulb_moss');
+
+  const umbrella = collectBlocks('umbrella_tree');
+  assert.ok(umbrella.blocks.has('betterend:jungle_vine'), 'umbrella_tree hangs jungle_vine');
+  assert.ok(umbrella.blocks.has('betterend:jungle_fern'), 'umbrella_tree attaches jungle_fern');
+  assert.ok(umbrella.blocks.has('betterend:small_jellyshroom'), 'umbrella_tree attaches small_jellyshroom');
+
+  const jelly = collectBlocks('jellyshroom');
+  assert.ok(jelly.blocks.has('betterend:small_jellyshroom'), 'jellyshroom attaches small_jellyshroom');
+
+  const lucernia = collectBlocks('lucernia');
+  assert.ok(lucernia.blocks.has('betterend:aurant_polypore'), 'lucernia attaches aurant_polypore');
+  assert.ok(lucernia.blocks.has('betterend:ruscus'), 'lucernia attaches ruscus');
+
+  const floatingSpire = collectBlocks('floating_spire');
+  assert.ok(floatingSpire.blocks.has('betterend:bulb_vine'), 'floating_spire hangs bulb_vine');
+  assert.ok(floatingSpire.blocks.has('betterend:twisted_moss'), 'floating_spire attaches twisted_moss');
+
+  // Double-height umbrella moss
+  const doubleMoss = collectBlocks('umbrella_moss_double', 1);
+  assert.ok(doubleMoss.blocks.has('betterend:umbrella_moss_tall'), 'umbrella_moss_double places umbrella_moss_tall');
+  const doubleTwisted = collectBlocks('twisted_umbrella_moss_double', 1);
+  assert.ok(doubleTwisted.blocks.has('betterend:twisted_umbrella_moss_tall'), 'twisted_umbrella_moss_double places twisted_umbrella_moss_tall');
+
+  // Geyser / sulphur pool: sulphur_crystal (age 0..2), hydralux, charcoal_block
+  const geyser = collectBlocks('geyser', 8);
+  assert.ok(geyser.blocks.has('betterend:sulphur_crystal'), 'geyser places sulphur_crystal');
+  assert.ok(geyser.blocks.has('betterend:hydralux'), 'geyser places hydralux');
+  assert.ok(geyser.blocks.has('betterend:charcoal_block'), 'geyser places charcoal_block');
+  const crystalVoxels = geyser.voxels.filter(v => v.blockId === 'betterend:sulphur_crystal');
+  assert.ok(crystalVoxels.every(v => typeof v.states?.age === 'number' && v.states.age >= 0 && v.states.age <= 2), 'sulphur_crystal uses age 0..2');
+
+  // Megalake / water lake basin: end_lotus_leaf on water + underwater flora
+  const lake = collectBlocks('megalake', 8);
+  assert.ok(lake.blocks.has('betterend:end_lotus_leaf'), 'megalake places floating end_lotus_leaf pads');
+  assert.ok(lake.blocks.has('betterend:bubble_coral'), 'megalake places bubble_coral');
+  assert.ok(lake.blocks.has('betterend:menger_sponge_wet'), 'megalake places menger_sponge_wet');
+
+  // Directional/multiface floor flora default states in single_block_feature
+  const jellyFeat = featureIndex.get('betterend:flora_small_jellyshroom_feature');
+  assert.deepEqual(jellyFeat?.body?.places_block?.states, { 'betterend:facing': 'up' });
+  const neonFeat = featureIndex.get('betterend:flora_neon_cactus_feature');
+  assert.deepEqual(neonFeat?.body?.places_block?.states, {
+    'betterend:bottom': 'sand',
+    'betterend:facing': 'up',
+    'betterend:shape': 'top'
+  });
+  const sulphurFeat = featureIndex.get('betterend:flora_sulphur_crystal_feature');
+  assert.deepEqual(sulphurFeat?.body?.places_block?.states, { 'betterend:age': 2, 'betterend:facing': 'up', 'betterend:waterlogged': false });
+  const mossCoverFeat = featureIndex.get('betterend:flora_crystal_moss_cover_feature');
+  assert.equal(mossCoverFeat?.body?.places_block?.states?.['betterend:down'], true);
+  assert.equal(mossCoverFeat?.body?.places_block?.states?.['betterend:up'], false);
+
+  // Dragon bone block ore rule in dragon_graveyards
+  assert.ok(featureRules.has('feature_rules/dragon_bone_block_ore_feature_rule.json'), 'dragon_bone_block_ore rule emitted');
+});
+
 

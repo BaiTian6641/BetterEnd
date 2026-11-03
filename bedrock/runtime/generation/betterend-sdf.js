@@ -704,6 +704,66 @@ export function pruneUnsupportedFur(grid) {
   }
 }
 
+export function decorateTreeLogsAndCanopy(
+  grid,
+  ox,
+  oy,
+  oz,
+  rng,
+  {
+    logMatch = null,
+    wallPlants = null,
+    wallChance = 0.2,
+    canopyMatch = null,
+    hangingVines = null,
+    vineChance = 0.14,
+    vineMinLen = 2,
+    vineMaxLen = 5,
+    underBlock = null,
+    underChance = 0.08
+  } = {}
+) {
+  const snapshot = [...grid.voxels.values()];
+  for (const v of snapshot) {
+    if (wallPlants?.length && logMatch && logMatch(v.blockId) && v.y >= oy) {
+      for (const dir of HORIZONTAL_DIRS) {
+        const tx = v.x + dir.dx;
+        const tz = v.z + dir.dz;
+        if (!grid.has(tx, v.y, tz) && rng.nextFloat() < wallChance) {
+          const pick = wallPlants[rng.nextInt(wallPlants.length)];
+          const blockId = typeof pick === "string" ? pick : pick.blockId;
+          const extra = typeof pick === "string" ? {} : (pick.extraStates ?? {});
+          grid.set(tx, v.y, tz, blockId, { facing: dir.name, ...extra }, "tree_crown");
+        }
+      }
+    }
+    if (canopyMatch && canopyMatch(v.blockId) && v.y > oy + 2 && !grid.has(v.x, v.y - 1, v.z)) {
+      if (hangingVines?.length && v.y > oy + 3 && rng.nextFloat() < vineChance) {
+        const vineId = hangingVines[rng.nextInt(hangingVines.length)];
+        const maxLen = MHelper.randRange(vineMinLen, vineMaxLen, rng);
+        let actualLen = 0;
+        for (let k = 1; k <= maxLen; k++) {
+          if (v.y - k <= oy + 1 || grid.has(v.x, v.y - k, v.z)) break;
+          actualLen = k;
+        }
+        for (let k = 1; k <= actualLen; k++) {
+          const shape = actualLen === 1 ? "bottom" : k === actualLen ? "bottom" : k === 1 ? "top" : "middle";
+          grid.set(v.x, v.y - k, v.z, vineId, { shape }, "hanging_vine");
+        }
+      } else if (underBlock && rng.nextFloat() < underChance) {
+        grid.set(
+          v.x,
+          v.y - 1,
+          v.z,
+          underBlock.blockId,
+          { facing: "down", ...(underBlock.extraStates ?? {}) },
+          "tree_crown"
+        );
+      }
+    }
+  }
+}
+
 // ============================================================================
 // 4. All 11 BetterEnd Tree Generators (`world/features/trees/`)
 // ============================================================================
@@ -822,6 +882,16 @@ export function generateMossyGlowshroom(grid, ox, oy, oz, rng, isGiant = false) 
     isGiant ? "structure_core" : "tree_trunk"
   );
   pruneUnsupportedFur(grid);
+  decorateTreeLogsAndCanopy(grid, ox, oy, oz, rng, {
+    logMatch: isLog,
+    wallPlants: ["betterend:cyan_moss"],
+    wallChance: 0.2,
+    canopyMatch: (id) => id === "betterend:mossy_glowshroom_cap",
+    hangingVines: ["betterend:dense_vine"],
+    vineChance: 0.14,
+    vineMinLen: 2,
+    vineMaxLen: 5
+  });
 }
 
 export function generatePythadendronTree(grid, ox, oy, oz, rng) {
@@ -899,6 +969,11 @@ export function generatePythadendronTree(grid, ox, oy, oz, rng) {
     oz + 4,
     "tree_trunk"
   );
+  decorateTreeLogsAndCanopy(grid, ox, oy, oz, rng, {
+    logMatch: (id) => id === "betterend:pythadendron_log" || id === "betterend:pythadendron_bark",
+    wallPlants: ["betterend:tail_moss", "betterend:purple_polypore"],
+    wallChance: 0.22
+  });
 }
 
 export function generateLacugrove(grid, ox, oy, oz, rng) {
@@ -977,6 +1052,11 @@ export function generateLacugrove(grid, ox, oy, oz, rng) {
       }
     }
   }
+  decorateTreeLogsAndCanopy(grid, ox, oy, oz, rng, {
+    logMatch: (id) => id === "betterend:lacugrove_log" || id === "betterend:lacugrove_bark",
+    wallPlants: ["betterend:cyan_moss"],
+    wallChance: 0.22
+  });
 }
 
 const DRAGON_BRANCH = [
@@ -1079,6 +1159,16 @@ export function generateDragonTree(grid, ox, oy, oz, rng) {
     oz + 4,
     "tree_trunk"
   );
+  decorateTreeLogsAndCanopy(grid, ox, oy, oz, rng, {
+    logMatch: (id) => id === "betterend:dragon_tree_log" || id === "betterend:dragon_tree_bark",
+    wallPlants: ["betterend:tail_moss", "betterend:purple_polypore"],
+    wallChance: 0.22,
+    canopyMatch: (id) => id === "betterend:dragon_tree_leaves",
+    hangingVines: ["betterend:twisted_vine"],
+    vineChance: 0.12,
+    vineMinLen: 2,
+    vineMaxLen: 5
+  });
 }
 
 export function generateDragonHelixTree(grid, ox, oy, oz, rng) {
@@ -1253,6 +1343,11 @@ export function generateTenanea(grid, ox, oy, oz, rng) {
     }
   }
   pruneUnsupportedFur(grid);
+  decorateTreeLogsAndCanopy(grid, ox, oy, oz, rng, {
+    logMatch: (id) => id === "betterend:tenanea_bark" || id === "betterend:tenanea_log",
+    wallPlants: ["betterend:twisted_moss"],
+    wallChance: 0.25
+  });
 }
 
 export function generateHelixTree(grid, ox, oy, oz, rng) {
@@ -1366,6 +1461,11 @@ export function generateHelixTree(grid, ox, oy, oz, rng) {
   for (let t = 0; t < 3; t++) {
     grid.set(ox, topTipY + t, oz, "betterend:helix_tree_leaves", { color: 7 }, "tree_crown");
   }
+  decorateTreeLogsAndCanopy(grid, ox, oy, oz, rng, {
+    logMatch: (id) => id === "betterend:helix_tree_log" || id === "betterend:helix_tree_bark",
+    wallPlants: ["betterend:bulb_moss"],
+    wallChance: 0.22
+  });
 }
 
 export function generateUmbrellaTree(grid, ox, oy, oz, rng) {
@@ -1467,6 +1567,22 @@ export function generateUmbrellaTree(grid, ox, oy, oz, rng) {
       }
     }
   }
+  decorateTreeLogsAndCanopy(grid, ox, oy, oz, rng, {
+    logMatch: (id) => id === "betterend:umbrella_tree_log" || id === "betterend:umbrella_tree_bark",
+    wallPlants: [
+      "betterend:jungle_fern",
+      "betterend:cyan_moss",
+      { blockId: "betterend:small_jellyshroom", extraStates: { waterlogged: false } }
+    ],
+    wallChance: 0.24,
+    canopyMatch: (id) => id === "betterend:umbrella_tree_membrane",
+    hangingVines: ["betterend:jungle_vine"],
+    vineChance: 0.12,
+    vineMinLen: 2,
+    vineMaxLen: 6,
+    underBlock: { blockId: "betterend:small_jellyshroom", extraStates: { waterlogged: false } },
+    underChance: 0.05
+  });
 }
 
 export function generateJellyshroom(grid, ox, oy, oz, rng) {
@@ -1509,6 +1625,17 @@ export function generateJellyshroom(grid, ox, oy, oz, rng) {
 
   const maxR = Math.ceil(membraneRadius + 3);
   sdf.fillArea(grid, ox, oy, oz, ox - maxR, oy - 2, oz - maxR, ox + maxR, oy + height + 5, oz + maxR, "tree_canopy");
+  decorateTreeLogsAndCanopy(grid, ox, oy, oz, rng, {
+    logMatch: (id) => id === "betterend:jellyshroom_log" || id === "betterend:jellyshroom_bark",
+    wallPlants: [
+      { blockId: "betterend:small_jellyshroom", extraStates: { waterlogged: false } },
+      "betterend:cyan_moss"
+    ],
+    wallChance: 0.22,
+    canopyMatch: (id) => id === "betterend:jellyshroom_cap_purple",
+    underBlock: { blockId: "betterend:small_jellyshroom", extraStates: { waterlogged: false } },
+    underChance: 0.12
+  });
 }
 
 export function generateGiganticAmaranita(grid, ox, oy, oz, rng) {
@@ -1737,6 +1864,11 @@ export function generateLucernia(grid, ox, oy, oz, rng) {
     SplineHelper.fillSpline(rt, grid, ox, rootY, oz, "betterend:lucernia_bark", {}, "tree_trunk");
   }
   pruneUnsupportedFur(grid);
+  decorateTreeLogsAndCanopy(grid, ox, oy, oz, rng, {
+    logMatch: (id) => id === "betterend:lucernia_bark" || id === "betterend:lucernia_log",
+    wallPlants: ["betterend:aurant_polypore", "betterend:ruscus"],
+    wallChance: 0.24
+  });
 }
 
 // ============================================================================
@@ -1817,6 +1949,20 @@ export function generateBush(grid, ox, oy, oz, rng, leavesBlock, stemBlock, oute
   }
   if (outerLeavesBlock) {
     pruneUnsupportedFur(grid);
+  }
+  const bushWallPlants = stemBlock.includes("lucernia")
+    ? ["betterend:ruscus", "betterend:aurant_polypore"]
+    : stemBlock.includes("pythadendron") || stemBlock.includes("dragon_tree")
+      ? ["betterend:tail_moss", "betterend:purple_polypore"]
+      : stemBlock.includes("tenanea")
+        ? ["betterend:twisted_moss"]
+        : null;
+  if (bushWallPlants) {
+    decorateTreeLogsAndCanopy(grid, ox, oy, oz, rng, {
+      logMatch: (id) => id === stemBlock || id === leavesBlock,
+      wallPlants: bushWallPlants,
+      wallChance: 0.16
+    });
   }
 }
 
@@ -2290,6 +2436,16 @@ export function generateSpire(grid, ox, oy, oz, rng, isFloating = false) {
     oz + maxR,
     "formation_body"
   );
+  decorateTreeLogsAndCanopy(grid, ox, oy, oz, rng, {
+    logMatch: (id) => id === "minecraft:end_stone" || id === "betterend:pink_moss",
+    wallPlants: ["betterend:twisted_moss"],
+    wallChance: 0.08,
+    canopyMatch: (id) => isFloating && id === "minecraft:end_stone",
+    hangingVines: ["betterend:bulb_vine"],
+    vineChance: 0.12,
+    vineMinLen: 2,
+    vineMaxLen: 4
+  });
 }
 
 export function generateUmbralithArch(grid, ox, oy, oz, rng, isThin = false) {
@@ -2339,41 +2495,86 @@ export function generateGeyserOrSulphurPool(grid, ox, oy, oz, rng) {
   const radius = MHelper.randRange(5.0, 7.5, rng);
   const noise = new OpenSimplexNoise(15152);
   const rBound = Math.ceil(radius * 1.4);
+  const sulphurCharnias = ["betterend:charnia_orange", "betterend:charnia_red", "betterend:charnia_green"];
   for (let dx = -rBound; dx <= rBound; dx++) {
     for (let dz = -rBound; dz <= rBound; dz++) {
       const r = radius * (noise.eval((ox + dx) * 0.2, (oz + dz) * 0.2) * 0.25 + 0.75);
       const r2 = r * 1.35;
       const d2 = dx * dx + dz * dz;
       if (d2 <= (r - 1.2) * (r - 1.2)) {
-        grid.set(ox + dx, oy - 2, oz + dz, "betterend:sulphuric_rock", {}, "formation_body");
-        grid.set(ox + dx, oy - 1, oz + dz, "betterend:brimstone", { active: true }, "formation_body");
+        grid.set(ox + dx, oy - 3, oz + dz, "betterend:sulphuric_rock", {}, "formation_body");
+        grid.set(ox + dx, oy - 2, oz + dz, "betterend:brimstone", { active: true }, "formation_body");
+        grid.set(ox + dx, oy - 1, oz + dz, "minecraft:water", {}, "formation_cap");
         grid.set(ox + dx, oy, oz + dz, "minecraft:water", {}, "formation_cap");
         if (d2 <= 4 && rng.nextInt(3) === 0) {
           grid.set(
             ox + dx,
-            oy - 1,
+            oy - 2,
             oz + dz,
             "betterend:hydrothermal_vent",
             { active: true, waterlogged: true },
             "formation_cap"
           );
+          grid.set(ox + dx, oy - 1, oz + dz, "betterend:vent_bubble_column", {}, "formation_cap");
           grid.set(ox + dx, oy, oz + dz, "betterend:vent_bubble_column", {}, "formation_cap");
+        } else if (d2 <= (r - 2.0) * (r - 2.0) && rng.nextInt(9) === 0) {
+          const big = rng.nextBoolean();
+          grid.set(ox + dx, oy - 1, oz + dz, "betterend:hydralux", { shape: "roots" }, "formation_cap");
+          grid.set(
+            ox + dx,
+            oy,
+            oz + dz,
+            "betterend:hydralux",
+            { shape: big ? "flower_big_bottom" : "flower_small_bottom" },
+            "formation_cap"
+          );
+          grid.set(
+            ox + dx,
+            oy + 1,
+            oz + dz,
+            "betterend:hydralux",
+            { shape: big ? "flower_big_top" : "flower_small_top" },
+            "formation_cap"
+          );
+        } else if (rng.nextInt(5) === 0) {
+          grid.set(
+            ox + dx,
+            oy - 1,
+            oz + dz,
+            sulphurCharnias[rng.nextInt(sulphurCharnias.length)],
+            {},
+            "formation_cap"
+          );
         }
       } else if (d2 <= r * r) {
-        grid.set(ox + dx, oy - 1, oz + dz, "betterend:sulphuric_rock", {}, "formation_body");
+        grid.set(
+          ox + dx,
+          oy - 1,
+          oz + dz,
+          rng.nextInt(5) === 0 ? "betterend:charcoal_block" : "betterend:sulphuric_rock",
+          {},
+          "formation_body"
+        );
         grid.set(ox + dx, oy, oz + dz, "betterend:brimstone", { active: true }, "formation_buttress");
-        if (rng.nextInt(6) === 0) {
+        if (rng.nextInt(5) === 0) {
           grid.set(
             ox + dx,
             oy + 1,
             oz + dz,
             "betterend:sulphur_crystal",
-            { facing: "up", stage: rng.nextInt(3), waterlogged: false },
+            { facing: "up", age: rng.nextInt(3), waterlogged: false },
             "formation_cap"
           );
         }
       } else if (d2 <= r2 * r2) {
-        grid.set(ox + dx, oy, oz + dz, "betterend:sulphuric_rock", {}, "formation_buttress");
+        grid.set(
+          ox + dx,
+          oy,
+          oz + dz,
+          rng.nextInt(7) === 0 ? "betterend:charcoal_block" : "betterend:sulphuric_rock",
+          {},
+          "formation_buttress"
+        );
       }
     }
   }
@@ -2545,7 +2746,7 @@ export function generateWaterLakeBasin(grid, ox, oy, oz, rng, radiusMin = 6, rad
             );
           }
           grid.set(ox + dx, oy + 1, oz + dz, "betterend:end_lily", { shape: "top" }, "structure_apex");
-        } else if (depth >= 2 && rng.nextInt(8) === 0) {
+        } else if (depth >= 2 && rng.nextInt(5) === 0) {
           const charnias = [
             "betterend:charnia_cyan",
             "betterend:charnia_light_blue",
@@ -2553,7 +2754,9 @@ export function generateWaterLakeBasin(grid, ox, oy, oz, rng, radiusMin = 6, rad
             "betterend:charnia_red",
             "betterend:charnia_green",
             "betterend:charnia_orange",
-            "betterend:pond_anemone"
+            "betterend:pond_anemone",
+            "betterend:bubble_coral",
+            "betterend:menger_sponge_wet"
           ];
           const cBlk = charnias[rng.nextInt(charnias.length)];
           grid.set(ox + dx, oy - depth + 1, oz + dz, cBlk, {}, "structure_core");
@@ -2570,6 +2773,28 @@ export function generateWaterLakeBasin(grid, ox, oy, oz, rng, radiusMin = 6, rad
         );
         grid.set(ox + dx, oy + 1, oz + dz, "minecraft:air", {}, "structure_apex");
         grid.set(ox + dx, oy + 2, oz + dz, "minecraft:air", {}, "structure_apex");
+      }
+    }
+  }
+
+  // Place 1-2 floating 3x3 End Lotus Leaf pads on the water surface (oy + 1 above water at oy)
+  let padsPlaced = 0;
+  for (let dx = -rBound + 2; dx <= rBound - 2 && padsPlaced < 2; dx += 3) {
+    for (let dz = -rBound + 2; dz <= rBound - 2 && padsPlaced < 2; dz += 3) {
+      if (rng.nextInt(3) !== 0) continue;
+      let canPad = true;
+      for (let ix = -1; ix <= 1 && canPad; ix++) {
+        for (let iz = -1; iz <= 1 && canPad; iz++) {
+          const w = grid.get(ox + dx + ix, oy, oz + dz + iz);
+          const a = grid.get(ox + dx + ix, oy + 1, oz + dz + iz);
+          if (!w || w.blockId !== "minecraft:water" || (a && a.blockId !== "minecraft:air")) {
+            canPad = false;
+          }
+        }
+      }
+      if (canPad) {
+        generateEndLotusLeafPad(grid, ox + dx, oy + 1, oz + dz);
+        padsPlaced += 1;
       }
     }
   }
@@ -3045,14 +3270,16 @@ export function generateBetterEndFeatureVoxels(featureId, seedOrRng, ox = 0, oy 
       break;
     }
     case "umbrella_moss":
-    case "umbrella_moss_rare": {
+    case "umbrella_moss_rare":
+    case "umbrella_moss_double": {
       const rot = rng.nextInt(4);
       grid.set(ox, oy, oz, "betterend:umbrella_moss_tall", { rotation: rot, top: false }, "feature_primary");
       grid.set(ox, oy + 1, oz, "betterend:umbrella_moss_tall", { rotation: rot, top: true }, "feature_accent");
       break;
     }
     case "twisted_umbrella_moss":
-    case "twisted_umbrella_moss_rare": {
+    case "twisted_umbrella_moss_rare":
+    case "twisted_umbrella_moss_double": {
       const rot = rng.nextInt(4);
       grid.set(
         ox,
