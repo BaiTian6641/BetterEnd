@@ -1047,8 +1047,8 @@ function resolveStateBedrockBoxes(blockEntry, stateProps, resolved, isCenterXZ) 
     };
   }
 
-  // Carrier-backed container blocks (*_barrel, end_stone_smelter, *_furnace) keep a full 16x16x16 collision_box
-  // for physical walking, and a 14x14x14 selection_box (matching *_chest) so the 0.94x0.94 invisible container
+  // Carrier-backed container blocks (*_barrel, end_stone_smelter, *_furnace, *_anvil) keep their physical
+  // collision_box for walking, and an inset selection_box (matching *_chest) so the 0.94x0.94 invisible container
   // carrier entity inside the block receives right-clicks and opens the native 27-slot / 5-slot inventory GUI.
   if (
     shortName.endsWith('_barrel') ||
@@ -1058,6 +1058,12 @@ function resolveStateBedrockBoxes(blockEntry, stateProps, resolved, isCenterXZ) 
     return {
       collisionBox: { origin: [-8, 0, -8], size: [16, 16, 16] },
       selectionBox: { origin: [-7, 0, -7], size: [14, 14, 14] },
+    };
+  }
+  if (shortName.endsWith('_anvil')) {
+    return {
+      collisionBox: { origin: [-6, 0, -6], size: [12, 16, 12] },
+      selectionBox: { origin: [-6, 0, -6], size: [12, 14, 12] },
     };
   }
 

@@ -1088,11 +1088,282 @@ function executeSmelterRecipeFromUi(
   } catch {}
 }
 
+const ANVIL_RESHAPE_CYCLES = Object.freeze({
+  thallasium: Object.freeze([
+    "betterend:thallasium_forged_plate",
+    "betterend:thallasium_sword_blade",
+    "betterend:thallasium_pickaxe_head",
+    "betterend:thallasium_axe_head",
+    "betterend:thallasium_shovel_head",
+    "betterend:thallasium_hoe_head"
+  ]),
+  terminite: Object.freeze([
+    "betterend:terminite_forged_plate",
+    "betterend:terminite_sword_blade",
+    "betterend:terminite_pickaxe_head",
+    "betterend:terminite_axe_head",
+    "betterend:terminite_shovel_head",
+    "betterend:terminite_hoe_head"
+  ]),
+  aeternium: Object.freeze([
+    "betterend:aeternium_forged_plate",
+    "betterend:aeternium_sword_blade",
+    "betterend:aeternium_pickaxe_head",
+    "betterend:aeternium_axe_head",
+    "betterend:aeternium_shovel_head",
+    "betterend:aeternium_hoe_head",
+    "betterend:aeternium_hammer_head"
+  ]),
+  iron: Object.freeze([
+    "betterend:iron_hammer_head",
+    "betterend:iron_sword_blade",
+    "betterend:iron_pickaxe_head",
+    "betterend:iron_axe_head",
+    "betterend:iron_shovel_head",
+    "betterend:iron_hoe_head"
+  ]),
+  gold: Object.freeze([
+    "betterend:gold_hammer_head",
+    "betterend:gold_sword_blade",
+    "betterend:gold_pickaxe_head",
+    "betterend:gold_axe_head",
+    "betterend:gold_shovel_head",
+    "betterend:gold_hoe_head"
+  ]),
+  diamond: Object.freeze([
+    "betterend:diamond_hammer_head",
+    "betterend:diamond_sword_blade",
+    "betterend:diamond_pickaxe_head",
+    "betterend:diamond_axe_head",
+    "betterend:diamond_shovel_head",
+    "betterend:diamond_hoe_head"
+  ]),
+  netherite: Object.freeze([
+    "betterend:netherite_hammer_head",
+    "betterend:netherite_sword_blade",
+    "betterend:netherite_pickaxe_head",
+    "betterend:netherite_axe_head",
+    "betterend:netherite_shovel_head",
+    "betterend:netherite_hoe_head"
+  ])
+});
+
+function inferDesiredSmithingPartSuffix(selectorItemId) {
+  const s = String(selectorItemId ?? "");
+  if (!s) return null;
+  if (s.endsWith("_sword") || s.endsWith("_blade") || s === "minecraft:stick") return "_blade";
+  if (s.endsWith("_pickaxe") || s.endsWith("_pickaxe_head")) return "_pickaxe_head";
+  if (s.endsWith("_axe") || s.endsWith("_axe_head")) return "_axe_head";
+  if (s.endsWith("_shovel") || s.endsWith("_shovel_head")) return "_shovel_head";
+  if (s.endsWith("_hoe") || s.endsWith("_hoe_head")) return "_hoe_head";
+  if (s.endsWith("_hammer") || s.endsWith("_hammer_head")) return "_hammer_head";
+  if (
+    s.endsWith("_chestplate") ||
+    s.endsWith("_helmet") ||
+    s.endsWith("_leggings") ||
+    s.endsWith("_boots") ||
+    s.endsWith("_forged_plate")
+  ) {
+    return "_forged_plate";
+  }
+  return null;
+}
+
+/**
+ * Ticks a live 5-slot Anvil container (`betterend:end_stone_smelter_carrier` inside any `*_anvil` block):
+ * - Repair & Combine: Slot 0 damaged gear + Slot 1 repair material/item -> Slot 4 repaired item (with BetterEnd's 1-unit discount).
+ * - Smithing (`DEFAULT_SMITHING_RECIPES`): Slot 0 input material + Slot 1 Hammer (or player's best Hammer) + optional Slot 2 template -> Slot 4 forged output.
+ * - Reshaping: Slot 0 forged plate/head + Hammer -> cycles to next tool part of that metal in Slot 4.
+ */
+function tickAnvilCarrierContainer(runtime, dim, loc, blk, tid, container, player) {
+  const ItemStackCtor = runtime?.serverModule?.ItemStack;
+  if (!ItemStackCtor || !container || typeof container.getItem !== "function") return;
+
+  const raw0 = container.getItem(0);
+  const raw1 = container.getItem(1);
+  const raw2 = container.getItem(2);
+  const raw4 = container.getItem(4);
+  if (!raw0 || !raw0.typeId || (raw0.amount ?? 1) <= 0) return;
+
+  const slot0Id = String(raw0.typeId);
+  const slot0Amt = Number(raw0.amount ?? 1);
+  const slot1Id = String(raw1?.typeId ?? "");
+  const slot1Amt = Number(raw1?.amount ?? 0);
+  const slot2Id = String(raw2?.typeId ?? "");
+  const shortAnvil = tid.replace(/^betterend:/, "").replace(/__p\d+$/, "");
+  const anvilTier = resolveAnvilLevel(tid);
+  const pid = player?.id ?? player?.name ?? "player";
+  const creative = isPlayerCreative(player);
+
+  // 1. Repair / Combine in Slots 0 & 1 when Slot 4 is empty
+  const dur0 = raw0.getComponent?.("minecraft:durability") ?? raw0.getComponent?.("durability");
+  const dmg0 = Number(dur0?.damage ?? raw0.damage ?? 0);
+  const max0 = Number(dur0?.maxDurability ?? raw0.maxDurability ?? 0);
+  if (!raw4 && dmg0 > 0 && raw1 && slot1Id && slot1Amt > 0) {
+    const dur1 = raw1.getComponent?.("minecraft:durability") ?? raw1.getComponent?.("durability");
+    const dmg1 = Number(dur1?.damage ?? raw1.damage ?? 0);
+    const max1 = Number(dur1?.maxDurability ?? raw1.maxDurability ?? 500);
+    const repairRes = runtime.stationsService.executeAnvilRepairOrCombine({
+      anvil: tid,
+      base: { itemId: slot0Id, count: 1, damage: dmg0, maxDurability: max0 || 500 },
+      addition: { itemId: slot1Id, count: slot1Amt, damage: dmg1, maxDurability: max1 || 500 },
+      customName: raw0.nameTag || null
+    });
+    if (repairRes?.success) {
+      const cost = Math.max(1, Number(repairRes.repairItemCountCost || 1));
+      if (slot1Amt - cost <= 0) {
+        container.setItem(1, undefined);
+      } else {
+        raw1.amount = slot1Amt - cost;
+        container.setItem(1, raw1);
+      }
+      if (dur0) dur0.damage = repairRes.output.damage;
+      raw0.damage = repairRes.output.damage;
+      container.setItem(0, undefined);
+      container.setItem(4, raw0);
+      try {
+        player?.playSound?.("random.anvil_use");
+        player?.onScreenDisplay?.setActionBar?.(
+          `§a[${formatTitle(shortAnvil)}] Repaired ${formatTitle(slot0Id)} (1-Unit BetterEnd Discount)!`
+        );
+      } catch {}
+      return;
+    }
+  }
+
+  // Resolve Hammer/Tool from Slot 1 or nearest player's inventory
+  const slot1IsTool =
+    slot1Id.endsWith("_hammer") ||
+    slot1Id.endsWith("_pickaxe") ||
+    slot1Id.endsWith("_axe") ||
+    slot1Id.endsWith("_shovel");
+  const slot1ToolLevel = slot1IsTool ? resolveDiggerToolLevel({ itemId: slot1Id }) : -1;
+  const invTool = player ? findBestPlayerHammerOrTool(player, 0) : null;
+  const effectiveToolLevel = creative
+    ? 5
+    : Math.max(slot1ToolLevel, invTool?.toolLevel ?? -1);
+
+  const damageActiveHammer = (dmgAmount) => {
+    if (creative || dmgAmount <= 0) return;
+    if (slot1IsTool && raw1) {
+      const dComp = raw1.getComponent?.("minecraft:durability") ?? raw1.getComponent?.("durability");
+      const curD = Number(dComp?.damage ?? raw1.damage ?? 0);
+      const maxD = Number(dComp?.maxDurability ?? raw1.maxDurability ?? 250);
+      if (maxD > 0 && curD + dmgAmount >= maxD) {
+        container.setItem(1, undefined);
+        player?.playSound?.("random.break");
+      } else {
+        if (dComp) dComp.damage = curD + dmgAmount;
+        raw1.damage = curD + dmgAmount;
+        container.setItem(1, raw1);
+      }
+    } else if (invTool && player) {
+      damagePlayerTool(player, invTool, dmgAmount);
+    }
+  };
+
+  // 2. Reshaping a forged plate/head in Slot 0 into the next tool part of the same metal
+  for (const [metal, cycle] of Object.entries(ANVIL_RESHAPE_CYCLES)) {
+    const idx = cycle.indexOf(slot0Id);
+    if (idx < 0) continue;
+    if (effectiveToolLevel < 0) return;
+    const desiredSuffix = inferDesiredSmithingPartSuffix(slot2Id);
+    let nextPart = cycle[(idx + 1) % cycle.length];
+    if (desiredSuffix) {
+      const matchedPart = cycle.find((p) => p.endsWith(desiredSuffix));
+      if (matchedPart && matchedPart !== slot0Id) nextPart = matchedPart;
+    }
+    const canPlaceOut =
+      !raw4 || (raw4.typeId === nextPart && (raw4.amount ?? 1) < 64);
+    if (!canPlaceOut) return;
+
+    if (slot0Amt <= 1) {
+      container.setItem(0, undefined);
+    } else {
+      raw0.amount = slot0Amt - 1;
+      container.setItem(0, raw0);
+    }
+    const outCount = (raw4?.amount ?? 0) + 1;
+    container.setItem(4, new ItemStackCtor(nextPart, outCount));
+    damageActiveHammer(1);
+    runtime.presentationService?.awardAdvancement?.(pid, `betterend:${metal}_tool_head`);
+    try {
+      player?.playSound?.("random.anvil_use");
+      player?.onScreenDisplay?.setActionBar?.(
+        `§a[${formatTitle(shortAnvil)}] Reshaped into ${formatTitle(nextPart)}!`
+      );
+    } catch {}
+    return;
+  }
+
+  // 3. Forging any of the 26 BetterEnd Smithing Recipes (`DEFAULT_SMITHING_RECIPES`)
+  const matchingRecipes = DEFAULT_SMITHING_RECIPES.filter(
+    (r) =>
+      r.input === slot0Id &&
+      r.anvilLevel <= anvilTier &&
+      slot0Amt >= r.inputCount &&
+      effectiveToolLevel >= r.toolLevel
+  );
+  if (matchingRecipes.length === 0) return;
+
+  const desiredSuffix = inferDesiredSmithingPartSuffix(slot2Id);
+  const chosenRecipe =
+    (desiredSuffix
+      ? matchingRecipes.find((r) => String(r.result.item).endsWith(desiredSuffix))
+      : null) ?? matchingRecipes[0];
+
+  const outItem = chosenRecipe.result.item;
+  const outAdd = Number(chosenRecipe.result.count || 1);
+  const canPlaceOut =
+    !raw4 || (raw4.typeId === outItem && (raw4.amount ?? 1) + outAdd <= 64);
+  if (!canPlaceOut) return;
+
+  const smithRes = runtime.stationsService.executeAnvilSmithing({
+    anvil: tid,
+    recipeId: chosenRecipe.id,
+    material: { itemId: slot0Id, count: slot0Amt },
+    tool: {
+      itemId: slot1IsTool ? slot1Id : (invTool?.itemId ?? "betterend:aeternium_hammer"),
+      toolLevel: Math.max(chosenRecipe.toolLevel, effectiveToolLevel),
+      damage: 0,
+      maxDurability: 2500
+    }
+  });
+  if (!smithRes?.success) return;
+
+  if (slot0Amt - chosenRecipe.inputCount <= 0) {
+    container.setItem(0, undefined);
+  } else {
+    raw0.amount = slot0Amt - chosenRecipe.inputCount;
+    container.setItem(0, raw0);
+  }
+  const nextOutCount = (raw4?.amount ?? 0) + outAdd;
+  container.setItem(4, new ItemStackCtor(outItem, nextOutCount));
+  damageActiveHammer(smithRes.durabilityConsumed ?? chosenRecipe.damage ?? 1);
+
+  runtime.presentationService?.awardAdvancement?.(pid, `betterend:${shortAnvil}`);
+  if (outItem.endsWith("_forged_plate")) {
+    const metal = outItem.slice("betterend:".length).split("_")[0];
+    runtime.presentationService?.awardAdvancement?.(pid, `betterend:${metal}_plate`);
+  } else if (outItem === "betterend:aeternium_hammer_head") {
+    runtime.presentationService?.awardAdvancement?.(pid, "betterend:aeternium_hammer_head");
+  } else if (outItem.endsWith("_head") || outItem.endsWith("_blade")) {
+    const metal = outItem.slice("betterend:".length).split("_")[0];
+    runtime.presentationService?.awardAdvancement?.(pid, `betterend:${metal}_tool_head`);
+  }
+
+  try {
+    player?.playSound?.("random.anvil_use");
+    player?.onScreenDisplay?.setActionBar?.(
+      `§a[${formatTitle(shortAnvil)}] Forged ${outAdd}x ${formatTitle(outItem)}!`
+    );
+  } catch {}
+}
+
 /**
  * Steps all active smelters in `StationsService` AND syncs any live 5-slot
- * `betterend:end_stone_smelter_carrier` (`minecart_hopper`) entity containers during
- * `_stepLiveWorldTick`, updating their in-world `betterend:lit` block state and
- * placing smelted/alloyed outputs into Slot 4 of the container GUI.
+ * `betterend:end_stone_smelter_carrier` (`minecart_hopper`) entity containers (for Smelters,
+ * Furnaces, and BetterEnd Anvils) during `_stepLiveWorldTick`.
  */
 export function stepLiveSmelters(runtime, ticks = 10) {
   const ItemStackCtor = runtime?.serverModule?.ItemStack;
@@ -1153,13 +1424,13 @@ export function stepLiveSmelters(runtime, ticks = 10) {
         };
         const blk = dim.getBlock?.(loc);
         const tid = String(blk?.typeId ?? "");
-        if (
-          blk &&
-          tid !== "betterend:end_stone_smelter" &&
-          !tid.startsWith("betterend:end_stone_smelter__") &&
-          !tid.endsWith("_furnace") &&
-          !tid.includes("_furnace__")
-        ) {
+        const isSmelterOrFurnace =
+          tid === "betterend:end_stone_smelter" ||
+          tid.startsWith("betterend:end_stone_smelter__") ||
+          tid.endsWith("_furnace") ||
+          tid.includes("_furnace__");
+        const isAnvil = tid.endsWith("_anvil") || tid.includes("_anvil__");
+        if (blk && !isSmelterOrFurnace && !isAnvil) {
           destroyContainerCarrierAndBlock(runtime, sc, null, false);
           continue;
         }
@@ -1168,6 +1439,11 @@ export function stepLiveSmelters(runtime, ticks = 10) {
           sc.getComponent?.("minecraft:inventory") ?? sc.getComponent?.("inventory");
         const container = inv?.container;
         if (!container || typeof container.getItem !== "function") continue;
+
+        if (isAnvil) {
+          tickAnvilCarrierContainer(runtime, dim, loc, blk, tid, container, player);
+          continue;
+        }
 
         const raw0 = container.getItem(0);
         const raw1 = container.getItem(1);
@@ -1647,7 +1923,53 @@ export function handlePedestalInteraction(runtime, player, block, heldItemStack)
   const currentPedestal = runtime.stationsService.getPedestal({ dimension: dimId, anchor: loc });
 
   if (isCenter && (isSneaking || (!heldId && !currentPedestal?.item))) {
-    openInfusionPedestalStationUi(runtime, player, block);
+    // Match Java `InfusionPedestal.java` (`InfusionHint.trigger`): spawn compass socket hints & show status on actionbar (no stub UI popup)
+    syncInfusionRingFromWorld(runtime, dim, dimId, loc);
+    const ring = runtime.stationsService.validateInfusionRing({
+      dimension: dimId,
+      center: loc
+    });
+    if (!ring.valid) {
+      for (const dir of ring.missingDirections) {
+        const [dx, dz] = INFUSION_COMPASS_OFFSETS[dir];
+        try {
+          dim?.spawnParticle?.("minecraft:endrod", {
+            x: loc.x + dx + 0.5,
+            y: loc.y + 0.6,
+            z: loc.z + dz + 0.5
+          });
+        } catch {}
+      }
+      const missingList = ring.missingDirections
+        .map((d) => `${COMPASS_SHORT_LABELS[d]}(${INFUSION_COMPASS_OFFSETS[d].join(",")})`)
+        .join(", ");
+      try {
+        player.playSound?.("block.beacon.ambient");
+        player.onScreenDisplay?.setActionBar?.(
+          `§e[Infusion Pedestal] Missing peripheral pedestals at: ${missingList}`
+        );
+      } catch {}
+    } else {
+      for (const dir of INFUSION_COMPASS_ORDER) {
+        const [dx, dz] = INFUSION_COMPASS_OFFSETS[dir];
+        try {
+          dim?.spawnParticle?.("minecraft:enchanting_table_particle", {
+            x: loc.x + dx + 0.5,
+            y: loc.y + 1.0,
+            z: loc.z + dz + 0.5
+          });
+        } catch {}
+      }
+      const centerLabel = currentPedestal?.item
+        ? formatTitle(currentPedestal.item.itemId)
+        : "Empty (Right-click with item to insert)";
+      try {
+        player.playSound?.("block.enchantment_table.use");
+        player.onScreenDisplay?.setActionBar?.(
+          `§d[Infusion Pedestal] §a8/8 Ring Complete §8| §fCenter: §b${centerLabel}`
+        );
+      } catch {}
+    }
     return;
   }
 
@@ -2365,12 +2687,28 @@ export function handleEternalPedestalInteraction(runtime, player, block, heldIte
     setBlockStateSafe(block, dim, loc, "betterend:eternal_pedestal", {
       "betterend:active": true
     });
-    try {
-      player.playSound?.("block.end_portal_frame.fill");
-      player.onScreenDisplay?.setActionBar?.(
-        "§d[Eternal Pedestal] §bEternal Crystal socketed! (Place on all 6 Eternal Pedestals to open Eternal Portal)"
-      );
-    } catch {}
+    const pid = player?.id ?? player?.name ?? "player";
+    const portalRes = runtime.stationsService.activateEternalPortalRitual({
+      dimension: dimId,
+      center: loc,
+      actor: pid
+    });
+    if (portalRes?.activated) {
+      runtime.presentationService?.awardAdvancement?.(pid, "betterend:eternal_portal");
+      try {
+        player.playSound?.("block.end_portal.spawn");
+        player.onScreenDisplay?.setActionBar?.(
+          `§d[Eternal Portal] Linked Eternal Gateway to ${portalRes.targetDimension}!`
+        );
+      } catch {}
+    } else {
+      try {
+        player.playSound?.("block.end_portal_frame.fill");
+        player.onScreenDisplay?.setActionBar?.(
+          "§d[Eternal Pedestal] §bEternal Crystal socketed! (Place on all 6 Eternal Pedestals to open Eternal Portal)"
+        );
+      } catch {}
+    }
     return;
   }
 
@@ -2395,7 +2733,24 @@ export function handleEternalPedestalInteraction(runtime, player, block, heldIte
     return;
   }
 
-  openEternalPedestalStationUi(runtime, player, block);
+  // Match Java `EternalPedestal.java` (`EternalHint.trigger`): spawn guide particles at the 6 portal sockets (no stub UI popup)
+  for (const [ox, oz] of ETERNAL_PORTAL_PEDESTAL_OFFSETS) {
+    try {
+      dim?.spawnParticle?.("minecraft:endrod", {
+        x: loc.x + ox + 0.5,
+        y: loc.y + 0.8,
+        z: loc.z + oz + 0.5
+      });
+    } catch {}
+  }
+  try {
+    player.playSound?.("block.beacon.ambient");
+    player.onScreenDisplay?.setActionBar?.(
+      current?.item
+        ? "§d[Eternal Pedestal] §bActive (Eternal Crystal Socketed) §7— Empty-hand click to retrieve."
+        : "§d[Eternal Pedestal] §7Right-click with §bEternal Crystal §7to socket (6 Pedestals + Runed Flavolite frame)."
+    );
+  } catch {}
 }
 
 export function openEternalPedestalStationUi(runtime, player, block) {
@@ -2529,45 +2884,49 @@ export function handleRespawnObeliskInteraction(runtime, player, block, heldItem
   }
 
   const amberOwned = countPlayerItem(player, "betterend:amber_gem");
-  const holdingAmber = heldId === "betterend:amber_gem" && (amberOwned >= 6 || creative);
+  const canCharge = amberOwned >= 6 || creative;
 
-  if (!player?.isSneaking && (holdingAmber || creative)) {
+  if (!player?.isSneaking && canCharge) {
     const consumeRes = consumePlayerItem(player, "betterend:amber_gem", 6);
-    if (!consumeRes.ok) {
-      openRespawnObeliskUi(runtime, player, block, bottomAnchor);
-      return;
-    }
-    const actRes = runtime.transportService.activateRespawnObelisk({
-      playerId: pid,
-      dimension: dimId,
-      pos: loc,
-      heldItem: { itemId: "betterend:amber_gem", count: Math.max(6, amberOwned) },
-      isCreative: creative
-    });
-    if (actRes.activated) {
-      runtime.presentationService?.awardAdvancement?.(pid, "betterend:respawn_obelisk");
-      try {
-        player.setSpawnPoint?.({
-          dimension: dim,
-          x: bottomAnchor.x + 1,
-          y: bottomAnchor.y,
-          z: bottomAnchor.z
-        });
-        player.playSound?.("respawn_anchor.set_spawn");
-        dim?.spawnParticle?.("minecraft:totem_particle", {
-          x: bottomAnchor.x + 0.5,
-          y: bottomAnchor.y + 1.5,
-          z: bottomAnchor.z + 0.5
-        });
-        player.onScreenDisplay?.setActionBar?.(
-          `§d[Respawn Obelisk] §aBound End Respawn Point at (${bottomAnchor.x}, ${bottomAnchor.y}, ${bottomAnchor.z})! (-6 Amber Gems)`
-        );
-      } catch {}
-      return;
+    if (consumeRes.ok) {
+      const actRes = runtime.transportService.activateRespawnObelisk({
+        playerId: pid,
+        dimension: dimId,
+        pos: loc,
+        heldItem: { itemId: "betterend:amber_gem", count: Math.max(6, amberOwned) },
+        isCreative: creative
+      });
+      if (actRes.activated) {
+        runtime.presentationService?.awardAdvancement?.(pid, "betterend:respawn_obelisk");
+        try {
+          player.setSpawnPoint?.({
+            dimension: dim,
+            x: bottomAnchor.x + 1,
+            y: bottomAnchor.y,
+            z: bottomAnchor.z
+          });
+          player.playSound?.("respawn_anchor.set_spawn");
+          dim?.spawnParticle?.("minecraft:totem_particle", {
+            x: bottomAnchor.x + 0.5,
+            y: bottomAnchor.y + 1.5,
+            z: bottomAnchor.z + 0.5
+          });
+          player.onScreenDisplay?.setActionBar?.(
+            `§d[Respawn Obelisk] §aRespawn point set at (${bottomAnchor.x}, ${bottomAnchor.y}, ${bottomAnchor.z})! (-6 Amber Gems)`
+          );
+        } catch {}
+        return;
+      }
     }
   }
 
-  openRespawnObeliskUi(runtime, player, block, bottomAnchor);
+  // Match Java `RespawnObeliskBlock.java` (`message.betterend.fail_spawn`): actionbar feedback, no stub popup UI
+  try {
+    player.playSound?.("note.bass");
+    player.onScreenDisplay?.setActionBar?.(
+      `§c[Respawn Obelisk] Not enough Amber Gems to set spawn (Requires 6x Amber Gem, you have ${amberOwned}).`
+    );
+  } catch {}
 }
 
 export function openRespawnObeliskUi(runtime, player, block, bottomAnchor) {
@@ -2698,41 +3057,21 @@ export function handleSilkMothHousingInteraction(runtime, player, block, heldIte
     return;
   }
 
-  // Open status UI when clicked without shears/bottle
-  const ActionFormData = runtime.uiModule?.ActionFormData;
-  if (!ActionFormData) return;
+  // Match Java `SilkMothNestBlock.java`: no popup UI when clicked without shears/bottle; display fullness on actionbar
   const housing = runtime.ecologyService.getSilkMothHousing({
     dimension: dimId,
     anchor: loc
   });
   const fullness = housing?.fullness ?? worldFullness;
-  const hasShears = countPlayerItem(player, "minecraft:shears") > 0 || isPlayerCreative(player);
-
-  const form = new ActionFormData()
-    .title(formatTitle(shortName))
-    .body(
-      `§dBlock: §f${formatTitle(shortName)} §7@ (${loc.x}, ${loc.y}, ${loc.z})\n` +
-        `§dSilk Fullness: ${formatProgressBar(fullness, 3, 6, "§e", "§8")} §f(${fullness}/3)\n\n` +
-        `§7Use §fShears §7at Fullness >= 2/3 to harvest §bSilk Fiber §7+ §dSilk Moth Matrix§7, or §fGlass Bottle §7for §eHoney Bottle§7.`
-    )
-    .button(
-      fullness >= 2 && hasShears
-        ? `§a✂ Shear Silk Fiber (Fullness ${fullness}/3)`
-        : "§7Close Status",
-      resolveUiIconPath("betterend:silk_fiber")
+  try {
+    player.onScreenDisplay?.setActionBar?.(
+      `§d[${formatTitle(shortName)}] §fSilk Fullness: ${fullness}/3 ${
+        fullness >= 2
+          ? "§a(Ready! Right-click with Shears or Glass Bottle)"
+          : "§7(Wait for Silk Moths to pollinate)"
+      }`
     );
-
-  form
-    .show(player)
-    .then((res) => {
-      if (!res || res.canceled || res.selection !== 0) return;
-      if (fullness >= 2 && hasShears) {
-        handleSilkMothHousingInteraction(runtime, player, block, {
-          typeId: "minecraft:shears"
-        });
-      }
-    })
-    .catch(() => {});
+  } catch {}
 }
 
 export function openStorageContainerUi(runtime, player, block) {
@@ -3571,7 +3910,7 @@ function populateWorldgenChestContainer(container, loc, serverModule) {
 /**
  * Ensures an invisible native container carrier entity (`betterend:chest_carrier` with 27-slot
  * `minecart_chest` GUI or `betterend:end_stone_smelter_carrier` with 5-slot `minecart_hopper` GUI)
- * is spawned inside `*_chest`, `*_barrel`, `end_stone_smelter`, and `*_furnace` blocks.
+ * is spawned inside `*_chest`, `*_barrel`, `end_stone_smelter`, `*_furnace`, and `*_anvil` blocks.
  */
 export function ensureContainerCarrierEntity(runtime, dim, block, options = {}) {
   if (!dim || !block || typeof dim.spawnEntity !== "function") return null;
@@ -3582,7 +3921,8 @@ export function ensureContainerCarrierEntity(runtime, dim, block, options = {}) 
   const isChestOrBarrel = shortName.endsWith("_chest") || shortName.endsWith("_barrel");
   const isSmelterOrFurnace =
     shortName === "end_stone_smelter" || shortName.endsWith("_furnace");
-  if (!isChestOrBarrel && !isSmelterOrFurnace) return null;
+  const isAnvil = shortName.endsWith("_anvil");
+  if (!isChestOrBarrel && !isSmelterOrFurnace && !isAnvil) return null;
 
   const carrierType = isChestOrBarrel
     ? "betterend:chest_carrier"
@@ -3603,8 +3943,11 @@ export function ensureContainerCarrierEntity(runtime, dim, block, options = {}) 
 
     const carrier = dim.spawnEntity(carrierType, spawnPos);
     if (!carrier) return null;
-    carrier.nameTag =
-      shortName === "end_stone_smelter" ? "End Stone Smelter" : formatTitle(shortName);
+    carrier.nameTag = isAnvil
+      ? `${formatTitle(shortName)} (Tier ${resolveAnvilLevel(blockId)})`
+      : shortName === "end_stone_smelter"
+        ? "End Stone Smelter"
+        : formatTitle(shortName);
     carrier.setDynamicProperty?.("betterend:anchor_x", loc.x);
     carrier.setDynamicProperty?.("betterend:anchor_y", loc.y);
     carrier.setDynamicProperty?.("betterend:anchor_z", loc.z);
@@ -3629,7 +3972,8 @@ export function ensureContainerCarrierEntity(runtime, dim, block, options = {}) 
 
 /**
  * Spills all items from a `betterend:chest_carrier` or `betterend:end_stone_smelter_carrier`,
- * removes the carrier entity, and optionally breaks its host block when mined/punched.
+ * removes the carrier entity, and breaks its host block with `setblock ... air destroy`
+ * so full 3D block-breaking particles and sound always play in both Survival and Creative modes.
  */
 export function destroyContainerCarrierAndBlock(runtime, carrierEntity, player = null, breakBlock = true) {
   if (!carrierEntity) return { destroyed: false };
@@ -3646,6 +3990,35 @@ export function destroyContainerCarrierAndBlock(runtime, carrierEntity, player =
     };
     const dropPos = { x: loc.x + 0.5, y: loc.y + 0.5, z: loc.z + 0.5 };
 
+    // 1. Break the host block FIRST using `setblock x y z air destroy` so 3D breaking particles & break sound
+    //    always emit (in Creative mode, remove only the dropped host block item entity afterwards).
+    if (breakBlock && dim) {
+      const hostBlk = dim.getBlock?.(loc);
+      const hostBlockId = String(hostBlk?.typeId ?? "").replace(/__p\d+$/, "");
+      if (typeof dim.runCommand === "function") {
+        dim.runCommand(`setblock ${loc.x} ${loc.y} ${loc.z} air destroy`);
+        if (player && isPlayerCreative(player) && hostBlockId) {
+          const dropped =
+            dim.getEntities?.({
+              type: "minecraft:item",
+              location: dropPos,
+              maxDistance: 1.5
+            }) ?? [];
+          for (const itemEnt of dropped) {
+            const st =
+              itemEnt.getComponent?.("minecraft:item")?.itemStack ??
+              itemEnt.getComponent?.("item")?.itemStack;
+            if (!st || st.typeId === hostBlockId) {
+              itemEnt.remove?.();
+            }
+          }
+        }
+      } else {
+        hostBlk?.setType?.("minecraft:air");
+      }
+    }
+
+    // 2. Spill all items stored inside the container carrier
     const inv =
       carrierEntity.getComponent?.("minecraft:inventory") ??
       carrierEntity.getComponent?.("inventory");
@@ -3662,14 +4035,11 @@ export function destroyContainerCarrierAndBlock(runtime, carrierEntity, player =
 
     carrierEntity.remove?.();
 
-    if (breakBlock && dim) {
-      if (player && isPlayerCreative(player)) {
-        const blk = dim.getBlock?.(loc);
-        blk?.setType?.("minecraft:air");
-      } else {
-        dim.runCommand?.(`setblock ${loc.x} ${loc.y} ${loc.z} air destroy`);
-      }
+    // 3. If a block was broken, trigger gravity check on any BetterEnd anvil / falling block resting above it
+    if (breakBlock && dim && typeof runtime?._checkAndDropFallingColumn === "function") {
+      runtime._checkAndDropFallingColumn(dim, { x: loc.x, y: loc.y + 1, z: loc.z });
     }
+
     return { destroyed: true, location: loc };
   } catch {
     return { destroyed: false };

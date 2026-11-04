@@ -68,6 +68,9 @@ import {
   handleJukeboxRecordInteraction,
   stopJukeboxRecordAt,
   handleChiseledBookshelfInteraction,
+  ensureContainerCarrierEntity,
+  destroyContainerCarrierAndBlock,
+  stepLiveSmelters,
 } from '../runtime/stations/station-ui.js';
 
 const workspace = fileURLToPath(new URL('../', import.meta.url));
@@ -1443,11 +1446,11 @@ test('UI-001: Station-Backed Custom UIs, Real Player Inventory Consumption, and 
     permutation: { getState: () => 0, withState: () => ({}) },
     setPermutation: () => {},
   };
-  // Player currently has only 2 amber_gem -> should open Obelisk UI instead of activating for free
-  uiResponseQueue.push({ canceled: true });
+  // Player currently has only 2 amber_gem -> shows actionbar hint without opening a stub ActionFormData
   handleRespawnObeliskInteraction(runtime, pedPlayer, obeliskBlock, 'betterend:amber_gem');
   await new Promise(r => setTimeout(r, 10));
   assert.equal(pedPlayer.getSpawnPoint(), null, 'Respawn Obelisk must not bind spawn with < 6 amber_gem');
+  assert.ok(pedPlayer.getActionBar().includes('Amber Gem'), 'Respawn Obelisk shows Amber Gem requirement in actionbar');
 
   // Give player 6 amber_gem and interact again -> consumes 6 amber_gem and sets spawn point
   const richObeliskPlayer = createMockPlayer([new MockItemStack('betterend:amber_gem', 6)]);
@@ -1570,4 +1573,145 @@ test('UI-001: Station-Backed Custom UIs, Real Player Inventory Consumption, and 
   const ejectRes = handleJukeboxRecordInteraction(runtime, shelfPlayer, jukeboxBlock, '');
   assert.equal(ejectRes.action, 'stopped');
   assert.equal(stopJukeboxRecordAt(runtime, jukeboxDim, jukeboxBlock.location).stopped, false);
+
+  // 10. Stage 8: Live 5-Slot Anvil Container Carrier (Forge, Reshape, and Repair without Stub List UI)
+  const anvilCarrierSlots = new Array(5).fill(null);
+  let lastCmd = '';
+  let lastAnvilSound = '';
+  const anvilCarrierEntity = {
+    id: 'anvil_carrier_1',
+    typeId: 'betterend:end_stone_smelter_carrier',
+    location: { x: 150.5, y: 64.02, z: 150.5 },
+    nameTag: '',
+    addTag: () => {},
+    teleport: () => {},
+    remove: () => {},
+    setDynamicProperty: () => {},
+    getDynamicProperty: key => {
+      if (key === 'betterend:anchor_x') return 150;
+      if (key === 'betterend:anchor_y') return 64;
+      if (key === 'betterend:anchor_z') return 150;
+      return undefined;
+    },
+    getComponent: id =>
+      id === 'minecraft:inventory'
+        ? {
+            container: {
+              size: 5,
+              getItem: i => anvilCarrierSlots[i],
+              setItem: (i, stack) => {
+                anvilCarrierSlots[i] = stack ?? null;
+              },
+            },
+          }
+        : null,
+  };
+  let carrierSpawned = false;
+  const anvilDim = {
+    id: 'minecraft:the_end',
+    getEntities: opts => {
+      if (opts?.type === 'betterend:end_stone_smelter_carrier') {
+        return carrierSpawned ? [anvilCarrierEntity] : [];
+      }
+      return [];
+    },
+    spawnEntity: () => {
+      carrierSpawned = true;
+      return anvilCarrierEntity;
+    },
+    getBlock: loc => ({
+      typeId: loc.x === 150 && loc.y === 64 && loc.z === 150 ? 'betterend:terminite_anvil' : 'minecraft:end_stone',
+      location: loc,
+      dimension: anvilDim,
+      permutation: { getState: () => 0, withState: () => ({}) },
+      setPermutation: () => {},
+      setType: () => {},
+    }),
+    playSound: id => {
+      lastAnvilSound = id;
+    },
+    spawnParticle: () => {},
+    spawnItem: () => ({ remove: () => {} }),
+    runCommand: cmd => {
+      lastCmd = cmd;
+    },
+  };
+  anvilCarrierEntity.dimension = anvilDim;
+  const anvilCarrierPlayer = {
+    ...shelfPlayer,
+    dimension: anvilDim,
+    location: { x: 150.5, y: 64, z: 150.5 },
+    playSound: id => {
+      lastAnvilSound = id;
+    },
+  };
+  runtime.serverModule.world.getAllPlayers = () => [anvilCarrierPlayer];
+
+  const anvilCarrierBlock = anvilDim.getBlock({ x: 150, y: 64, z: 150 });
+  const ensuredCarrier = ensureContainerCarrierEntity(runtime, anvilDim, anvilCarrierBlock);
+  assert.equal(ensuredCarrier, anvilCarrierEntity);
+  assert.ok(anvilCarrierEntity.nameTag.includes('Terminite Anvil (Tier 2)'));
+
+  // Place 1x thallasium_ingot in Slot 0 and terminite_hammer in Slot 1 -> stepLiveSmelters forges thallasium_forged_plate in Slot 4
+  anvilCarrierSlots[0] = new MockItemStack('betterend:thallasium_ingot', 1);
+  anvilCarrierSlots[1] = new MockItemStack('betterend:terminite_hammer', 1, 0, 500);
+  stepLiveSmelters(runtime, 10);
+  assert.equal(anvilCarrierSlots[0], null, 'Slot 0 thallasium_ingot consumed');
+  assert.equal(anvilCarrierSlots[4]?.typeId, 'betterend:thallasium_forged_plate', 'Slot 4 received thallasium_forged_plate');
+  assert.equal(lastAnvilSound, 'random.anvil_use');
+
+  // Move forged plate to Slot 0 to reshape into thallasium_sword_blade
+  anvilCarrierSlots[0] = anvilCarrierSlots[4];
+  anvilCarrierSlots[4] = null;
+  stepLiveSmelters(runtime, 10);
+  assert.equal(anvilCarrierSlots[4]?.typeId, 'betterend:thallasium_sword_blade', 'Reshaped forged plate -> sword_blade in Slot 4');
+
+  // 11. Stage 8: destroyContainerCarrierAndBlock always runs `setblock ... air destroy` (3D breaking particles in Creative & Survival)
+  const creativeBarrelPlayer = {
+    ...anvilCarrierPlayer,
+    getGameMode: () => 'creative',
+  };
+  const destroyRes = destroyContainerCarrierAndBlock(runtime, anvilCarrierEntity, creativeBarrelPlayer, true);
+  assert.equal(destroyRes.destroyed, true);
+  assert.equal(lastCmd, 'setblock 150 64 150 air destroy', 'Creative container break uses setblock ... air destroy for 3D breaking particles');
+
+  // 12. Stage 8: Gravity-affected BetterEnd Anvils & Endstone Dust (_checkAndDropFallingColumn)
+  const fallGrid = new Map([
+    ['160,64,160', { typeId: 'minecraft:end_stone', perm: { id: 'end_stone' } }],
+    ['160,65,160', { typeId: 'minecraft:air', perm: { id: 'air' } }],
+    ['160,66,160', { typeId: 'minecraft:air', perm: { id: 'air' } }],
+    ['160,67,160', { typeId: 'betterend:terminite_anvil', perm: { id: 'terminite_anvil_perm' } }],
+  ]);
+  let landedSound = '';
+  const fallDim = {
+    id: 'minecraft:the_end',
+    getEntities: () => [],
+    spawnEntity: () => null,
+    spawnItem: () => null,
+    playSound: id => {
+      landedSound = id;
+    },
+    getBlock: loc => {
+      const key = `${loc.x},${loc.y},${loc.z}`;
+      const entry = fallGrid.get(key) ?? { typeId: 'minecraft:air', perm: {} };
+      return {
+        typeId: entry.typeId,
+        location: { ...loc },
+        dimension: fallDim,
+        permutation: entry.perm,
+        setType: newId => {
+          fallGrid.set(key, { typeId: newId, perm: { id: newId } });
+        },
+        setPermutation: newPerm => {
+          const cur = fallGrid.get(key) ?? { typeId: 'minecraft:air' };
+          fallGrid.set(key, { typeId: cur.typeId, perm: newPerm });
+        },
+      };
+    },
+  };
+  const dropRes = runtime._checkAndDropFallingColumn(fallDim, { x: 160, y: 67, z: 160 });
+  assert.equal(dropRes.droppedCount, 1, 'Unsupported terminite_anvil dropped');
+  assert.equal(fallGrid.get('160,67,160')?.typeId, 'minecraft:air', 'Original y=67 cleared to air');
+  assert.equal(fallGrid.get('160,65,160')?.typeId, 'betterend:terminite_anvil', 'Anvil landed at y=65 above end_stone');
+  assert.equal(landedSound, 'random.anvil_land', 'Anvil landing played random.anvil_land');
 });

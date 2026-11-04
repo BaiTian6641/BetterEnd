@@ -674,15 +674,24 @@ export class BetterEndRuntime {
       shortName.endsWith("_chest") ||
       shortName.endsWith("_barrel") ||
       shortName === "end_stone_smelter" ||
-      shortName.endsWith("_furnace")
+      shortName.endsWith("_furnace") ||
+      shortName.endsWith("_anvil") ||
+      shortName === "endstone_dust"
     ) {
       const placeLoc = event.block?.location;
       const placeDim = event.dimension ?? event.block?.dimension;
       if (placeLoc && placeDim && this.serverModule?.system?.run) {
         this.serverModule.system.run(() => {
           try {
+            if (shortName.endsWith("_anvil") || shortName === "endstone_dust") {
+              this._checkAndDropFallingColumn(placeDim, placeLoc);
+            }
             const placedBlk = placeDim.getBlock?.(placeLoc);
-            if (placedBlk) {
+            if (
+              placedBlk &&
+              String(placedBlk.typeId ?? "").startsWith("betterend:") &&
+              shortName !== "endstone_dust"
+            ) {
               ensureContainerCarrierEntity(this, placeDim, placedBlk, {
                 populateWorldgenLoot: false
               });
@@ -1792,6 +1801,164 @@ export class BetterEndRuntime {
     }
   }
 
+  _isFallingBetterEndBlock(typeId) {
+    const id = String(typeId ?? "");
+    if (!id.startsWith("betterend:")) return false;
+    const short = id.slice("betterend:".length).replace(/__p\d+$/, "");
+    return short.endsWith("_anvil") || short === "endstone_dust";
+  }
+
+  _isPassableBelowFallingBlock(typeId) {
+    const id = String(typeId ?? "");
+    return (
+      !id ||
+      id === "minecraft:air" ||
+      id === "minecraft:water" ||
+      id === "minecraft:flowing_water" ||
+      id === "minecraft:lava" ||
+      id === "minecraft:flowing_lava" ||
+      id === "minecraft:short_grass" ||
+      id === "minecraft:tall_grass"
+    );
+  }
+
+  /**
+   * Checks a vertical column starting at `startLoc` for any unsupported BetterEnd gravity blocks
+   * (`betterend:*_anvil` and `betterend:endstone_dust`), dropping them down to solid ground (`landingY`),
+   * preserving their permutation & container carrier contents, and playing `random.anvil_land`.
+   */
+  _checkAndDropFallingColumn(dim, startLoc) {
+    if (!dim || !startLoc || typeof dim.getBlock !== "function") return { droppedCount: 0 };
+    const x = Math.trunc(startLoc.x);
+    const baseY = Math.trunc(startLoc.y);
+    const z = Math.trunc(startLoc.z);
+    let droppedCount = 0;
+
+    for (let dy = 0; dy <= 8; dy++) {
+      const y = baseY + dy;
+      let blk;
+      try {
+        blk = dim.getBlock({ x, y, z });
+      } catch {
+        break;
+      }
+      if (!blk || !this._isFallingBetterEndBlock(blk.typeId)) continue;
+
+      let belowBlk;
+      try {
+        belowBlk = dim.getBlock({ x, y: y - 1, z });
+      } catch {
+        break;
+      }
+      if (!belowBlk || !this._isPassableBelowFallingBlock(belowBlk.typeId)) continue;
+
+      let landingY = y - 1;
+      for (let scanY = y - 1; scanY > 1; scanY--) {
+        try {
+          const under = dim.getBlock({ x, y: scanY - 1, z });
+          if (under && this._isPassableBelowFallingBlock(under.typeId)) {
+            landingY = scanY - 1;
+          } else {
+            break;
+          }
+        } catch {
+          break;
+        }
+      }
+
+      if (landingY >= y) continue;
+      const savedTypeId = String(blk.typeId);
+      const savedPerm = blk.permutation ?? null;
+      const isAnvil = savedTypeId.includes("_anvil");
+      const savedStacks = [];
+
+      // Preserve any items inside an anvil's 5-slot container carrier before moving the anvil down
+      if (isAnvil && typeof dim.getEntities === "function") {
+        try {
+          const carriers =
+            dim.getEntities({
+              type: "betterend:end_stone_smelter_carrier",
+              location: { x: x + 0.5, y: y + 0.5, z: z + 0.5 },
+              maxDistance: 0.75
+            }) ?? [];
+          for (const c of carriers) {
+            const inv = c.getComponent?.("minecraft:inventory") ?? c.getComponent?.("inventory");
+            const cont = inv?.container;
+            if (cont && typeof cont.size === "number") {
+              for (let s = 0; s < cont.size; s++) {
+                const st = cont.getItem(s);
+                if (st && st.typeId && (st.amount ?? 1) > 0) {
+                  savedStacks.push({ slot: s, stack: st });
+                  cont.setItem(s, undefined);
+                }
+              }
+            }
+            c.remove?.();
+          }
+        } catch {}
+      }
+
+      try {
+        blk.setType("minecraft:air");
+        const landBlk = dim.getBlock({ x, y: landingY, z });
+        if (landBlk) {
+          landBlk.setType?.(savedTypeId);
+          if (savedPerm && typeof landBlk.setPermutation === "function") {
+            try {
+              landBlk.setPermutation(savedPerm);
+            } catch {}
+          }
+          if (isAnvil) {
+            const refreshedLandBlk = dim.getBlock({ x, y: landingY, z }) ?? landBlk;
+            const newCarrier = ensureContainerCarrierEntity(this, dim, refreshedLandBlk, {
+              populateWorldgenLoot: false
+            });
+            if (newCarrier && savedStacks.length > 0) {
+              const inv =
+                newCarrier.getComponent?.("minecraft:inventory") ??
+                newCarrier.getComponent?.("inventory");
+              const cont = inv?.container;
+              if (cont && typeof cont.setItem === "function") {
+                for (const entry of savedStacks) {
+                  cont.setItem(entry.slot, entry.stack);
+                }
+              }
+            }
+            const fallDist = y - landingY;
+            const landPos = { x: x + 0.5, y: landingY + 0.5, z: z + 0.5 };
+            try {
+              dim.playSound?.("random.anvil_land", landPos);
+            } catch {}
+            const nearPlayers = dim.getPlayers?.({ location: landPos, maxDistance: 16 }) ?? [];
+            for (const p of nearPlayers) {
+              try {
+                p.playSound?.("random.anvil_land");
+              } catch {}
+            }
+            if (fallDist >= 2 && typeof dim.getEntities === "function") {
+              const hitDmg = Math.min(40, (fallDist - 1) * 2);
+              const victims =
+                dim.getEntities({
+                  location: landPos,
+                  maxDistance: 1.1
+                }) ?? [];
+              for (const v of victims) {
+                const vid = String(v?.typeId ?? "");
+                if (!vid || vid.endsWith("_carrier") || vid === "minecraft:item") continue;
+                try {
+                  v.applyDamage?.(hitDmg, { cause: "fallingBlock" });
+                } catch {}
+              }
+            }
+          }
+          droppedCount += 1;
+        }
+      } catch {}
+    }
+
+    return { droppedCount };
+  }
+
   _handleLiveBlockInteract(event) {
     const block = event?.block;
     const player = event?.player;
@@ -1826,16 +1993,23 @@ export class BetterEndRuntime {
     }
 
     if (shortName === "end_stone_smelter" || shortName.endsWith("_furnace")) {
-      const carrier = ensureContainerCarrierEntity(this, dim, block, {
+      ensureContainerCarrierEntity(this, dim, block, {
         populateWorldgenLoot: false
       });
-      if (!carrier || player.isSneaking) {
-        this._openSmelterUi(player, block, {
-          singleInputOnly: shortName.endsWith("_furnace")
-        });
+      const xp = Number(
+        this.stationsService.claimSmelterXp({ dimension: dimId, anchor: loc }) || 0
+      );
+      if (xp > 0) {
+        try {
+          player.addExperience?.(Math.ceil(xp));
+          player.playSound?.("random.orb");
+        } catch {}
       }
     } else if (shortName.endsWith("_anvil")) {
-      this._openAnvilUi(player, block);
+      this._checkAndDropFallingColumn(dim, loc);
+      ensureContainerCarrierEntity(this, dim, block, {
+        populateWorldgenLoot: false
+      });
     } else if (shortName === "infusion_pedestal") {
       handlePedestalInteraction(this, player, block, heldStack);
     } else if (shortName === "eternal_pedestal") {
@@ -1849,12 +2023,9 @@ export class BetterEndRuntime {
     } else if (shortName.endsWith("_chiseled_bookshelf")) {
       handleChiseledBookshelfInteraction(this, player, block, heldStack);
     } else if (shortName.endsWith("_barrel") || shortName.endsWith("_chest")) {
-      const carrier = ensureContainerCarrierEntity(this, dim, block, {
+      ensureContainerCarrierEntity(this, dim, block, {
         populateWorldgenLoot: true
       });
-      if (!carrier) {
-        openStorageContainerUi(this, player, block);
-      }
     } else if (
       shortName.endsWith("_sign") ||
       shortName.endsWith("_wall_sign") ||
@@ -2049,7 +2220,9 @@ export class BetterEndRuntime {
         brokenId === "betterend:end_stone_smelter" ||
         brokenId.startsWith("betterend:end_stone_smelter__") ||
         brokenId.endsWith("_furnace") ||
-        brokenId.includes("_furnace__")
+        brokenId.includes("_furnace__") ||
+        brokenId.endsWith("_anvil") ||
+        brokenId.includes("_anvil__")
       ) {
         try {
           const carriers =
@@ -2085,6 +2258,11 @@ export class BetterEndRuntime {
         this.transportService.breakRespawnObeliskPart({ dimension: dimId, pos: loc });
       }
       this.store.breakStation({ dimension: dimId, anchor: loc, reason: "player_break" });
+    }
+
+    // Whenever ANY block is broken, check if a BetterEnd Anvil or Endstone Dust resting above it should fall
+    if (loc && dim) {
+      this._checkAndDropFallingColumn(dim, { x: loc.x, y: loc.y + 1, z: loc.z });
     }
 
     if (itemId.startsWith("betterend:") && itemId.endsWith("_hammer") && loc && dim) {
@@ -2992,12 +3170,15 @@ export class BetterEndRuntime {
       // Sync Armored/Crystalite Elytra & Crystalite armor abilities
       this._syncPlayerElytraAndArmor(player);
 
-      // Proactively ensure native container carrier entity on any BetterEnd chest/barrel/smelter/furnace
+      // Proactively ensure native container carrier entity on any BetterEnd chest/barrel/smelter/furnace/anvil
       // the player is looking at (within 7 blocks) so the first right-click immediately opens the native
-      // 27-slot Chest/Barrel GUI or 5-slot Smelter/Furnace GUI.
+      // 27-slot Chest/Barrel GUI or 5-slot Smelter/Furnace/Anvil GUI, and drop any unsupported anvil/dust.
       try {
         const viewHit = player.getBlockFromViewDirection?.({ maxDistance: 7 });
         if (viewHit?.block && dim) {
+          if (this._isFallingBetterEndBlock(viewHit.block.typeId) && viewHit.block.location) {
+            this._checkAndDropFallingColumn(dim, viewHit.block.location);
+          }
           ensureContainerCarrierEntity(this, dim, viewHit.block, {
             populateWorldgenLoot: true
           });
@@ -3236,11 +3417,16 @@ export class BetterEndRuntime {
             const ax = target.getDynamicProperty?.("betterend:anchor_x");
             const ay = target.getDynamicProperty?.("betterend:anchor_y");
             const az = target.getDynamicProperty?.("betterend:anchor_z");
+            const bId = String(target.getDynamicProperty?.("betterend:block_id") ?? "");
             const loc = {
               x: typeof ax === "number" ? ax : Math.floor(target.location.x),
               y: typeof ay === "number" ? ay : Math.floor(target.location.y),
               z: typeof az === "number" ? az : Math.floor(target.location.z)
             };
+            if (bId.includes("_anvil")) {
+              player.playSound?.("random.anvil_use");
+              return;
+            }
             const xp = Number(
               this.stationsService.claimSmelterXp({ dimension: dimId, anchor: loc }) || 0
             );
@@ -3249,14 +3435,6 @@ export class BetterEndRuntime {
               player.playSound?.("random.orb");
             } else {
               player.playSound?.("block.furnace.fire_crackle");
-            }
-            if (player.isSneaking && dim) {
-              const blk = dim.getBlock?.(loc);
-              if (blk) {
-                this._openSmelterUi(player, blk, {
-                  singleInputOnly: String(blk.typeId ?? "").endsWith("_furnace")
-                });
-              }
             }
           } catch {}
           return;
