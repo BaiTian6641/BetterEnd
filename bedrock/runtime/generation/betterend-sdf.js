@@ -2208,6 +2208,39 @@ export function generateFilalux(grid, ox, oy, oz, rng) {
   }
 }
 
+/**
+ * One Java `FilaluxFeature extends SkyScatterFeature` invocation (ScatterFeatureConfig.filalux() = radius 10).
+ *
+ * `ScatterFeature.place`: r = rand(radius/2, radius); count = floor(r^2 * rand(1.5, 3)) attempts spread
+ * uniformly over a disc of radius r around the centre; each attempt sits at centre.y + yOffset(5) + rand(-5, 5),
+ * needs its own cell plus the four horizontal neighbours to be empty, and `SkyScatterFeature.getChance() = 10`
+ * keeps only one attempt in ten. Java places this once per chunk at most (`count_on_every_layer` uniform 0..1),
+ * so a chunk holds 0 or one cluster of ~13 lanterns on average (about 30 at the very most) - never a uniform
+ * carpet of lanterns over the whole chunk column.
+ */
+export function generateFilaluxCluster(grid, ox, oy, oz, rng) {
+  const radius = 10;
+  const r = radius * 0.5 + rng.nextFloat() * radius * 0.5; // Java float randRange(radius * 0.5F, radius)
+  const attempts = Math.floor(r * r * MHelper.randRange(1.5, 3.0, rng));
+  const yOffset = 5;
+  for (let i = 0; i < attempts; i++) {
+    const pr = r * Math.sqrt(rng.nextFloat());
+    const theta = rng.nextFloat() * PI2;
+    const x = ox + Math.trunc(pr * Math.cos(theta));
+    const z = oz + Math.trunc(pr * Math.sin(theta));
+    const y = oy + yOffset + MHelper.randRange(-yOffset, yOffset, rng);
+    if (rng.nextInt(10) !== 0) continue;
+    // canGenerate: own cell + four horizontal neighbours empty (here: not claimed by an earlier lantern)
+    let free = !grid.has(x, y, z) && !grid.has(x, y + 1, z);
+    for (const dir of HORIZONTAL_DIRS) {
+      if (grid.has(x + dir.dx, y, z + dir.dz)) free = false;
+    }
+    for (let k = 1; k <= 3 && free; k++) if (grid.has(x, y - k, z)) free = false;
+    if (!free) continue;
+    generateFilalux(grid, x, y, z, rng);
+  }
+}
+
 export function generateHydralux(grid, ox, oy, oz, rng) {
   const h = MHelper.randRange(4, 6, rng);
   const big = rng.nextBoolean();
@@ -2878,63 +2911,95 @@ export function generateWaterLakeBasin(grid, ox, oy, oz, rng, radiusMin = 6, rad
   }
 }
 
+/**
+ * Java `MountainPiece` sizing: radius `50..100`, height `radius * k` (crystal `0.8..1.2`, painted `0.4..0.6`).
+ * A Bedrock `structure_template_feature` only writes reliably inside a 3x3-chunk window (48 blocks), so the
+ * shape is kept but scaled to fit it: horizontally by `MOUNTAIN_H_SCALE` (radius 11..22) and vertically by the
+ * given factor. Java's own placement is `mountain` spacing 3 / separation 2, i.e. one per 3x3 chunks.
+ */
+const MOUNTAIN_H_SCALE = 0.22;
+
 export function generateCrystalMountainOutcrop(grid, ox, oy, oz, rng) {
-  // Exact CrystalMountainPiece spire + crystal moss cone
-  const r = MHelper.randRange(5, 8, rng);
-  const h = MHelper.randRange(7, 12, rng);
-  const noise = new OpenSimplexNoise(rng.nextInt());
-  for (let dx = -r; dx <= r; dx++) {
-    for (let dz = -r; dz <= r; dz++) {
+  // Java CrystalMountainPiece: dist = 1 - (d^2 / r^2)^0.3 (steep spire), end-stone body, crystal-moss top
+  // cover in noise-driven patches, scattered aurora crystal spikes (3% on stone / 2% on moss) and a small,
+  // hard-capped number of big aurora crystals.
+  const javaRadius = MHelper.randRange(50, 100, rng);
+  const radius = javaRadius * MOUNTAIN_H_SCALE;
+  const height = javaRadius * MHelper.randRange(0.8, 1.2, rng) * 0.45;
+  const r2 = radius * radius;
+  const noise1 = new OpenSimplexNoise(rng.nextInt());
+  const reach = Math.ceil(radius);
+  const tops = [];
+  for (let dx = -reach; dx <= reach; dx++) {
+    for (let dz = -reach; dz <= reach; dz++) {
       const d2 = dx * dx + dz * dz;
-      if (d2 > r * r) continue;
-      const dist = 1.0 - Math.pow(d2 / (r * r), 0.35);
-      const colH = Math.max(1, Math.round(dist * h * (noise.eval((ox + dx) * 0.1, (oz + dz) * 0.1) * 0.25 + 0.85)));
-      for (let y = 0; y < colH; y++) {
-        const isTop = y === colH - 1;
+      if (d2 >= r2) continue;
+      const dist = 1.0 - Math.pow(d2 / r2, 0.3);
+      let maxY = dist * height;
+      maxY *= noise1.eval((ox + dx) * 0.12, (oz + dz) * 0.12) * 0.3 + 0.7;
+      maxY *= noise1.eval((ox + dx) * 0.25, (oz + dz) * 0.25) * 0.1 + 0.9;
+      const top = Math.floor(maxY);
+      if (top < 1) continue;
+      const mossy = noise1.eval((ox + dx) * 0.08, (oz + dz) * 0.08) > -0.25;
+      for (let y = -3; y <= top; y++) {
         grid.set(
           ox + dx,
           oy + y,
           oz + dz,
-          isTop ? "betterend:crystal_moss" : "minecraft:end_stone",
+          y === top && mossy ? "betterend:crystal_moss" : "minecraft:end_stone",
           {},
-          isTop ? "structure_canopy" : "structure_core"
+          y === top ? "structure_canopy" : "structure_core"
         );
       }
+      tops.push({ x: ox + dx, y: oy + top + 1, z: oz + dz, mossy, dist });
     }
   }
-  generateBigAuroraCrystal(grid, ox, oy + Math.floor(h * 0.7), oz, rng);
+  // small aurora crystal accents (fixed radius 1, 1.5-3 blocks tall)
+  for (const t of tops) {
+    if (rng.nextFloat() >= (t.mossy ? 0.02 : 0.03)) continue;
+    const spikeHeight = MHelper.randRange(2, 3, rng);
+    for (let k = 0; k < spikeHeight; k++) {
+      grid.set(t.x, t.y + k, t.z, "betterend:aurora_crystal", {}, "formation_tip");
+    }
+  }
+  // big crystals: budgeted, scaled with how high the mountain rises
+  const bigCount = Math.min(3, Math.floor(height / 12));
+  const peaks = tops.filter((t) => t.dist > 0.35);
+  for (let i = 0; i < bigCount && peaks.length > 0; i++) {
+    const p = peaks[rng.nextInt(peaks.length)];
+    generateBigAuroraCrystal(grid, p.x, p.y, p.z, rng);
+  }
 }
 
 export function generatePaintedMountainStrata(grid, ox, oy, oz, rng) {
-  // Exact PaintedMountainPiece layered strata
-  const strata = [
-    "minecraft:end_stone",
-    "betterend:flavolite",
-    "betterend:violecite",
-    "betterend:virid_jadestone",
-    "betterend:azure_jadestone",
-    "betterend:sandy_jadestone"
-  ];
-  const r = MHelper.randRange(6, 9, rng);
-  const h = MHelper.randRange(7, 11, rng);
-  const noise = new OpenSimplexNoise(rng.nextInt());
-  for (let dx = -r; dx <= r; dx++) {
-    for (let dz = -r; dz <= r; dz++) {
+  // Java PaintedMountainPiece: parabolic dome `dist = 1 - d^2 / r^2`, two noise factors on the height and
+  // horizontal strata `slices[floor((y + offset) * 0.65) % count]` drawn from {end_stone, flavolite, violecite}.
+  const strataVariants = ["minecraft:end_stone", "betterend:flavolite", "betterend:violecite"];
+  const javaRadius = MHelper.randRange(50, 100, rng);
+  const radius = javaRadius * MOUNTAIN_H_SCALE;
+  const javaHeight = javaRadius * MHelper.randRange(0.4, 0.6, rng);
+  const height = javaHeight * 0.5;
+  const count = Math.floor(javaHeight * MHelper.randRange(0.1, 0.35, rng) + 1);
+  const slices = [];
+  for (let i = 0; i < count; i++) slices.push(strataVariants[rng.nextInt(strataVariants.length)]);
+  const r2 = radius * radius;
+  const noise1 = new OpenSimplexNoise(rng.nextInt());
+  const reach = Math.ceil(radius);
+  for (let dx = -reach; dx <= reach; dx++) {
+    for (let dz = -reach; dz <= reach; dz++) {
       const d2 = dx * dx + dz * dz;
-      if (d2 > r * r) continue;
-      const dist = 1.0 - d2 / (r * r);
-      const colH = Math.max(1, Math.round(dist * h * (noise.eval((ox + dx) * 0.1, (oz + dz) * 0.1) * 0.2 + 0.9)));
-      const offset = noise.eval((ox + dx) * 0.07, (oz + dz) * 0.07) * 4.0 + 7.0;
-      for (let y = 0; y < colH; y++) {
-        const idx = MHelper.mod(Math.floor((oy + y + offset) * 0.65), strata.length);
-        grid.set(
-          ox + dx,
-          oy + y,
-          oz + dz,
-          strata[idx],
-          {},
-          y === colH - 1 ? "structure_canopy" : "structure_core"
-        );
+      if (d2 >= r2) continue;
+      const px = ox + dx;
+      const pz = oz + dz;
+      let maxY = (1 - d2 / r2) * height;
+      maxY *= noise1.eval(px * 0.12, pz * 0.12) * 0.3 + 0.7;
+      maxY *= noise1.eval(px * 0.25, pz * 0.25) * 0.1 + 0.9;
+      const top = Math.floor(maxY);
+      if (top < 1) continue;
+      const offset = noise1.eval(px * 0.15, pz * 0.15) * 5 + noise1.eval(px * 0.4, pz * 0.4) * 2 + 7;
+      for (let y = -3; y <= top; y++) {
+        const idx = MHelper.mod(Math.floor((oy + y + offset) * 0.65), slices.length);
+        grid.set(px, oy + y, pz, slices[idx], {}, y === top ? "structure_canopy" : "structure_core");
       }
     }
   }
@@ -3376,6 +3441,9 @@ export function generateBetterEndFeatureVoxels(featureId, seedOrRng, ox = 0, oy 
       break;
     case "neon_cactus":
       generateNeonCactus(grid, ox, oy, oz, rng);
+      break;
+    case "filalux_cluster":
+      generateFilaluxCluster(grid, ox, oy, oz, rng);
       break;
     case "filalux":
       generateFilalux(grid, ox, oy, oz, rng);

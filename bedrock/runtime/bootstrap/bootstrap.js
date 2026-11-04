@@ -96,6 +96,19 @@ const POND_OBSTRUCTION_PATTERN =
 
 /** Decoration queue tuning: per-run time budget, look-ahead and retry limits. */
 const DECORATION_BUDGET_MS = 4;
+/** Java BCLib `BaseVineBlock` family: extends only via bone meal, up to `maxGrowLength` segments. */
+const PLAIN_BONEMEAL_VINES = new Set([
+  "dense_vine",
+  "twisted_vine",
+  "jungle_vine",
+  "filalux",
+  "rubinea",
+  "magnula",
+  "tenanea_flowers"
+]);
+const VINE_MAX_GROW_LENGTH = 32;
+/** Java `NeonCactusPlantBlock.MAX_LENGTH`. */
+const NEON_CACTUS_MAX_LENGTH = 12;
 const DECORATION_MAX_PER_RUN = 6;
 const DECORATION_SCAN_RADIUS = 7;
 const DECORATION_LOOKAHEAD_RADIUS = 3;
@@ -316,36 +329,45 @@ export class BetterEndRuntime {
 
     const makeEnvironmentalHandler = (family) => ({
       beforeOnPlayerPlace: (event) => this._handleBeforePlayerPlace(event),
-      onTick: (event) => {
-        if (!event?.block) return;
-        const dim = event.dimension ?? event.block.dimension;
-        const loc = event.block.location ?? { x: 0, y: 64, z: 0 };
-        this.ecologyService.tickEnvironmentalBlock?.({
-          family,
-          blockId: event.block.typeId,
-          dimension: dim?.id ?? "minecraft:the_end",
-          position: loc
-        });
-        if (family === "ecology_tick" && dim && Math.random() < 0.08) {
-          this._growBetterEndPlantAt(dim, loc, event.block.typeId, { isBoneMeal: false });
-        }
-      },
-      onRandomTick: (event) => {
-        if (!event?.block) return;
-        const dim = event.dimension ?? event.block.dimension;
-        const loc = event.block.location ?? { x: 0, y: 64, z: 0 };
-        if (dim && Math.random() < 0.25) {
-          this._growBetterEndPlantAt(dim, loc, event.block.typeId, { isBoneMeal: false });
-        }
-      },
-      onStepOn: (event) => {
-        if (!event?.block || !event?.entity) return;
-        this.ecologyService.handleBlockStep?.({
-          family,
-          blockId: event.block.typeId,
-          entityId: event.entity.id
-        });
-      }
+      ...(family === "hydrothermal_vent"
+        ? {
+            onTick: (event) => {
+              if (!event?.block) return;
+              const dim = event.dimension ?? event.block.dimension;
+              const loc = event.block.location ?? { x: 0, y: 64, z: 0 };
+              this.ecologyService.tickEnvironmentalBlock?.({
+                family,
+                blockId: event.block.typeId,
+                dimension: dim?.id ?? "minecraft:the_end",
+                position: loc
+              });
+            }
+          }
+        : {}),
+      ...(family === "ecology_tick"
+        ? {
+            onRandomTick: (event) => {
+              if (!event?.block) return;
+              const dim = event.dimension ?? event.block.dimension;
+              const loc = event.block.location ?? { x: 0, y: 64, z: 0 };
+              if (dim && Math.random() < 0.25) {
+                this._growBetterEndPlantAt(dim, loc, event.block.typeId, { isBoneMeal: false });
+              }
+            }
+          }
+        : {}),
+      ...(family === "bouncy" || family === "hazard"
+        ? {
+            onStepOn: (event) => {
+              if (!event?.block || !event?.entity) return;
+              this.ecologyService.handleBlockStep?.({
+                family,
+                blockId: event.block.typeId,
+                entityId: event.entity.id
+              });
+            }
+          }
+        : {})
     });
 
     handlers.set("betterend:bouncy", makeEnvironmentalHandler("bouncy"));
@@ -799,14 +821,25 @@ export class BetterEndRuntime {
   _resolvePlayerRegion(dimension, loc) {
     const surface = this._lookupNativeCellRegion(loc.x, loc.z);
     try {
-      const top = dimension?.getTopmostBlock?.({ x: Math.floor(loc.x), z: Math.floor(loc.z) }, 130);
+      const bx = Math.floor(loc.x);
+      const bz = Math.floor(loc.z);
+      const top = dimension?.getTopmostBlock?.({ x: bx, z: bz }, 130);
       const topY = top?.location?.y;
-      if (topY === undefined || topY < 16) {
-        const aerial = nativeAerialRegionIndex(loc.x, loc.z);
-        if (aerial >= 0) return REGION_CATALOGUE[aerial] ?? surface;
-        return surface;
+      const aerial = nativeAerialRegionIndex(loc.x, loc.z);
+      if (aerial >= 0) {
+        if (topY === undefined || topY < 16) {
+          return REGION_CATALOGUE[aerial] ?? surface;
+        }
+        const lowBlk = dimension?.getBlock?.({ x: bx, y: 24, z: bz });
+        const midBlk = dimension?.getBlock?.({ x: bx, y: 38, z: bz });
+        if (
+          (!lowBlk || lowBlk.typeId === "minecraft:air") &&
+          (!midBlk || midBlk.typeId === "minecraft:air")
+        ) {
+          return REGION_CATALOGUE[aerial] ?? surface;
+        }
       }
-      if (loc.y < topY - 7) {
+      if (topY !== undefined && loc.y < topY - 7) {
         const cave = nativeCaveRegionIndex(loc.x, loc.z);
         if (cave >= 0) return REGION_CATALOGUE[cave] ?? surface;
       }
@@ -932,7 +965,7 @@ export class BetterEndRuntime {
     const region = REGIONS_BY_ID.get(regionId) ?? REGION_CATALOGUE[0];
 
     try {
-      if (typeof dimension.getTopmostBlock === "function") {
+      if (typeof dimension.getTopmostBlock === "function" && region?.layer !== "aerial") {
         const existingTop = dimension.getTopmostBlock({ x: Math.trunc(cx), z: Math.trunc(cz) }, 120);
         if (existingTop && existingTop.location.y >= 40) {
           const landY = existingTop.location.y;
@@ -1014,6 +1047,18 @@ export class BetterEndRuntime {
               try {
                 dimension.runCommand?.(
                   `structure load betterend:proc_${grottoFeat}_v0 ${Math.trunc(cx) - 8} ${cy} ${Math.trunc(cz) - 8}`
+                );
+              } catch {}
+            } else if (region?.layer === "aerial") {
+              const aerialFeat =
+                regionId === "flower_islets"
+                  ? "small_island_flower"
+                  : regionId === "waterfall_ponds"
+                    ? "small_island"
+                    : "ice_star";
+              try {
+                dimension.runCommand?.(
+                  `structure load betterend:proc_${aerialFeat}_v0 ${Math.trunc(cx) - 9} ${cy - 8} ${Math.trunc(cz) - 9}`
                 );
               } catch {}
             } else {
@@ -1714,8 +1759,21 @@ export class BetterEndRuntime {
         return false;
       }
 
-      // 6. Neon Cactus upward growth
+      // 6. Neon Cactus upward growth. Java `NeonCactusPlantBlock` stops at MAX_LENGTH (12) segments; without
+      //    the cap a ticking cactus column grew without bound (hundreds of blocks per minute in a probe).
       if (shortName === "neon_cactus") {
+        let length = 1;
+        for (let dy = 1; dy <= NEON_CACTUS_MAX_LENGTH; dy++) {
+          const below = dim.getBlock({ x, y: y - dy, z });
+          if (!below || !String(below.typeId ?? "").startsWith("betterend:neon_cactus")) break;
+          length += 1;
+        }
+        for (let dy = 1; dy <= NEON_CACTUS_MAX_LENGTH; dy++) {
+          const above = dim.getBlock({ x, y: y + dy, z });
+          if (!above || !String(above.typeId ?? "").startsWith("betterend:neon_cactus")) break;
+          length += 1;
+        }
+        if (length >= NEON_CACTUS_MAX_LENGTH) return false;
         const aboveBlk = dim.getBlock({ x, y: y + 1, z });
         if (aboveBlk && aboveBlk.typeId === "minecraft:air") {
           this._applyBlockPlacement(blk, "betterend:neon_cactus", { facing: "up", shape: "middle" });
@@ -1725,35 +1783,31 @@ export class BetterEndRuntime {
         return false;
       }
 
-      // 7. Hanging vines downward extension
-      if (
-        [
-          "bulb_vine",
-          "dense_vine",
-          "twisted_vine",
-          "jungle_vine",
-          "filalux",
-          "rubinea",
-          "magnula",
-          "tenanea_flowers"
-        ].includes(shortName)
-      ) {
+      // 7. Hanging vines downward extension. Java `BaseVineBlock` (dense/twisted/jungle vine, rubinea, magnula,
+      //    filalux, tenanea flowers) never random-ticks - it only extends when bone-mealed, and at most to
+      //    `maxGrowLength` (32) segments from the anchor. `bulb_vine` refuses bone meal and only exists as the
+      //    product of a `bulb_vine_seed`. So natural/ecology ticks must never lengthen a vine.
+      if (PLAIN_BONEMEAL_VINES.has(shortName)) {
+        if (!isBoneMeal) return false;
+        const vineId = `betterend:${shortName}`;
+        const isVineAt = (vy) => {
+          const b = dim.getBlock({ x, y: vy, z });
+          return Boolean(b) && String(b.typeId ?? "").startsWith(vineId);
+        };
         let bottomY = y;
-        while (bottomY > y - 16) {
-          const nextDown = dim.getBlock({ x, y: bottomY - 1, z });
-          if (nextDown && String(nextDown.typeId ?? "").startsWith(`betterend:${shortName}`)) {
-            bottomY -= 1;
-          } else {
-            break;
-          }
-        }
+        let topY = y;
+        while (y - bottomY < VINE_MAX_GROW_LENGTH && isVineAt(bottomY - 1)) bottomY -= 1;
+        while (topY - y < VINE_MAX_GROW_LENGTH && isVineAt(topY + 1)) topY += 1;
+        const length = topY - bottomY + 1;
+        if (length >= VINE_MAX_GROW_LENGTH) return false;
         const curBottom = dim.getBlock({ x, y: bottomY, z });
         const targetAir = dim.getBlock({ x, y: bottomY - 1, z });
         if (curBottom && targetAir && targetAir.typeId === "minecraft:air") {
-          this._applyBlockPlacement(curBottom, `betterend:${shortName}`, { shape: "middle" });
-          this._applyBlockPlacement(targetAir, `betterend:${shortName}`, { shape: "bottom" });
+          this._applyBlockPlacement(curBottom, vineId, { shape: length === 1 ? "top" : "middle" });
+          this._applyBlockPlacement(targetAir, vineId, { shape: "bottom" });
           return true;
         }
+        return false;
       }
     } catch {}
     return false;
@@ -2614,10 +2668,11 @@ export class BetterEndRuntime {
    * effect / legacy-carrier clean-up runs every 10 ticks in `_syncPlayerElytraAndArmor`.
    */
   _refreshElytraVariant(player, pid) {
-    // Players without an elytra only need the chest re-checked every 5 ticks (equipping takes longer
-    // than that to matter); a worn elytra is re-validated every tick so unequipping ends the glide.
+    // The chest slot only needs re-reading every few ticks: 5 while no elytra is cached (equipping takes
+    // longer than that to matter), 4 while one is worn (unequipping still ends the glide within 4 ticks).
+    // Doing the two component/equipment lookups on every tick of every player was pure per-tick overhead.
     const cached = this._playerElytraVariant.get(pid) ?? null;
-    if (!cached && this._fastTick % 5 !== 0) return null;
+    if (this._fastTick % (cached ? 4 : 5) !== 0) return cached;
     try {
       const equippable =
         player.getComponent?.("minecraft:equippable") ?? player.getComponent?.("equippable");
@@ -2735,7 +2790,6 @@ export class BetterEndRuntime {
     // Java wears the elytra by one durability point per second of flight.
     const glideTicks = (this._playerGlideTicks.get(pid) ?? 0) + 1;
     this._playerGlideTicks.set(pid, glideTicks);
-    if (glideTicks % 10 === 0) this._startGlideAnimation(player);
     if (glideTicks % 20 === 0) this._wearElytra(player);
   }
 
@@ -2807,6 +2861,9 @@ export class BetterEndRuntime {
       this._fastTick += 1;
       const elytraVariant = this._refreshElytraVariant(player, pid);
       this._stepElytraFlight(player, pid, elytraVariant, dim, loc, view, vel);
+
+      // A gliding player cannot climb: skip the four block lookups below for the whole flight.
+      if (this._playerGlidingState.get(pid) === true) continue;
 
       // 2. BetterEnd Ladder & Vine Climbing
       const bx = Math.floor(loc.x);

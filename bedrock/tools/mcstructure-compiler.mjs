@@ -544,6 +544,8 @@ export const PROCEDURAL_FEATURE_SPECS = Object.freeze([
   { id: 'glow_pillar', variants: 2, maxExtent: 12 },
   { id: 'neon_cactus', variants: 2, maxExtent: 16 },
   { id: 'filalux', variants: 2, maxExtent: 12 },
+  // One Java FilaluxFeature scatter invocation (r = 5..10 disc, ~13 lanterns on average, ~30 at most).
+  { id: 'filalux_cluster', variants: 10, maxExtent: 26 },
   { id: 'hydralux', variants: 2, maxExtent: 12 },
   { id: 'end_lotus', variants: 2, maxExtent: 12 },
   { id: 'end_lotus_leaf', variants: 2, maxExtent: 12 },
@@ -576,6 +578,9 @@ export const PROCEDURAL_FEATURE_SPECS = Object.freeze([
   { id: 'obsidian_pillar_basement', variants: 2, maxExtent: 22 },
   { id: 'fallen_pillar', variants: 2, maxExtent: 24 },
   { id: 'small_island', variants: 2, maxExtent: 28 },
+  // Java MOUNTAIN / PAINTED_MOUNTAIN, scaled to one 3x3-chunk template window (radius 11..22).
+  { id: 'mountain', variants: 4, maxExtent: 64 },
+  { id: 'painted_mountain', variants: 4, maxExtent: 64 },
   { id: 'small_island_flower', variants: 2, maxExtent: 28 },
   { id: 'stalactite_cluster', variants: 2, maxExtent: 12 },
   { id: 'stalactite_cluster_cavemoss', variants: 2, maxExtent: 12 },

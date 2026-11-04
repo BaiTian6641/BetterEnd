@@ -655,7 +655,7 @@ test('Ice Starfield: Java star frequencies over void, including enormous tiled g
   }
 });
 
-test('Lantern Woods: Filalux floats in open air (Java SkyScatterFeature), above the terrain', () => {
+test('Lantern Woods: Filalux follows Java ScatterFeature - at most one bounded cluster per chunk, never a carpet', () => {
   const [centreX, centreZ] = findCellForRegion('lantern_woods');
   const centreChunkX = Math.floor(centreX / 16);
   const centreChunkZ = Math.floor(centreZ / 16);
@@ -664,25 +664,102 @@ test('Lantern Woods: Filalux floats in open air (Java SkyScatterFeature), above 
   const skyRule = ruleList.find(entry => entry.file === 'feature_rules/biome_lantern_woods_sky_scatter_rule.json');
   assert.ok(skyRule, 'lantern woods sky scatter rule exists');
   let landChunks = 0;
+  const perChunkClusters = new Map();
   for (let cx = centreChunkX - radius; cx <= centreChunkX + radius; cx += 1) {
     for (let cz = centreChunkZ - radius; cz <= centreChunkZ + radius; cz += 1) {
       const owns = nativeSurfaceRegionIndex(cx * 16 + 8, cz * 16 + 8) === regionIndexById('lantern_woods');
       if (owns && syntheticHeight(cx * 16 + 8, cz * 16 + 8) >= 50) landChunks += 1;
+      const before = sim.placements.length;
       runRule(skyRule, cx, cz, sim);
+      perChunkClusters.set(`${cx},${cz}`, sim.placements.length - before);
     }
   }
-  const lanterns = sim.placements.filter(p => /proc_filalux_v/.test(p.structure));
   assert.ok(landChunks > 80, `lantern woods sample ${landChunks}`);
-  const perChunk = lanterns.length / landChunks;
-  assert.ok(perChunk >= 6 && perChunk <= 20, `filalux per chunk ${perChunk.toFixed(1)} (Java ~13)`);
-  for (const lantern of lanterns) {
-    const ground = syntheticHeight(lantern.anchor.x, lantern.anchor.z);
-    assert.ok(lantern.anchor.y >= ground + 6, `filalux at y=${lantern.anchor.y} sits above terrain ${ground}`);
-    assert.ok(lantern.anchor.y <= 192 + 10, `filalux height ${lantern.anchor.y}`);
+  const clusters = sim.placements.filter(p => /proc_filalux_cluster_v/.test(p.structure));
+  assert.equal(clusters.length, sim.placements.length, 'the sky rule only places filalux clusters');
+  // Java `count_on_every_layer` uniform 0..1: never more than one scatter invocation per chunk, ~50% of chunks.
+  assert.ok(Math.max(...perChunkClusters.values()) <= 1, 'at most one Filalux cluster per chunk');
+  const clusterShare = clusters.length / landChunks;
+  assert.ok(clusterShare > 0.3 && clusterShare < 0.7, `cluster per land chunk ${clusterShare.toFixed(2)} (Java 0.5)`);
+  for (const cluster of clusters) {
+    const ground = syntheticHeight(cluster.anchor.x, cluster.anchor.z);
+    assert.ok(cluster.anchor.y >= ground + 12, `cluster at y=${cluster.anchor.y} sits above terrain ${ground}`);
+    assert.ok(cluster.anchor.y <= 192, `cluster height ${cluster.anchor.y}`);
   }
-  const heights = lanterns.map(p => p.anchor.y - syntheticHeight(p.anchor.x, p.anchor.z));
-  assert.ok(Math.max(...heights) - Math.min(...heights) > 40, 'lanterns spread over many heights, not one layer');
+
+  // The cluster itself is the Java algorithm: ~13 lanterns on average and a hard upper bound near 30.
+  const counts = [];
+  for (let seed = 1; seed <= 300; seed += 1) {
+    const voxels = generateBetterEndFeatureVoxels('filalux_cluster', seed * 7919);
+    const lanterns = voxels.filter(v => v.blockId === 'betterend:filalux_lantern');
+    counts.push(lanterns.length);
+    for (const l of lanterns) {
+      assert.ok(Math.hypot(l.x, l.z) <= 11, `lantern ${l.x},${l.z} outside the radius-10 scatter disc`);
+      assert.ok(l.y >= 0 && l.y <= 10, `lantern y ${l.y} outside the centre.y + 5 +- 5 band`);
+    }
+    // vines of every lantern are Java's 1..3 blocks
+    const vines = voxels.filter(v => v.blockId === 'betterend:filalux');
+    assert.ok(vines.length <= lanterns.length * 3);
+  }
+  const mean = counts.reduce((a, b) => a + b, 0) / counts.length;
+  assert.ok(mean > 8 && mean < 18, `mean lanterns per cluster ${mean.toFixed(1)} (Java ~13)`);
+  assert.ok(Math.max(...counts) <= 45, `max lanterns per cluster ${Math.max(...counts)}`);
+  assert.ok((clusterShare * mean) < 9, `lanterns per chunk ${(clusterShare * mean).toFixed(1)} (Java ~6.5)`);
 });
+
+test('Java vines never random-tick: only bone meal extends them, capped at 32; seeds/saplings/neon cactus alone carry ecology_tick', () => {
+  const blocks = content.blocks.blockJsonMap;
+  const hasEcologyTick = shortName => {
+    const file = [...blocks.keys()].find(k => k === `blocks/${shortName}.block.json` || k.startsWith(`blocks/${shortName}__p`));
+    const def = blocks.get(file)?.['minecraft:block'];
+    return Boolean(def?.components?.['betterend:ecology_tick']);
+  };
+  for (const never of ['filalux', 'jungle_vine', 'dense_vine', 'twisted_vine', 'rubinea', 'magnula', 'bulb_vine', 'cyan_moss',
+    'end_moss', 'umbrella_tree_leaves', 'lucernia_leaves', 'geyser']) {
+    if ([...blocks.keys()].some(k => k.startsWith(`blocks/${never}.`) || k.startsWith(`blocks/${never}__p`))) {
+      assert.equal(hasEcologyTick(never), false, `${never} must not carry ecology_tick`);
+    }
+  }
+  for (const always of ['neon_cactus', 'blue_vine_seed', 'chorus_mushroom_seed', 'mossy_glowshroom_sapling']) {
+    if ([...blocks.keys()].some(k => k.startsWith(`blocks/${always}.`) || k.startsWith(`blocks/${always}__p`))) {
+      assert.equal(hasEcologyTick(always), true, `${always} keeps ecology_tick`);
+    }
+  }
+  let ticking = 0;
+  let scheduledTick = 0;
+  for (const [, json] of blocks) {
+    if (json['minecraft:block']?.components?.['betterend:ecology_tick']) ticking += 1;
+    if (json['minecraft:block']?.components?.['minecraft:tick']) scheduledTick += 1;
+  }
+  assert.ok(ticking < 120, `ecology_tick blocks: ${ticking}`);
+  assert.ok(scheduledTick <= 16, `scheduled minecraft:tick blocks: ${scheduledTick} (only silk_moth_nest/hive and hydrothermal_vent)`);
+});
+
+test('Java parity: Crystal/Painted mountains and every Java lake biome have placement rules', () => {
+  for (const id of ['crystal_mountains', 'painted_mountains']) {
+    assert.ok(featureRules.has(`feature_rules/biome_${id}_mountain_rule.json`), `${id} mountain rule`);
+  }
+  for (const id of ['umbrella_jungle', 'lantern_woods', 'amber_land', 'chorus_forest', 'glowing_grasslands', 'shadow_forest']) {
+    assert.ok(featureRules.has(`feature_rules/biome_${id}_pond_rule.json`), `${id} has a Java lake rule`);
+  }
+  for (let seed = 1; seed <= 6; seed += 1) {
+    const painted = generateBetterEndFeatureVoxels('painted_mountain', seed * 104729);
+    const crystal = generateBetterEndFeatureVoxels('mountain', seed * 104729);
+    const span = voxels => {
+      const xs = voxels.map(v => v.x);
+      const ys = voxels.map(v => v.y);
+      return { w: Math.max(...xs) - Math.min(...xs) + 1, h: Math.max(...ys) - Math.min(...ys) + 1 };
+    };
+    const p = span(painted);
+    const c = span(crystal);
+    assert.ok(p.w >= 16 && p.w <= 46 && p.h >= 8, `painted mountain ${p.w}x${p.h}`);
+    assert.ok(c.w >= 16 && c.w <= 46 && c.h >= 12, `crystal mountain ${c.w}x${c.h}`);
+    const paintedBlocks = new Set(painted.map(v => v.blockId));
+    for (const b of paintedBlocks) assert.ok(['minecraft:end_stone', 'betterend:flavolite', 'betterend:violecite'].includes(b), `painted strata block ${b}`);
+    assert.ok(new Set(crystal.map(v => v.blockId)).has('betterend:crystal_moss'));
+  }
+});
+
 
 test('32-bit float + LUT sin (Bedrock C++ Molang VM) agrees 100% with 64-bit JS on site coords and cell hashes', () => {
   const f = Math.fround;
@@ -871,6 +948,29 @@ test('Stage 3 cave formations, cave flora, and aerial island ecosystems (Flower 
   // Pre-registered cave/aerial flora features
   const shardFeat = featureIndex.get('betterend:flora_smaragdant_crystal_shard_feature');
   assert.deepEqual(shardFeat?.body?.places_block?.states, { 'betterend:facing': 'up', 'betterend:waterlogged': false });
+
+  // Aerial floating island archipelagos over void in Flower Islets & Waterfall Ponds
+  for (const [id, structPrefix] of [
+    ['flower_islets', 'proc_small_island_flower_v'],
+    ['waterfall_ponds', 'proc_small_island_v']
+  ]) {
+    const [ax, az] = findAerialColumn(regionIndexById(id));
+    const acx = Math.floor(ax / 16);
+    const acz = Math.floor(az / 16);
+    const sim = newSimulation(888);
+    sim.molang = createMolangContext({ heightmap: () => 0, noise: syntheticNoise });
+    const islandRules = rulesByPass('after_surface_pass').filter(entry =>
+      entry.file.includes(`biome_${id}_major_landmark_rule`) || entry.file.includes(`biome_${id}_island_cluster_rule`)
+    );
+    assert.equal(islandRules.length, 2, `${id} has major_landmark + island_cluster rules`);
+    for (let cx = acx - 10; cx <= acx + 10; cx += 1) {
+      for (let cz = acz - 10; cz <= acz + 10; cz += 1) {
+        for (const entry of islandRules) runRule(entry, cx, cz, sim);
+      }
+    }
+    const islands = sim.placements.filter(p => p.structure.includes(structPrefix));
+    assert.ok(islands.length >= 15, `${id} placed ${islands.length} floating islands over void`);
+  }
 });
 
 

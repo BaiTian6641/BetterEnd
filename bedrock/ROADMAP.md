@@ -49,14 +49,15 @@ Probe rules:
 
 | Area | State | Evidence |
 |---|---|---|
-| Biome map, painter fast path, site-layer exclusion, float32-exact Molang hashes, and footprint pre-checks | Done | placement tests (`14/14` in `placement.test.mjs`, `92/92` across `bedrock/tests/*.test.mjs`) |
+| Biome map, painter fast path, site-layer exclusion, float32-exact Molang hashes, and footprint pre-checks | Done | placement tests (`16/16` in `placement.test.mjs`, `94/94` across `bedrock/tests/*.test.mjs`) |
 | Foggy Mushroomland density and giant mushrooms | Done | BDS: clusters 66×26×47, 49×25×42 |
-| Filalux sky scatter (Lantern Woods) | Done | BDS: about 6–13 per chunk, y 52–198 |
+| Filalux sky scatter (Lantern Woods) & Java vine growth rules | Done | BDS (`task-4584`): `filalux_cluster` (0..1/chunk, 1–3 vine segments), static at `208/max6` across rounds (bone-meal-only growth capped at 32) |
 | Small and medium ice stars at Java frequencies | Done | BDS clusters 13×15×14 to 33×35×34 |
 | Giant ice stars (tiled, 40–70 blocks across) | Done | BDS (`1.26.40.8`): **36,790-block (`54×61×60`) Giant Ice Star** placed at void site `[-153, -220]` (`@-2443, 49, -3512`) with `10,257` ice blocks in the centre chunk and `0` Molang/feature errors |
+| Crystal Mountains (`CrystalMountainPiece`), Painted Mountains (`PaintedMountainPiece` strata), & all 12 Java Lake Biomes (`EndStructures.END_LAKE*`) | Done | BDS (`task-4616`): `crystal_mountains` (`crystal_moss: 42,947, aurora_crystal: 765`), `painted_mountains` (`flavolite: 5,356, violecite: 8,396`), `neon_oasis` (`neon_cactus` capped at 12, `water: 312`) |
 | Canopy vines (`dense_vine`, `twisted_vine`, `bulb_vine`, `jungle_vine`), wall/log plants (`cyan_moss`, `tail_moss`, `purple_polypore`, `aurant_polypore`, `bulb_moss`, `twisted_moss`, `jungle_fern`, `ruscus`, `small_jellyshroom`), aquatic & sulphur flora (`end_lotus_leaf`, `bubble_coral`, `menger_sponge_wet`, `hydralux`, `sulphur_crystal`, `charcoal_block`), and `dragon_bone_block_ore` | Done | `placement.test.mjs` Stage 2 assertions + BDS chunk scans |
-| Cave grotto flora (`rubinea`, `magnula`, `cave_pumpkin`, `cave_grass`, `cave_bush`, `crystal_moss_cover`, `smaragdant_crystal_shard`) and aerial island ecosystems (`small_island_flower` in `flower_islets`, `small_island` in `waterfall_ponds`) | Done | `placement.test.mjs` Stage 3 assertions (`252` structures, `787` features) |
-| Elytra physics (Java model, glide controller, firework boost, wall damage, `override_previous_animation` horizontal glide posture) | Done | `elytra-physics.test.mjs` (`9/9`) + `compiler.test.mjs` |
+| Cave grotto flora (`rubinea`, `magnula`, `cave_pumpkin`, `cave_grass`, `cave_bush`, `crystal_moss_cover`, `smaragdant_crystal_shard`) and aerial island archipelagos (`small_island_flower` in `flower_islets`, `small_island` in `waterfall_ponds`) | Done | BDS (`task-4616`): `flower_islets` (`sangnum: 1,513, pallidium_full: 1,099, amaranita_cap: 196`), `waterfall_ponds` (`lumecorn: 24, water: 1,012, cyan_moss: 76`), `270` structures, `831` features, `179` rules |
+| Elytra physics & scheduled block tick pruning (`onTick/s: 11,739 -> 0`) | Done | `elytra-physics.test.mjs` (`9/9`) + BDS (`task-4584`: `onTick/s=0, onRandomTick/s=3..4, growCalls/s=1`) |
 | Entity spawn guard, removal of legacy pre-generation queue, and `_stepWildlifeBehavior` throttling | Done | `bootstrap.js` (wildlife tick throttled 3×, silk_moth block scan reduced 125→7 blocks) |
 | Per-growth-stage `minecraft:selection_box` outlines (`age 0..3` seeds, berries, vines, crystals) & directional flora default states | Done | `compiler.test.mjs` & `placement.test.mjs` |
 

@@ -236,11 +236,11 @@ export function molangChunkHasLand(minY = 16) {
   return `(${probes.join(' || ')})`;
 }
 
-/** True when the whole 3x3-chunk area around this chunk is void (floating features may spawn). */
+/** True when the 9 in-chunk heightmap probes of this (or the offset) chunk are void (`< maxY`). */
 export function molangVoidAround(maxY = 16, chunkDx = 0, chunkDz = 0) {
-  // `chunkDx/chunkDz` re-centre the 3x3 window on the chunk `(-chunkDx, -chunkDz)` away, i.e. on the
-  // site chunk of a multi-chunk structure when evaluated from one of its tiles.
-  const offsets = [-8, 8, 24];
+  // Using in-chunk offsets `[2, 8, 13]` avoids cross-chunk heightmap reads (`-8` / `+24`), which
+  // can evaluate before neighbouring chunks finish surface generation in Bedrock.
+  const offsets = [2, 8, 13];
   const probes = [];
   for (const dx of offsets) {
     for (const dz of offsets) {
@@ -338,13 +338,13 @@ export const SITE_LAYERS = Object.freeze({
       pick: [157.3, 29.9, 63.1]
     })
   }),
-  /** Floating islands in void biomes (Flower Islets, Waterfall Ponds): one 21x21 island per block. */
+  /** Floating islands in void biomes (Flower Islets, Waterfall Ponds): Java `small_island` spacing 5, separation 2. */
   island: Object.freeze({
     id: 'island',
     cell: 5,
     innerMin: 1,
     innerSpan: 3,
-    gatePercent: 65,
+    gatePercent: 100,
     salts: Object.freeze({
       x: [181.3, 109.7, 29.9],
       z: [139.1, 71.3, 53.9],

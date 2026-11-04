@@ -715,14 +715,7 @@ function buildMaterialInstances(blockEntry, flatModel, stateProps = {}, geoDoc =
 
 const TICKING_BLOCK_CUSTOM_COMPONENTS = new Set([
   'betterend:silk_moth_nest',
-  'betterend:bouncy',
-  'betterend:hazard',
-  'betterend:sponge',
   'betterend:hydrothermal_vent',
-  'betterend:brimstone',
-  'betterend:emerald_ice',
-  'betterend:umbrella_cluster',
-  'betterend:ecology_tick',
 ]);
 
 function deriveBlockCustomComponents(blockEntry, partitions = [], partition = null) {
@@ -823,31 +816,18 @@ function deriveBlockCustomComponents(blockEntry, partitions = [], partition = nu
   ) {
     components.add('betterend:interactive_furniture');
   }
+  // Only blocks that Java randomly ticks need the script growth hook: saplings, seed/crop blocks
+  // (`RandomTicksTrait`: *_seed, shadow_berry) and the neon cactus (`.randomTicks()`). Java's vines, mosses,
+  // leaves, nylium, mushrooms, filalux, rubinea, magnula, geysers etc. never random-tick, so giving them
+  // `minecraft:tick` + `onRandomTick` only made every leaf/vine/moss block in a loaded chunk call into
+  // script for nothing (and let plain vines grow without bound).
   if (
     topClass.includes('Sapling') ||
     topClass.includes('Seed') ||
-    topClass.includes('Moss') ||
-    topClass.includes('Nylium') ||
-    topClass.includes('Path') ||
-    topClass.includes('Vine') ||
-    topClass.includes('Plant') ||
-    topClass.includes('Leaves') ||
     shortName.endsWith('_sapling') ||
     shortName.endsWith('_seed') ||
     shortName === 'shadow_berry' ||
-    shortName === 'neon_cactus' ||
-    shortName === 'lumecorn' ||
-    shortName === 'lanceleaf' ||
-    shortName === 'hydralux' ||
-    shortName === 'end_lily' ||
-    shortName.startsWith('end_lotus') ||
-    shortName.includes('amaranita') ||
-    shortName === 'filalux' ||
-    shortName === 'rubinea' ||
-    shortName === 'magnula' ||
-    shortName.includes('geyser') ||
-    shortName.includes('brimstone') ||
-    shortName.includes('budding_')
+    shortName === 'neon_cactus'
   ) {
     components.add('betterend:ecology_tick');
   }
@@ -4335,6 +4315,20 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
   const TREE_DENSITY_SCALE = { foggy_mushroomland: 1.6 };
   const DEFAULT_TREE_DENSITY_SCALE = 0.5;
 
+  /** Java structure-set spacing squared (chunks per lake): end_lake 6, end_lake_normal 5, end_lake_rare 6. */
+  const JAVA_LAKE_STRIDE = {
+    umbrella_jungle: 36,
+    lantern_woods: 25,
+    amber_land: 36,
+    chorus_forest: 36,
+    glowing_grasslands: 36,
+    shadow_forest: 36,
+  };
+  /** Java mountain structures: biome -> procedural template (see `generateCrystalMountainOutcrop`). */
+  const MOUNTAIN_PROC_BY_BIOME = {
+    crystal_mountains: 'mountain',
+    painted_mountains: 'painted_mountain',
+  };
   const LAKE_BIOME_IDS = new Set([
     'megalake',
     'megalake_grove',
@@ -4342,6 +4336,14 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
     'sulphur_springs',
     'neon_oasis',
     'waterfall_ponds',
+    // Java `EndStructures.END_LAKE` (umbrella_jungle), `END_LAKE_NORMAL` (lantern_woods) and `END_LAKE_RARE`
+    // (amber_land, chorus_forest, glowing_grasslands, shadow_forest) were not generated at all before.
+    'umbrella_jungle',
+    'lantern_woods',
+    'amber_land',
+    'chorus_forest',
+    'glowing_grasslands',
+    'shadow_forest',
   ]);
   /**
    * Deterministic pseudo-random height for rules over empty space. It must be a Molang expression that
@@ -4353,7 +4355,7 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
 
   /** Java `SkyScatterFeature` plants: floating in open air, scattered per chunk (see 5b below). */
   const SKY_SCATTER_BY_BIOME = {
-    lantern_woods: { proc: 'filalux', density: 16, max: 20 },
+    lantern_woods: { proc: 'filalux_cluster' },
   };
 
   const placementPlan = new Map();
@@ -4598,7 +4600,8 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
 
     // Chunk-level guards shared by the placement rules below.
     const hasPond = isPaintedRegion && LAKE_BIOME_IDS.has(region.id);
-    const lakeStride = region.id === 'megalake' || region.id === 'megalake_grove' ? 5 : 8;
+    const lakeStride =
+      region.id === 'megalake' || region.id === 'megalake_grove' ? 5 : (JAVA_LAKE_STRIDE[region.id] ?? 8);
     const lakeHash = chunkHashExpr(419.2, 371.9, 59.3 + idx);
     const pondHere = hasPond ? `(math.mod(${lakeHash}, ${lakeStride}) == 0)` : null;
     const minorStructStride = 16;
@@ -4773,26 +4776,22 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
       });
     }
 
-    // 5b. Floating "sky scatter" plants. Java `FilaluxFeature extends SkyScatterFeature`: every chunk of
-    //     Lantern Woods scatters ~r^2 * 2.25 / 10 (r = 5..10, about 13) free-floating Filalux lanterns
-    //     (lantern + 5 wings + 1-3 hanging vine blocks) around a random height; positions are valid in
-    //     open air only. Here the per-chunk band floats from just above the local terrain up to y = 192
-    //     (Java's 32..192 minus the part that would be underground), with a +-5 block vertical scatter.
+    // 5b. Floating "sky scatter" plants. Java `FilaluxFeature extends SkyScatterFeature` is registered with
+    //     `count_on_every_layer` uniform 0..1, i.e. at most ONE scatter invocation per chunk (50% of chunks).
+    //     An invocation is a single disc of radius 5..10 around a random height (32..192) holding about 13
+    //     lanterns (r^2 * 1.5..3 attempts, 1 in 10 accepted; ~30 at the very most). `filalux_cluster` is that
+    //     whole invocation as one template, so the density and its upper bound come from the Java algorithm
+    //     itself instead of a per-chunk lantern count. The cluster floats from just above the local terrain
+    //     (Java's 32..192 minus the part that would be underground) up to y ~ 182.
     const skyScatter = SKY_SCATTER_BY_BIOME[region.id];
     if (skyScatter && isPaintedRegion) {
       const skyHash = chunkHashExpr(331.7, 197.3, 47.9 + idx);
       // highest of five heightmap probes, so a lantern band never dips into a ridge the centre probe missed
       const probe = (dx, dz) => `query.heightmap(variable.originx + ${dx}, variable.originz + ${dz})`;
       const terrainTop = `math.max(math.max(math.max(${probe(8, 8)}, ${probe(2, 2)}), math.max(${probe(13, 2)}, ${probe(2, 13)})), ${probe(13, 13)})`;
-      const bandBase = `${terrainTop} + 14 + math.mod(${skyHash}, math.max(1, 178 - ${terrainTop}))`;
-      const jitter = 'math.mod(math.floor(math.abs(math.sin(variable.worldx * 12.9898 + variable.worldz * 78.233) * 43758.5453)), 11)';
-      const skyCount = molangTreeCount({
-        density: skyScatter.density,
-        noiseSalt: idx * 23 + 7,
-        hashExpr: chunkHashExpr(419.9, 233.1, 29.9 + idx),
-        max: skyScatter.max,
-      });
-      const skyGuards = joinGuards([chunkHasLand, cellCond, `${nearAnySite} == 0`]);
+      const clusterY = `${terrainTop} + 12 + math.mod(${skyHash}, math.max(1, 172 - ${terrainTop}))`;
+      const clusterHere = `math.mod(${chunkHashExpr(419.9, 233.1, 29.9 + idx)}, 2) == 0`;
+      const skyGuards = joinGuards([chunkHasLand, clusterHere, cellCond, `${nearAnySite} == 0`]);
       const skyFeature = ensureProceduralStructureFeature(skyScatter.proc, { groundCheck: false });
       featureRules.set(`feature_rules/biome_${region.id}_sky_scatter_rule.json`, {
         format_version: BEDROCK_FEATURE_FORMAT_VERSION,
@@ -4806,10 +4805,10 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
             'minecraft:biome_filter': [{ test: 'has_biome_tag', operator: '==', value: 'the_end' }],
           },
           distribution: {
-            iterations: `${skyGuards} ? ${skyCount} : 0`,
-            x: { distribution: 'uniform', extent: [1, 15] },
-            y: `${bandBase} + ${jitter}`,
-            z: { distribution: 'uniform', extent: [1, 15] },
+            iterations: `${skyGuards} ? 1 : 0`,
+            x: { distribution: 'uniform', extent: [4, 12] },
+            y: `${clusterY} + math.mod(math.abs(variable.worldx * 7 + variable.worldz * 13), 9)`,
+            z: { distribution: 'uniform', extent: [4, 12] },
           },
         },
       });
@@ -4953,6 +4952,40 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
       }
     }
 
+    // 7b. Native 3D floating island clusters in Flower Islets & Waterfall Ponds over void (complementing
+    //     the spaced `SITE_LAYERS.island` major islands so void archipelagos match Java's multi-island clusters).
+    if (region.id === 'flower_islets' || region.id === 'waterfall_ponds') {
+      const chunkIsVoid = `(${chunkHasLand}) == 0`;
+      const islandProcId = region.id === 'flower_islets' ? 'small_island_flower' : 'small_island';
+      const islandFeat = ensureProceduralStructureFeature(islandProcId, { groundCheck: false });
+      const clusterHash = chunkHashExpr(193.7, 277.3, 43.1 + idx);
+      const clusterGuards = joinGuards([
+        chunkIsVoid,
+        `math.mod(${clusterHash}, 5) == 0`,
+        cellCond,
+        `${nearAnySite} == 0`,
+      ]);
+      featureRules.set(`feature_rules/biome_${region.id}_island_cluster_rule.json`, {
+        format_version: BEDROCK_FEATURE_FORMAT_VERSION,
+        'minecraft:feature_rules': {
+          description: {
+            identifier: `betterend:biome_${region.id}_island_cluster_rule`,
+            places_feature: ensureBiomeGate(islandFeat, 'island_cluster'),
+          },
+          conditions: {
+            placement_pass: 'after_surface_pass',
+            'minecraft:biome_filter': [{ test: 'has_biome_tag', operator: '==', value: 'the_end' }],
+          },
+          distribution: {
+            iterations: `${clusterGuards} ? 1 : 0`,
+            x: { distribution: 'uniform', extent: [4, 12] },
+            y: aerialHeightExpr(46, 37),
+            z: { distribution: 'uniform', extent: [4, 12] },
+          },
+        },
+      });
+    }
+
     // 8. Native 3D big aurora crystal hexagonal prisms in Crystal Mountains & Aurora Caves (strictly void-gated!)
     if (['crystal_mountains', 'empty_aurora_cave', 'lush_aurora_cave'].includes(region.id)) {
       const auroraHash = chunkHashExpr(347.3, 197.7, 83.9 + idx);
@@ -4974,6 +5007,39 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
             x: { distribution: 'uniform', extent: [2, 14] },
             y: 'query.heightmap(variable.worldx, variable.worldz)',
             z: { distribution: 'uniform', extent: [2, 14] },
+          },
+        },
+      });
+    }
+
+    // 8b. Java `EndStructures.MOUNTAIN` (Crystal Mountains) / `PAINTED_MOUNTAIN` (Painted Mountains): one
+    //     mountain per 3x3-chunk region (`mountain` structure set: spacing 3, separation 2). Java mountains are
+    //     50-100 blocks in radius; a template only writes reliably inside a 3x3-chunk window, so the same
+    //     profile is built at ~22% of the radius (see `generateCrystalMountainOutcrop`). Sites sit on a
+    //     deterministic chunk grid (every third chunk, 70% kept) so neighbouring mountains never overlap, the
+    //     anchor column must be land inside the build window with a flat trunk ring, and the whole thing stays
+    //     out of any reserved major-structure window.
+    const mountainProc = MOUNTAIN_PROC_BY_BIOME[region.id];
+    if (mountainProc && isPaintedRegion) {
+      const mountainFeat = ensureProceduralStructureFeature(mountainProc, { groundCheck: true, guard: 'tree' });
+      const mountainHash = chunkHashExpr(311.3, 487.7, 61.9 + idx);
+      const mountainHere = `math.mod(math.abs(${CHUNK_X}), 3) == 1 && math.mod(math.abs(${CHUNK_Z}), 3) == 1 && math.mod(${mountainHash}, 10) < 7`;
+      featureRules.set(`feature_rules/biome_${region.id}_mountain_rule.json`, {
+        format_version: BEDROCK_FEATURE_FORMAT_VERSION,
+        'minecraft:feature_rules': {
+          description: {
+            identifier: `betterend:biome_${region.id}_mountain_rule`,
+            places_feature: ensureBiomeGate(mountainFeat, 'mountain'),
+          },
+          conditions: {
+            placement_pass: 'after_surface_pass',
+            'minecraft:biome_filter': [{ test: 'has_biome_tag', operator: '==', value: 'the_end' }],
+          },
+          distribution: {
+            iterations: `${joinGuards([landGate, mountainHere, cellCond, `${nearAnySite} == 0`])} ? 1 : 0`,
+            x: { distribution: 'uniform', extent: [6, 10] },
+            y: 'query.heightmap(variable.worldx, variable.worldz)',
+            z: { distribution: 'uniform', extent: [6, 10] },
           },
         },
       });
