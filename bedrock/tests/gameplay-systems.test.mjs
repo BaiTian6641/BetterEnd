@@ -65,6 +65,9 @@ import {
   openStorageContainerUi,
   openSignEditorUi,
   openGuidebookUi,
+  handleJukeboxRecordInteraction,
+  stopJukeboxRecordAt,
+  handleChiseledBookshelfInteraction,
 } from '../runtime/stations/station-ui.js';
 
 const workspace = fileURLToPath(new URL('../', import.meta.url));
@@ -1507,4 +1510,64 @@ test('UI-001: Station-Backed Custom UIs, Real Player Inventory Consumption, and 
     32,
     'Guidebook has 27 outer-End biome buttons (indices 0..26) + 5 Encyclopedia chapters (indices 27..31)',
   );
+
+  // 8. Physical Chiseled Bookshelf Interaction (direct slot 0..5 book insertion/extraction without stub UI)
+  const shelfPlayer = createMockPlayer([new MockItemStack('minecraft:enchanted_book', 2)]);
+  let shelfStates = {};
+  const shelfBlock = {
+    typeId: 'betterend:dragon_tree_chiseled_bookshelf',
+    location: { x: 140, y: 64, z: 140 },
+    dimension: shelfPlayer.dimension,
+    permutation: {
+      getState: k => shelfStates[k] ?? false,
+      withState: (k, v) => {
+        shelfStates[k] = v;
+        return shelfBlock.permutation;
+      },
+    },
+    setPermutation: () => {},
+  };
+  const insRes = handleChiseledBookshelfInteraction(
+    runtime,
+    shelfPlayer,
+    shelfBlock,
+    new MockItemStack('minecraft:enchanted_book', 1),
+  );
+  assert.equal(insRes.action, 'inserted');
+  assert.equal(insRes.slot, 0);
+  assert.equal(shelfStates['betterend:slot_0_occupied'], true);
+  assert.equal(shelfPlayer.countItem('minecraft:enchanted_book'), 1);
+
+  const extRes = handleChiseledBookshelfInteraction(runtime, shelfPlayer, shelfBlock, '');
+  assert.equal(extRes.action, 'extracted');
+  assert.equal(extRes.slot, 0);
+  assert.equal(shelfStates['betterend:slot_0_occupied'], false);
+  assert.equal(shelfPlayer.countItem('minecraft:enchanted_book'), 2);
+
+  // 9. BetterEnd Music Discs in Jukebox (playback, Now Playing actionbar, and stop on eject/break)
+  let playedSoundId = null;
+  const jukeboxDim = {
+    ...shelfPlayer.dimension,
+    playSound: id => {
+      playedSoundId = id;
+    },
+  };
+  const jukeboxBlock = {
+    typeId: 'minecraft:jukebox',
+    location: { x: 145, y: 64, z: 145 },
+    dimension: jukeboxDim,
+  };
+  const playRes = handleJukeboxRecordInteraction(
+    runtime,
+    shelfPlayer,
+    jukeboxBlock,
+    'betterend:music_disc_endseeker',
+  );
+  assert.equal(playRes.action, 'playing');
+  assert.equal(playedSoundId, 'betterend.record.endseeker');
+  assert.ok(shelfPlayer.getActionBar().includes('Firel - Endseeker'));
+
+  const ejectRes = handleJukeboxRecordInteraction(runtime, shelfPlayer, jukeboxBlock, '');
+  assert.equal(ejectRes.action, 'stopped');
+  assert.equal(stopJukeboxRecordAt(runtime, jukeboxDim, jukeboxBlock.location).stopped, false);
 });

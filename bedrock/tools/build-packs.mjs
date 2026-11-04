@@ -223,6 +223,7 @@ function stripSoundProvenance(soundDefinitionsJson) {
   for (const [eventKey, def] of Object.entries(soundDefinitionsJson.sound_definitions ?? {})) {
     cleanDefs[eventKey] = {
       category: def.category,
+      ...(def.max_distance !== undefined ? { max_distance: def.max_distance } : {}),
       sounds: (def.sounds ?? []).map(s => {
         if (typeof s !== 'object' || s === null) return s;
         const { __provenance, ...rest } = s;

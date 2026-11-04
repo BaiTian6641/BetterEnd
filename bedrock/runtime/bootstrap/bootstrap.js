@@ -25,9 +25,14 @@ import {
   StationsService
 } from "../stations/stations-service.js";
 import {
+  BETTEREND_MUSIC_DISCS,
   consumePlayerItem,
   depositPlayerItem,
+  destroyContainerCarrierAndBlock,
+  ensureContainerCarrierEntity,
+  handleChiseledBookshelfInteraction,
   handleEternalPedestalInteraction,
+  handleJukeboxRecordInteraction,
   handlePedestalInteraction,
   handleRespawnObeliskInteraction,
   handleSilkMothHousingInteraction,
@@ -38,8 +43,10 @@ import {
   openSignEditorUi,
   openSmelterStationUi,
   openStorageContainerUi,
+  stepActiveJukeboxes,
   stepLiveInfusionRituals,
-  stepLiveSmelters
+  stepLiveSmelters,
+  stopJukeboxRecordAt
 } from "../stations/station-ui.js";
 import { EquipmentService } from "../equipment/equipment-service.js";
 import {
@@ -661,6 +668,28 @@ export class BetterEndRuntime {
 
     if ("betterend:is_floor" in states) {
       trySetState("betterend:is_floor", face !== "down");
+    }
+
+    if (
+      shortName.endsWith("_chest") ||
+      shortName.endsWith("_barrel") ||
+      shortName === "end_stone_smelter" ||
+      shortName.endsWith("_furnace")
+    ) {
+      const placeLoc = event.block?.location;
+      const placeDim = event.dimension ?? event.block?.dimension;
+      if (placeLoc && placeDim && this.serverModule?.system?.run) {
+        this.serverModule.system.run(() => {
+          try {
+            const placedBlk = placeDim.getBlock?.(placeLoc);
+            if (placedBlk) {
+              ensureContainerCarrierEntity(this, placeDim, placedBlk, {
+                populateWorldgenLoot: false
+              });
+            }
+          } catch {}
+        });
+      }
     }
 
     if ("betterend:rotation" in states) {
@@ -1769,12 +1798,17 @@ export class BetterEndRuntime {
     if (!block || !player) return;
 
     const blockId = String(block.typeId ?? "");
+    const heldStack = event?.itemStack ?? event?.beforeItemStack;
+    if (blockId === "minecraft:jukebox") {
+      handleJukeboxRecordInteraction(this, player, block, heldStack);
+      return;
+    }
     if (!blockId.startsWith("betterend:")) return;
     const shortName = blockId.slice("betterend:".length).replace(/__p\d+$/, "");
     const dim = block.dimension ?? player.dimension;
     const dimId = dim?.id ?? "minecraft:the_end";
     const loc = block.location ?? { x: 0, y: 64, z: 0 };
-    const heldItemId = String(event?.itemStack?.typeId ?? "");
+    const heldItemId = String(heldStack?.typeId ?? "");
 
     // Bone Meal growth on BetterEnd saplings, seeds, mosses, and vines
     if (heldItemId === "minecraft:bone_meal" && dim) {
@@ -1791,28 +1825,36 @@ export class BetterEndRuntime {
       }
     }
 
-    if (shortName === "end_stone_smelter") {
-      this._openSmelterUi(player, block, { singleInputOnly: false });
-    } else if (shortName.endsWith("_furnace")) {
-      this._openSmelterUi(player, block, { singleInputOnly: true });
+    if (shortName === "end_stone_smelter" || shortName.endsWith("_furnace")) {
+      const carrier = ensureContainerCarrierEntity(this, dim, block, {
+        populateWorldgenLoot: false
+      });
+      if (!carrier || player.isSneaking) {
+        this._openSmelterUi(player, block, {
+          singleInputOnly: shortName.endsWith("_furnace")
+        });
+      }
     } else if (shortName.endsWith("_anvil")) {
       this._openAnvilUi(player, block);
     } else if (shortName === "infusion_pedestal") {
-      handlePedestalInteraction(this, player, block, event?.itemStack);
+      handlePedestalInteraction(this, player, block, heldStack);
     } else if (shortName === "eternal_pedestal") {
-      handleEternalPedestalInteraction(this, player, block, event?.itemStack);
+      handleEternalPedestalInteraction(this, player, block, heldStack);
     } else if (shortName.endsWith("_pedestal")) {
-      handlePedestalInteraction(this, player, block, event?.itemStack);
+      handlePedestalInteraction(this, player, block, heldStack);
     } else if (shortName === "respawn_obelisk") {
-      handleRespawnObeliskInteraction(this, player, block, event?.itemStack);
+      handleRespawnObeliskInteraction(this, player, block, heldStack);
     } else if (shortName === "silk_moth_nest" || shortName === "silk_moth_hive") {
-      handleSilkMothHousingInteraction(this, player, block, event?.itemStack);
-    } else if (
-      shortName.endsWith("_barrel") ||
-      shortName.endsWith("_chest") ||
-      shortName.endsWith("_bookshelf")
-    ) {
-      openStorageContainerUi(this, player, block);
+      handleSilkMothHousingInteraction(this, player, block, heldStack);
+    } else if (shortName.endsWith("_chiseled_bookshelf")) {
+      handleChiseledBookshelfInteraction(this, player, block, heldStack);
+    } else if (shortName.endsWith("_barrel") || shortName.endsWith("_chest")) {
+      const carrier = ensureContainerCarrierEntity(this, dim, block, {
+        populateWorldgenLoot: true
+      });
+      if (!carrier) {
+        openStorageContainerUi(this, player, block);
+      }
     } else if (
       shortName.endsWith("_sign") ||
       shortName.endsWith("_wall_sign") ||
@@ -1959,6 +2001,10 @@ export class BetterEndRuntime {
       event?.brokenBlockPermutation?.type?.id ?? block?.typeId ?? ""
     );
 
+    if (loc && dim && brokenId === "minecraft:jukebox") {
+      stopJukeboxRecordAt(this, dim, loc);
+    }
+
     if (loc && dim && brokenId.startsWith("betterend:")) {
       this._cascadeBreakMultiblockPlant(dim, loc, brokenId);
       const dimId = dim.id ?? "minecraft:the_end";
@@ -1989,6 +2035,37 @@ export class BetterEndRuntime {
             depositPlayerItem(player, it, this.serverModule);
           }
         }
+      }
+      if (Array.isArray(stationRec?.state?.slots)) {
+        for (const bk of stationRec.state.slots) {
+          if (bk && bk.itemId) {
+            depositPlayerItem(player, bk, this.serverModule);
+          }
+        }
+      }
+      if (
+        brokenId.endsWith("_chest") ||
+        brokenId.endsWith("_barrel") ||
+        brokenId === "betterend:end_stone_smelter" ||
+        brokenId.startsWith("betterend:end_stone_smelter__") ||
+        brokenId.endsWith("_furnace") ||
+        brokenId.includes("_furnace__")
+      ) {
+        try {
+          const carriers =
+            dim.getEntities?.({
+              location: { x: loc.x + 0.5, y: loc.y + 0.5, z: loc.z + 0.5 },
+              maxDistance: 0.75
+            }) ?? [];
+          for (const c of carriers) {
+            if (
+              c?.typeId === "betterend:chest_carrier" ||
+              c?.typeId === "betterend:end_stone_smelter_carrier"
+            ) {
+              destroyContainerCarrierAndBlock(this, c, player, false);
+            }
+          }
+        } catch {}
       }
       if (brokenId.endsWith("_flower_pot")) {
         const potBreak = this.ecologyService.interactWithFlowerPot({
@@ -2879,6 +2956,7 @@ export class BetterEndRuntime {
     this._tickCounter += 1;
     stepLiveSmelters(this, 10);
     stepLiveInfusionRituals(this, 10);
+    stepActiveJukeboxes(this);
     // NOTE: the staged cell-preparation pipeline (generationService.enqueuePlayerApproach /
     // stepPreparationQueue) is deliberately NOT driven from here any more. Native feature rules do
     // all terrain decoration; the pipeline only produced journal records nothing consumed, yet cost
@@ -2913,6 +2991,18 @@ export class BetterEndRuntime {
 
       // Sync Armored/Crystalite Elytra & Crystalite armor abilities
       this._syncPlayerElytraAndArmor(player);
+
+      // Proactively ensure native container carrier entity on any BetterEnd chest/barrel/smelter/furnace
+      // the player is looking at (within 7 blocks) so the first right-click immediately opens the native
+      // 27-slot Chest/Barrel GUI or 5-slot Smelter/Furnace GUI.
+      try {
+        const viewHit = player.getBlockFromViewDirection?.({ maxDistance: 7 });
+        if (viewHit?.block && dim) {
+          ensureContainerCarrierEntity(this, dim, viewHit.block, {
+            populateWorldgenLoot: true
+          });
+        }
+      } catch {}
 
       // Check bouncy blocks & hydrothermal vents under player
       try {
@@ -3089,7 +3179,21 @@ export class BetterEndRuntime {
       });
     }
 
-    // Java ShadowWalkerEntity applies 60 ticks of Blindness on melee hit unless blocked by Crystalite Helmet!
+    // Mining/breaking a Chest, Barrel, End Stone Smelter, or Furnace by punching its invisible container carrier
+    if (world?.afterEvents?.entityHitEntity?.subscribe) {
+      world.afterEvents.entityHitEntity.subscribe((event) => {
+        const attacker = event?.damagingEntity;
+        const hit = event?.hitEntity;
+        if (!attacker || !hit || String(attacker.typeId ?? "") !== "minecraft:player") return;
+        const hitId = String(hit.typeId ?? "");
+        if (
+          hitId === "betterend:chest_carrier" ||
+          hitId === "betterend:end_stone_smelter_carrier"
+        ) {
+          destroyContainerCarrierAndBlock(this, hit, attacker, true);
+        }
+      });
+    }
     if (world?.afterEvents?.entityHurt?.subscribe) {
       world.afterEvents.entityHurt.subscribe((event) => {
         const attacker = event?.damageSource?.damagingEntity;
@@ -3110,13 +3214,54 @@ export class BetterEndRuntime {
     }
 
     // Catching End Fish or Cubozoa with a Water Bucket (EndFishEntity.java / CubozoaEntity.java)
+    // and handling native Container Carrier (`betterend:chest_carrier` & `betterend:end_stone_smelter_carrier`) interactions
     if (world?.afterEvents?.playerInteractWithEntity?.subscribe) {
       world.afterEvents.playerInteractWithEntity.subscribe((event) => {
         const player = event?.player;
         const target = event?.target;
         const item = event?.itemStack;
-        if (!player || !target || !item) return;
+        if (!player || !target) return;
         const targetId = String(target.typeId ?? "");
+        if (targetId === "betterend:chest_carrier") {
+          try {
+            const bId = String(target.getDynamicProperty?.("betterend:block_id") ?? "");
+            player.playSound?.(bId.endsWith("_barrel") ? "block.barrel.open" : "random.chestopen");
+          } catch {}
+          return;
+        }
+        if (targetId === "betterend:end_stone_smelter_carrier") {
+          try {
+            const dim = target.dimension ?? player.dimension;
+            const dimId = dim?.id ?? "minecraft:the_end";
+            const ax = target.getDynamicProperty?.("betterend:anchor_x");
+            const ay = target.getDynamicProperty?.("betterend:anchor_y");
+            const az = target.getDynamicProperty?.("betterend:anchor_z");
+            const loc = {
+              x: typeof ax === "number" ? ax : Math.floor(target.location.x),
+              y: typeof ay === "number" ? ay : Math.floor(target.location.y),
+              z: typeof az === "number" ? az : Math.floor(target.location.z)
+            };
+            const xp = Number(
+              this.stationsService.claimSmelterXp({ dimension: dimId, anchor: loc }) || 0
+            );
+            if (xp > 0) {
+              player.addExperience?.(Math.ceil(xp));
+              player.playSound?.("random.orb");
+            } else {
+              player.playSound?.("block.furnace.fire_crackle");
+            }
+            if (player.isSneaking && dim) {
+              const blk = dim.getBlock?.(loc);
+              if (blk) {
+                this._openSmelterUi(player, blk, {
+                  singleInputOnly: String(blk.typeId ?? "").endsWith("_furnace")
+                });
+              }
+            }
+          } catch {}
+          return;
+        }
+        if (!item) return;
         if (
           item.typeId === "minecraft:water_bucket" &&
           (targetId === "betterend:end_fish" || targetId === "betterend:cubozoa")

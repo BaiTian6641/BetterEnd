@@ -1089,10 +1089,165 @@ function executeSmelterRecipeFromUi(
 }
 
 /**
- * Steps all active smelters in `StationsService` during `_stepLiveWorldTick` and updates
- * their in-world `betterend:lit` block state.
+ * Steps all active smelters in `StationsService` AND syncs any live 5-slot
+ * `betterend:end_stone_smelter_carrier` (`minecart_hopper`) entity containers during
+ * `_stepLiveWorldTick`, updating their in-world `betterend:lit` block state and
+ * placing smelted/alloyed outputs into Slot 4 of the container GUI.
  */
 export function stepLiveSmelters(runtime, ticks = 10) {
+  const ItemStackCtor = runtime?.serverModule?.ItemStack;
+  const world = runtime?.serverModule?.world;
+
+  // 1. Sync live 5-slot `betterend:end_stone_smelter_carrier` entities around active players
+  try {
+    const players = world?.getAllPlayers?.() ?? [];
+    const seenCarriers = new Set();
+    for (const player of players) {
+      const dim = player?.dimension;
+      if (!dim || typeof dim.getEntities !== "function" || !player.location) continue;
+      const dimId = normalizeDimensionId(dim.id ?? "minecraft:the_end");
+
+      // Check nearby chest carriers so orphaned carriers (if block broken by explosion) spill items
+      const chestCarriers =
+        dim.getEntities({
+          type: "betterend:chest_carrier",
+          location: player.location,
+          maxDistance: 16
+        }) ?? [];
+      for (const cc of chestCarriers) {
+        const cid = cc?.id ?? "";
+        if (!cc || seenCarriers.has(cid)) continue;
+        seenCarriers.add(cid);
+        const ax = cc.getDynamicProperty?.("betterend:anchor_x");
+        const ay = cc.getDynamicProperty?.("betterend:anchor_y");
+        const az = cc.getDynamicProperty?.("betterend:anchor_z");
+        const loc = {
+          x: typeof ax === "number" ? ax : Math.floor(cc.location.x),
+          y: typeof ay === "number" ? ay : Math.floor(cc.location.y),
+          z: typeof az === "number" ? az : Math.floor(cc.location.z)
+        };
+        const blk = dim.getBlock?.(loc);
+        const tid = String(blk?.typeId ?? "");
+        if (blk && !tid.endsWith("_chest") && !tid.endsWith("_barrel")) {
+          destroyContainerCarrierAndBlock(runtime, cc, null, false);
+        }
+      }
+
+      const smelterCarriers =
+        dim.getEntities({
+          type: "betterend:end_stone_smelter_carrier",
+          location: player.location,
+          maxDistance: 16
+        }) ?? [];
+      for (const sc of smelterCarriers) {
+        const cid = sc?.id ?? "";
+        if (!sc || seenCarriers.has(cid)) continue;
+        seenCarriers.add(cid);
+        const ax = sc.getDynamicProperty?.("betterend:anchor_x");
+        const ay = sc.getDynamicProperty?.("betterend:anchor_y");
+        const az = sc.getDynamicProperty?.("betterend:anchor_z");
+        const loc = {
+          x: typeof ax === "number" ? ax : Math.floor(sc.location.x),
+          y: typeof ay === "number" ? ay : Math.floor(sc.location.y),
+          z: typeof az === "number" ? az : Math.floor(sc.location.z)
+        };
+        const blk = dim.getBlock?.(loc);
+        const tid = String(blk?.typeId ?? "");
+        if (
+          blk &&
+          tid !== "betterend:end_stone_smelter" &&
+          !tid.startsWith("betterend:end_stone_smelter__") &&
+          !tid.endsWith("_furnace") &&
+          !tid.includes("_furnace__")
+        ) {
+          destroyContainerCarrierAndBlock(runtime, sc, null, false);
+          continue;
+        }
+
+        const inv =
+          sc.getComponent?.("minecraft:inventory") ?? sc.getComponent?.("inventory");
+        const container = inv?.container;
+        if (!container || typeof container.getItem !== "function") continue;
+
+        const raw0 = container.getItem(0);
+        const raw1 = container.getItem(1);
+        const raw2 = container.getItem(2);
+        const raw3 = container.getItem(3);
+        const raw4 = container.getItem(4);
+
+        // Determine fuel slot (Slot 2 by default; fallback to Slot 1 or Slot 3 if player put fuel there)
+        let fuelSlotIdx = 2;
+        let inputBSlotIdx = 1;
+        if (
+          (!raw2 || !raw2.typeId) &&
+          raw1?.typeId &&
+          SMELTER_FUEL_REGISTRY[raw1.typeId] &&
+          (!raw0?.typeId || !runtime.stationsService.findAlloyingRecipe(raw0, raw1))
+        ) {
+          fuelSlotIdx = 1;
+          inputBSlotIdx = 3;
+        } else if ((!raw2 || !raw2.typeId) && raw3?.typeId && SMELTER_FUEL_REGISTRY[raw3.typeId]) {
+          fuelSlotIdx = 3;
+        }
+
+        const rawInB = container.getItem(inputBSlotIdx);
+        const rawFuel = container.getItem(fuelSlotIdx);
+
+        const toSlotObj = (stk) =>
+          stk && stk.typeId && (stk.amount ?? 1) > 0
+            ? { itemId: stk.typeId, count: stk.amount ?? 1 }
+            : null;
+
+        if (!runtime.stationsService.getSmelterState({ dimension: dimId, anchor: loc })) {
+          runtime.stationsService.createSmelter({ dimension: dimId, anchor: loc });
+        }
+
+        runtime.stationsService.setSmelterSlots({
+          dimension: dimId,
+          anchor: loc,
+          input0: toSlotObj(raw0),
+          input1: toSlotObj(rawInB),
+          fuel: toSlotObj(rawFuel),
+          output: toSlotObj(raw4)
+        });
+
+        const updated = runtime.stationsService.tickSmelter({
+          dimension: dimId,
+          anchor: loc,
+          ticks
+        });
+
+        const syncSlotBack = (slotIdx, nextSpec) => {
+          if (!ItemStackCtor) return;
+          const cur = container.getItem(slotIdx);
+          if (!nextSpec || nextSpec.count <= 0) {
+            if (cur) container.setItem(slotIdx, undefined);
+            return;
+          }
+          if (!cur || cur.typeId !== nextSpec.itemId || (cur.amount ?? 1) !== nextSpec.count) {
+            container.setItem(slotIdx, new ItemStackCtor(nextSpec.itemId, nextSpec.count));
+          }
+        };
+
+        syncSlotBack(0, updated.input0);
+        syncSlotBack(inputBSlotIdx, updated.input1);
+        syncSlotBack(fuelSlotIdx, updated.fuel);
+        syncSlotBack(4, updated.output);
+
+        const isLit = Boolean(updated.availableHeat > 0 || updated.progress > 0);
+        setBlockStateSafe(blk, dim, loc, tid, { "betterend:lit": isLit });
+        if (isLit && Math.random() < 0.4) {
+          dim.spawnParticle?.("minecraft:basic_flame_particle", {
+            x: loc.x + 0.5,
+            y: loc.y + 0.85,
+            z: loc.z + 0.5
+          });
+        }
+      }
+    }
+  } catch {}
+
+  // 2. Also tick any smelters registered directly in `StationsService`
   const smelters = runtime?.stationsService?._smelters;
   if (!smelters || smelters.size === 0) return;
 
@@ -1109,7 +1264,7 @@ export function stepLiveSmelters(runtime, ticks = 10) {
     const nextLit = Boolean(updated && (updated.availableHeat > 0 || updated.progress > 0));
     if (prevLit !== nextLit || nextLit) {
       try {
-        const dim = runtime.serverModule?.world?.getDimension?.(smelter.dimension);
+        const dim = world?.getDimension?.(smelter.dimension);
         if (dim) {
           if (prevLit !== nextLit) {
             setBlockStateSafe(null, dim, smelter.anchor, null, { "betterend:lit": nextLit });
@@ -3081,3 +3236,443 @@ function openGuidebookAdvancementsChapter(runtime, player) {
     .then(() => openGuidebookUi(runtime, player))
     .catch(() => {});
 }
+
+// ============================================================================
+// 7. BETTEREND MUSIC RECORDS (`EndDiscItems.java` & `JukeboxRegistryProvider.java`)
+// ============================================================================
+
+export const BETTEREND_MUSIC_DISCS = Object.freeze({
+  "betterend:music_disc_strange_and_alien": Object.freeze({
+    itemId: "betterend:music_disc_strange_and_alien",
+    track: "strange_and_alien",
+    soundEvent: "betterend.record.strange_and_alien",
+    comparatorSignal: 1,
+    duration: 266,
+    description: "Firel - Strange And Alien"
+  }),
+  "betterend:music_disc_grasping_at_stars": Object.freeze({
+    itemId: "betterend:music_disc_grasping_at_stars",
+    track: "grasping_at_stars",
+    soundEvent: "betterend.record.grasping_at_stars",
+    comparatorSignal: 2,
+    duration: 528,
+    description: "Firel - Grasping At Stars"
+  }),
+  "betterend:music_disc_endseeker": Object.freeze({
+    itemId: "betterend:music_disc_endseeker",
+    track: "endseeker",
+    soundEvent: "betterend.record.endseeker",
+    comparatorSignal: 3,
+    duration: 461,
+    description: "Firel - Endseeker"
+  }),
+  "betterend:music_disc_eo_dracona": Object.freeze({
+    itemId: "betterend:music_disc_eo_dracona",
+    track: "eo_dracona",
+    soundEvent: "betterend.record.eo_dracona",
+    comparatorSignal: 4,
+    duration: 353,
+    description: "Firel - Eo Dracona"
+  }),
+  "betterend:music_disc_ender_hollow": Object.freeze({
+    itemId: "betterend:music_disc_ender_hollow",
+    track: "ender_hollow",
+    soundEvent: "betterend.record.ender_hollow",
+    comparatorSignal: 5,
+    duration: 219,
+    description: "noqwww - Ender Hollow"
+  }),
+  "betterend:music_disc_moonlit_undercurrents": Object.freeze({
+    itemId: "betterend:music_disc_moonlit_undercurrents",
+    track: "moonlit_undercurrents",
+    soundEvent: "betterend.record.moonlit_undercurrents",
+    comparatorSignal: 6,
+    duration: 231,
+    description: "noqwww - Moonlit Undercurrents"
+  })
+});
+
+export function stopJukeboxRecordAt(runtime, dim, loc) {
+  if (!runtime?._activeJukeboxes || !loc) return { stopped: false };
+  const dimId = normalizeDimensionId(dim?.id ?? "minecraft:the_end");
+  const normLoc = normalizeBlockAnchor(loc);
+  const key = formatAnchorKey(dimId, normLoc);
+  const active = runtime._activeJukeboxes.get(key);
+  if (!active) return { stopped: false };
+
+  runtime._activeJukeboxes.delete(key);
+  try {
+    dim?.runCommand?.(
+      `stopsound @a[x=${normLoc.x},y=${normLoc.y},z=${normLoc.z},r=96] ${active.disc.soundEvent}`
+    );
+  } catch {}
+  return { stopped: true, disc: active.disc };
+}
+
+export function handleJukeboxRecordInteraction(runtime, player, block, heldItemStack) {
+  if (!runtime || !block) return { handled: false };
+  if (!(runtime._activeJukeboxes instanceof Map)) {
+    runtime._activeJukeboxes = new Map();
+  }
+  const dim = block.dimension ?? player?.dimension;
+  const dimId = normalizeDimensionId(dim?.id ?? "minecraft:the_end");
+  const loc = normalizeBlockAnchor(block.location ?? { x: 0, y: 64, z: 0 });
+  const key = formatAnchorKey(dimId, loc);
+
+  // If a BetterEnd disc is currently playing in this jukebox, right-clicking ejects/stops it
+  if (runtime._activeJukeboxes.has(key)) {
+    const res = stopJukeboxRecordAt(runtime, dim, loc);
+    return { handled: true, action: "stopped", disc: res.disc };
+  }
+
+  const heldId = String(
+    typeof heldItemStack === "string"
+      ? heldItemStack
+      : (heldItemStack?.typeId ?? heldItemStack?.itemId ?? "")
+  );
+  const disc = BETTEREND_MUSIC_DISCS[heldId];
+  if (!disc) return { handled: false };
+
+  const centerPos = { x: loc.x + 0.5, y: loc.y + 0.5, z: loc.z + 0.5 };
+  const curTick = Number(runtime._tickCounter ?? 0);
+  runtime._activeJukeboxes.set(key, {
+    dimension: dimId,
+    location: loc,
+    disc,
+    startedTick: curTick,
+    expiresAtTick: curTick + Math.ceil(disc.duration * 20)
+  });
+
+  try {
+    if (typeof dim?.playSound === "function") {
+      dim.playSound(disc.soundEvent, centerPos, { volume: 4.0, pitch: 1.0 });
+    } else {
+      player?.playSound?.(disc.soundEvent, { location: centerPos, volume: 4.0, pitch: 1.0 });
+    }
+    dim?.spawnParticle?.("minecraft:note_particle", {
+      x: loc.x + 0.5,
+      y: loc.y + 1.2,
+      z: loc.z + 0.5
+    });
+    player?.onScreenDisplay?.setActionBar?.(`§dNow Playing: §f${disc.description}`);
+  } catch {}
+
+  return { handled: true, action: "playing", disc };
+}
+
+export function stepActiveJukeboxes(runtime) {
+  if (!(runtime?._activeJukeboxes instanceof Map) || runtime._activeJukeboxes.size === 0) return;
+  const curTick = Number(runtime._tickCounter ?? 0);
+  for (const [key, entry] of runtime._activeJukeboxes) {
+    if (curTick >= entry.expiresAtTick) {
+      runtime._activeJukeboxes.delete(key);
+      continue;
+    }
+    try {
+      const dim = runtime.serverModule?.world?.getDimension?.(entry.dimension);
+      if (!dim) continue;
+      const blk = dim.getBlock?.(entry.location);
+      if (blk && String(blk.typeId ?? "") !== "minecraft:jukebox") {
+        stopJukeboxRecordAt(runtime, dim, entry.location);
+        continue;
+      }
+      dim.spawnParticle?.("minecraft:note_particle", {
+        x: entry.location.x + 0.5,
+        y: entry.location.y + 1.2,
+        z: entry.location.z + 0.5
+      });
+    } catch {}
+  }
+}
+
+// ============================================================================
+// 8. PHYSICAL CHISELED BOOKSHELF INTERACTION & NATIVE CONTAINER CARRIERS
+// ============================================================================
+
+export function isBookItem(itemId) {
+  const id = String(itemId ?? "");
+  return (
+    id === "minecraft:book" ||
+    id === "minecraft:enchanted_book" ||
+    id === "minecraft:writable_book" ||
+    id === "minecraft:written_book" ||
+    id === "betterend:guidebook" ||
+    id === "betterend:enchanted_book" ||
+    id.endsWith("_book")
+  );
+}
+
+/**
+ * Direct physical book insertion & extraction for all 10 `betterend:*_chiseled_bookshelf` blocks
+ * (updates `betterend:slot_0_occupied` .. `betterend:slot_5_occupied` with zero popup forms).
+ */
+export function handleChiseledBookshelfInteraction(runtime, player, block, heldItemStack) {
+  if (!runtime || !player || !block) return { handled: false };
+  const blockId = String(block.typeId ?? "betterend:dragon_tree_chiseled_bookshelf");
+  const shortName = blockId.replace(/^betterend:/, "").replace(/__p\d+$/, "");
+  const dim = block.dimension ?? player.dimension;
+  const dimId = normalizeDimensionId(dim?.id ?? "minecraft:the_end");
+  const loc = normalizeBlockAnchor(block.location ?? { x: 0, y: 64, z: 0 });
+  const heldId = String(
+    typeof heldItemStack === "string"
+      ? heldItemStack
+      : (heldItemStack?.typeId ?? heldItemStack?.itemId ?? "")
+  );
+
+  let record = runtime.store.getStation({ dimension: dimId, anchor: loc });
+  if (!record || record.stationType !== "betterend:chiseled_bookshelf") {
+    record = runtime.store.registerStation({
+      dimension: dimId,
+      anchor: loc,
+      stationType: "betterend:chiseled_bookshelf",
+      state: { slots: [null, null, null, null, null, null] }
+    });
+  }
+  const rawSlots = Array.isArray(record.state?.slots)
+    ? [...record.state.slots]
+    : [null, null, null, null, null, null];
+  while (rawSlots.length < 6) rawSlots.push(null);
+
+  const syncShelfStates = () => {
+    const patch = {};
+    for (let i = 0; i < 6; i++) {
+      patch[`betterend:slot_${i}_occupied`] = Boolean(rawSlots[i]);
+    }
+    setBlockStateSafe(block, dim, loc, blockId, patch);
+  };
+
+  if (isBookItem(heldId)) {
+    const emptyIdx = rawSlots.findIndex((s) => !s);
+    if (emptyIdx >= 0) {
+      const cRes = consumePlayerItem(player, heldId, 1);
+      if (cRes.ok) {
+        const storedBook = {
+          itemId: heldId,
+          count: 1,
+          nameTag: typeof heldItemStack === "object" ? (heldItemStack?.nameTag ?? null) : null,
+          lore:
+            typeof heldItemStack === "object" && typeof heldItemStack?.getLore === "function"
+              ? heldItemStack.getLore()
+              : []
+        };
+        rawSlots[emptyIdx] = storedBook;
+        runtime.store.updateStationState({
+          dimension: dimId,
+          anchor: loc,
+          generationId: record.generationId,
+          statePatch: { slots: rawSlots }
+        });
+        syncShelfStates();
+        try {
+          player.playSound?.(
+            heldId.includes("enchanted")
+              ? "block.chiseled_bookshelf.insert.enchanted"
+              : "block.chiseled_bookshelf.insert"
+          );
+          player.onScreenDisplay?.setActionBar?.(
+            `§a[${formatTitle(shortName)}] Inserted ${formatTitle(heldId)} (Slot ${emptyIdx + 1}/6)`
+          );
+        } catch {}
+        return { handled: true, action: "inserted", slot: emptyIdx, itemId: heldId };
+      }
+    }
+  }
+
+  let lastOccupied = -1;
+  for (let i = 5; i >= 0; i--) {
+    if (rawSlots[i]) {
+      lastOccupied = i;
+      break;
+    }
+  }
+  if (lastOccupied >= 0) {
+    const removed = rawSlots[lastOccupied];
+    rawSlots[lastOccupied] = null;
+    runtime.store.updateStationState({
+      dimension: dimId,
+      anchor: loc,
+      generationId: record.generationId,
+      statePatch: { slots: rawSlots }
+    });
+    syncShelfStates();
+    depositPlayerItem(player, removed, runtime.serverModule);
+    try {
+      player.playSound?.(
+        String(removed.itemId).includes("enchanted")
+          ? "block.chiseled_bookshelf.pickup.enchanted"
+          : "block.chiseled_bookshelf.pickup"
+      );
+      player.onScreenDisplay?.setActionBar?.(
+        `§e[${formatTitle(shortName)}] Took ${formatTitle(removed.itemId)} (Slot ${lastOccupied + 1}/6)`
+      );
+    } catch {}
+    return { handled: true, action: "extracted", slot: lastOccupied, itemId: removed.itemId };
+  }
+
+  return { handled: false, reason: "empty" };
+}
+
+const OUTER_END_CHEST_COMMON_LOOT = Object.freeze([
+  { itemId: "betterend:ender_shard", min: 2, max: 6, weight: 20 },
+  { itemId: "betterend:amber_gem", min: 1, max: 4, weight: 14 },
+  { itemId: "betterend:thallasium_ingot", min: 2, max: 5, weight: 16 },
+  { itemId: "betterend:terminite_ingot", min: 1, max: 2, weight: 6 },
+  { itemId: "betterend:crystal_shards", min: 1, max: 4, weight: 12 },
+  { itemId: "betterend:glowing_bulb", min: 1, max: 3, weight: 10 },
+  { itemId: "betterend:silk_fiber", min: 2, max: 6, weight: 12 },
+  { itemId: "betterend:charcoal_end", min: 2, max: 5, weight: 14 },
+  { itemId: "minecraft:ender_pearl", min: 1, max: 3, weight: 12 }
+]);
+
+const DISC_IDS = Object.freeze(Object.keys(BETTEREND_MUSIC_DISCS));
+
+function populateWorldgenChestContainer(container, loc, serverModule) {
+  const ItemStackCtor = serverModule?.ItemStack;
+  if (!container || typeof container.setItem !== "function" || !ItemStackCtor) return;
+
+  // Deterministic seed from chest coordinates
+  let seed =
+    ((Math.imul(loc.x | 0, 73428767) ^
+      Math.imul(loc.y | 0, 912931) ^
+      Math.imul(loc.z | 0, 4382893)) >>>
+      0) || 1;
+  const nextRand = () => {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    return seed / 0x100000000;
+  };
+
+  // 1. Roll 1..2 BetterEnd Music Discs (`EndChestLootTableProvider.includeCommonItems`)
+  const discCount = nextRand() < 0.65 ? 1 : 2;
+  for (let i = 0; i < discCount; i++) {
+    const discId = DISC_IDS[Math.floor(nextRand() * DISC_IDS.length)];
+    const slot = Math.floor(nextRand() * 27);
+    try {
+      container.setItem(slot, new ItemStackCtor(discId, 1));
+    } catch {}
+  }
+
+  // 2. Roll 4..7 BetterEnd common items
+  const rolls = 4 + Math.floor(nextRand() * 4);
+  for (let r = 0; r < rolls; r++) {
+    const entry =
+      OUTER_END_CHEST_COMMON_LOOT[
+        Math.floor(nextRand() * OUTER_END_CHEST_COMMON_LOOT.length)
+      ];
+    const count = entry.min + Math.floor(nextRand() * (entry.max - entry.min + 1));
+    const slot = Math.floor(nextRand() * 27);
+    try {
+      if (!container.getItem?.(slot)) {
+        container.setItem(slot, new ItemStackCtor(entry.itemId, count));
+      }
+    } catch {}
+  }
+}
+
+/**
+ * Ensures an invisible native container carrier entity (`betterend:chest_carrier` with 27-slot
+ * `minecart_chest` GUI or `betterend:end_stone_smelter_carrier` with 5-slot `minecart_hopper` GUI)
+ * is spawned inside `*_chest`, `*_barrel`, `end_stone_smelter`, and `*_furnace` blocks.
+ */
+export function ensureContainerCarrierEntity(runtime, dim, block, options = {}) {
+  if (!dim || !block || typeof dim.spawnEntity !== "function") return null;
+  const blockId = String(block.typeId ?? "");
+  if (!blockId.startsWith("betterend:")) return null;
+  const shortName = blockId.slice("betterend:".length).replace(/__p\d+$/, "");
+
+  const isChestOrBarrel = shortName.endsWith("_chest") || shortName.endsWith("_barrel");
+  const isSmelterOrFurnace =
+    shortName === "end_stone_smelter" || shortName.endsWith("_furnace");
+  if (!isChestOrBarrel && !isSmelterOrFurnace) return null;
+
+  const carrierType = isChestOrBarrel
+    ? "betterend:chest_carrier"
+    : "betterend:end_stone_smelter_carrier";
+  const loc = normalizeBlockAnchor(block.location ?? { x: 0, y: 64, z: 0 });
+  const spawnPos = { x: loc.x + 0.5, y: loc.y + 0.02, z: loc.z + 0.5 };
+
+  try {
+    const existing =
+      dim.getEntities?.({
+        type: carrierType,
+        location: spawnPos,
+        maxDistance: 0.65
+      }) ?? [];
+    if (existing.length > 0) {
+      return existing[0];
+    }
+
+    const carrier = dim.spawnEntity(carrierType, spawnPos);
+    if (!carrier) return null;
+    carrier.nameTag =
+      shortName === "end_stone_smelter" ? "End Stone Smelter" : formatTitle(shortName);
+    carrier.setDynamicProperty?.("betterend:anchor_x", loc.x);
+    carrier.setDynamicProperty?.("betterend:anchor_y", loc.y);
+    carrier.setDynamicProperty?.("betterend:anchor_z", loc.z);
+    carrier.setDynamicProperty?.("betterend:block_id", blockId);
+
+    if (
+      options.populateWorldgenLoot &&
+      shortName.endsWith("_chest") &&
+      (Math.abs(loc.x) > 1024 || Math.abs(loc.z) > 1024)
+    ) {
+      const inv =
+        carrier.getComponent?.("minecraft:inventory") ?? carrier.getComponent?.("inventory");
+      if (inv?.container) {
+        populateWorldgenChestContainer(inv.container, loc, runtime?.serverModule);
+      }
+    }
+    return carrier;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Spills all items from a `betterend:chest_carrier` or `betterend:end_stone_smelter_carrier`,
+ * removes the carrier entity, and optionally breaks its host block when mined/punched.
+ */
+export function destroyContainerCarrierAndBlock(runtime, carrierEntity, player = null, breakBlock = true) {
+  if (!carrierEntity) return { destroyed: false };
+  try {
+    const dim = carrierEntity.dimension ?? player?.dimension;
+    const rawLoc = carrierEntity.location ?? { x: 0, y: 64, z: 0 };
+    const ax = carrierEntity.getDynamicProperty?.("betterend:anchor_x");
+    const ay = carrierEntity.getDynamicProperty?.("betterend:anchor_y");
+    const az = carrierEntity.getDynamicProperty?.("betterend:anchor_z");
+    const loc = {
+      x: typeof ax === "number" ? ax : Math.floor(rawLoc.x),
+      y: typeof ay === "number" ? ay : Math.floor(rawLoc.y),
+      z: typeof az === "number" ? az : Math.floor(rawLoc.z)
+    };
+    const dropPos = { x: loc.x + 0.5, y: loc.y + 0.5, z: loc.z + 0.5 };
+
+    const inv =
+      carrierEntity.getComponent?.("minecraft:inventory") ??
+      carrierEntity.getComponent?.("inventory");
+    const container = inv?.container;
+    if (container && typeof container.size === "number") {
+      for (let i = 0; i < container.size; i++) {
+        const stack = container.getItem(i);
+        if (stack && stack.typeId && (stack.amount ?? 1) > 0) {
+          container.setItem(i, undefined);
+          dim?.spawnItem?.(stack, dropPos);
+        }
+      }
+    }
+
+    carrierEntity.remove?.();
+
+    if (breakBlock && dim) {
+      if (player && isPlayerCreative(player)) {
+        const blk = dim.getBlock?.(loc);
+        blk?.setType?.("minecraft:air");
+      } else {
+        dim.runCommand?.(`setblock ${loc.x} ${loc.y} ${loc.z} air destroy`);
+      }
+    }
+    return { destroyed: true, location: loc };
+  } catch {
+    return { destroyed: false };
+  }
+}
+

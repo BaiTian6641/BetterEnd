@@ -982,9 +982,10 @@ export function buildSoundDefinitions(repoRoot = defaultRepoRoot) {
   const soundDefinitions = Object.create(null);
   for (const [eventKey, def] of Object.entries(rawSounds).sort(([a], [b]) => compareText(a, b))) {
     const bedrockEventKey = eventKey.startsWith('betterend.') ? eventKey : `betterend.${eventKey}`;
-    const isMusic = eventKey.includes('music') || eventKey.includes('record');
+    const isRecord = eventKey.includes('record');
+    const isMusic = eventKey.includes('music') || isRecord;
     const isAmbient = eventKey.includes('ambient');
-    const category = isMusic ? 'music' : isAmbient ? 'ambient' : 'neutral';
+    const category = isRecord ? 'record' : isMusic ? 'music' : isAmbient ? 'ambient' : 'neutral';
 
     const sounds = (def.sounds ?? []).map(entry => {
       const rawName = typeof entry === 'string' ? entry : entry.name;
@@ -997,12 +998,14 @@ export function buildSoundDefinitions(repoRoot = defaultRepoRoot) {
         stream,
         volume: 1.0,
         pitch: 1.0,
+        ...(isRecord ? { is3D: true } : {}),
         ...(trackInfo ? { __provenance: { sha256: trackInfo.sha256, artistCredit: trackInfo.artistCredit, distributionAudit: trackInfo.distributionAudit } } : {}),
       };
     });
 
     soundDefinitions[bedrockEventKey] = {
       category,
+      ...(isRecord ? { max_distance: 64.0 } : {}),
       sounds,
     };
   }
@@ -1037,7 +1040,15 @@ export function buildLocalizationFiles(repoRoot = defaultRepoRoot, provenance = 
   ];
 
   for (const [key, value] of Object.entries(enUsJson).sort(([a], [b]) => compareText(a, b))) {
-    const cleanVal = String(value).replace(/\r?\n/gu, ' ');
+    let cleanVal = String(value).replace(/\r?\n/gu, ' ');
+    if (key.startsWith('item.betterend.music_disc_')) {
+      const trackKey = key.slice('item.betterend.music_disc_'.length);
+      const songDesc = enUsJson[`jukebox_song.betterend.${trackKey}`];
+      if (songDesc) {
+        const cleanSong = String(songDesc).replace(/\r?\n/gu, ' ');
+        cleanVal = `${cleanVal.replace(/§r$/u, '')} (${cleanSong})`;
+      }
+    }
     lines.push(`${key}=${cleanVal}`);
     if (key.startsWith('block.betterend.')) {
       const shortId = key.slice('block.betterend.'.length);

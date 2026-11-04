@@ -486,10 +486,20 @@ test('Content compiler lowers all 728 blocks (22,385 states), 850 items, 879 rec
   // 4. Entities & Features (27 catalogue entities + 5 station carriers, 6 spawn rules, 18 wearable attachables, 5 ore features + rules)
   assert.equal(compiled.counts.catalogueEntities, 27);
   assert.equal(compiled.counts.serverEntities, 32);
-  assert.equal(compiled.counts.clientEntities, 27);
+  assert.equal(compiled.counts.clientEntities, 32);
   assert.equal(compiled.entitiesAndFeatures.entityLootTables.size, 6);
   assert.equal(compiled.entitiesAndFeatures.spawnRules.size, 6);
   assert.equal(compiled.entitiesAndFeatures.attachables.size, 18);
+
+  const chestCarrier = compiled.entitiesAndFeatures.serverEntities.get('entities/chest_carrier.entity.json')['minecraft:entity'].components;
+  assert.equal(chestCarrier['minecraft:inventory'].container_type, 'minecart_chest');
+  assert.equal(chestCarrier['minecraft:inventory'].inventory_size, 27);
+  assert.equal(chestCarrier['minecraft:inventory'].can_be_siphoned_from, true);
+
+  const smelterCarrier = compiled.entitiesAndFeatures.serverEntities.get('entities/end_stone_smelter_carrier.entity.json')['minecraft:entity'].components;
+  assert.equal(smelterCarrier['minecraft:inventory'].container_type, 'minecart_hopper');
+  assert.equal(smelterCarrier['minecraft:inventory'].inventory_size, 5);
+  assert.equal(smelterCarrier['minecraft:inventory'].can_be_siphoned_from, true);
 
   for (const [, serverEnt] of compiled.entitiesAndFeatures.serverEntities) {
     assert.equal(serverEnt.format_version, BEDROCK_SERVER_ENTITY_FORMAT_VERSION);
@@ -560,4 +570,33 @@ test('Content compiler lowers all 728 blocks (22,385 states), 850 items, 879 rec
     );
   }
   assert.equal(craftingTableCount, 10, 'All 10 BetterEnd wood crafting tables compiled with native crafting_table UI');
+
+  // 7. All 6 BetterEnd Music Discs compile with minecraft:record, rarity: rare, record sound category, and artist/title localization
+  const expectedDiscs = [
+    ['music_disc_strange_and_alien', 1, 266, 'Firel', 'Strange And Alien'],
+    ['music_disc_grasping_at_stars', 2, 528, 'Firel', 'Grasping At Stars'],
+    ['music_disc_endseeker', 3, 461, 'Firel', 'Endseeker'],
+    ['music_disc_eo_dracona', 4, 353, 'Firel', 'Eo Dracona'],
+    ['music_disc_ender_hollow', 5, 219, 'noqwww', 'Ender Hollow'],
+    ['music_disc_moonlit_undercurrents', 6, 231, 'noqwww', 'Moonlit Undercurrents'],
+  ];
+  for (const [discShort, signal, duration, artist, title] of expectedDiscs) {
+    const discComp = compiled.items.itemJsonMap.get(`items/${discShort}.item.json`)['minecraft:item'].components;
+    assert.equal(discComp['minecraft:rarity'], 'rare', `${discShort} must have rare rarity`);
+    assert.ok(discComp['minecraft:record'], `${discShort} must have minecraft:record component`);
+    assert.equal(discComp['minecraft:record'].comparator_signal, signal);
+    assert.equal(discComp['minecraft:record'].duration, duration);
+    assert.ok(discComp['minecraft:tags']?.tags?.includes('minecraft:music_disc'));
+
+    const trackKey = discShort.slice('music_disc_'.length);
+    const soundDef = compiled.modelAssets.soundDefinitionsJson.sound_definitions[`betterend.record.${trackKey}`];
+    assert.ok(soundDef, `Missing sound definition for betterend.record.${trackKey}`);
+    assert.equal(soundDef.category, 'record', `betterend.record.${trackKey} must use record category`);
+    assert.equal(soundDef.max_distance, 64, `betterend.record.${trackKey} must set 64m jukebox attenuation`);
+    assert.ok(
+      compiled.modelAssets.localization.enUsLang.includes(artist) &&
+        compiled.modelAssets.localization.enUsLang.includes(title),
+      `Localization for ${discShort} must include ${artist} - ${title}`,
+    );
+  }
 });

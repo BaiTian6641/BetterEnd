@@ -61,6 +61,7 @@ Probe rules:
 | Entity spawn guard, removal of legacy pre-generation queue, and `_stepWildlifeBehavior` throttling | Done | `bootstrap.js` (wildlife tick throttled 3×, silk_moth block scan reduced 125→7 blocks) |
 | Per-growth-stage `minecraft:selection_box` outlines (`age 0..3` seeds, berries, vines, crystals) & directional flora default states | Done | `compiler.test.mjs` & `placement.test.mjs` |
 | Native `minecraft:crafting_table` UI + Station-Backed Custom UIs (`@minecraft/server-ui` `ActionFormData` & `ModalFormData` with real inventory consumption, hammer durability, 49 Infusion recipes, Respawn Obelisk, Silk Moth Nest, Storage Containers, Signs, and 5-Chapter Guidebook) | Done | `compiler.test.mjs` + `gameplay-systems.test.mjs` (`UI-001`) |
+| 6 BetterEnd Music Discs (`minecraft:record`, `rarity: rare`, `record` category 64m spatial attenuation, artist/title localization, Jukebox playback/stop, outer-End chest loot) & Native Container Inventory Grids (`betterend:chest_carrier` 27-slot `minecart_chest` GUI for `*_chest`/`*_barrel`, `betterend:end_stone_smelter_carrier` 5-slot `minecart_hopper` GUI for `end_stone_smelter`/`*_furnace`, and physical 6-slot `*_chiseled_bookshelf`) | Done | `compiler.test.mjs` + `gameplay-systems.test.mjs` + BDS `1.26.40.8` |
 
 ## 5. Roadmap & Completed Milestones
 
@@ -99,6 +100,15 @@ All 7 feature groups are implemented, tested in `placement.test.mjs`, and packag
    - **Leveled & Aeternium Anvils UI (`openAnvilStationUi`):** Smithing checks & consumes `inputCount` of `r.input` from player inventory, verifies hammer/tool tier (`resolveDiggerToolLevel >= r.toolLevel`), applies durability damage (`durabilityConsumed`), and provides a `ModalFormData` **Repair, Combine & Rename** screen with BetterEnd's 1-unit material cost reduction.
    - **Infusion Pedestal, 13 Peripheral Pedestals & 8-Compass Ritual (`handlePedestalInteraction`, `openInfusionPedestalStationUi`):** Physical right-click item insertion/extraction on all 13 `*_pedestal` blocks and `infusion_pedestal` (`betterend:has_item`), live 8-compass ring status (`N..NW`), socket mist hints, and full browser for all 49 `DEFAULT_INFUSION_RECIPES` (11 Gear/Crystal + 38 Enchanted Book infusions).
    - **Eternal Pedestal, Respawn Obelisk (6x `betterend:amber_gem` in Survival + `playerSpawn` death respawn redirect), Silk Moth Nest/Hive, Storage Containers (`*_barrel`, `*_chest`, `*_chiseled_bookshelf`), 4-Line Sign Editor (`ModalFormData`), and Multi-Chapter Guidebook UI (`openGuidebookUi` — 27 biome teleports + 5 Encyclopedia chapters).**
+
+### Milestone G: BetterEnd Music Records & Real Vanilla/BetterEnd Container Inventory Grids — COMPLETED
+1. **6 BetterEnd Music Discs (`music_disc_strange_and_alien`, `music_disc_grasping_at_stars`, `music_disc_endseeker`, `music_disc_eo_dracona`, `music_disc_ender_hollow`, `music_disc_moonlit_undercurrents`):**
+   - Added `"minecraft:rarity": "rare"`, `"minecraft:record"` (`comparator_signal: 1..6`, `duration: 219..528s`, `sound_event: "undefined"`), and `"minecraft:music_disc"` item tag in `content-compiler.mjs`.
+   - Updated `sound_definitions.json` (`model-compiler.mjs` & `build-packs.mjs`) so `betterend.record.*` uses `"category": "record"`, `"max_distance": 64.0`, and `"is3D": true`, and appended the artist & track title from `jukebox_song.betterend.<track>` to `item.betterend.music_disc_<track>` in `texts/en_US.lang`.
+   - Added live Jukebox playback & stop (`handleJukeboxRecordInteraction`, `stopJukeboxRecordAt`, `stepActiveJukeboxes`) plus outer-End chest loot generation with BetterEnd music discs (`EndChestLootTableProvider.java`).
+2. **Real Vanilla Container Inventory Grids & Physical Chiseled Bookshelves (`station-ui.js`, `bootstrap.js`, `content-compiler.mjs`):**
+   - Upgraded `betterend:chest_carrier` to `"container_type": "minecart_chest"`, `"inventory_size": 27`, `"can_be_siphoned_from": true` (opening the native 27-slot Chest/Barrel Grid GUI on `*_chest` and `*_barrel`) and `betterend:end_stone_smelter_carrier` to `"container_type": "minecart_hopper"`, `"inventory_size": 5`, `"can_be_siphoned_from": true` (opening the native 5-slot Hopper/Smelter Grid GUI on `end_stone_smelter` and `*_furnace`, synced live every 10 ticks in `stepLiveSmelters`), with invisible `clientEntities` and full item spilling on mine/break (`destroyContainerCarrierAndBlock`).
+   - Removed popup UI from regular `*_bookshelf` blocks and implemented direct physical book insertion/extraction in slots `0..5` (`betterend:slot_0_occupied`..`slot_5_occupied`) for `*_chiseled_bookshelf`.
 
 ## 6. Known risks
 

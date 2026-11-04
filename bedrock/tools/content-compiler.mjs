@@ -794,8 +794,7 @@ function deriveBlockCustomComponents(blockEntry, partitions = [], partition = nu
     shortName.endsWith('_furnace') ||
     shortName.endsWith('_composter') ||
     shortName.endsWith('_barrel') ||
-    shortName.endsWith('_chest') ||
-    shortName.endsWith('_bookshelf')
+    shortName.endsWith('_chest')
   ) {
     components.add('betterend:station_interaction');
   }
@@ -811,7 +810,8 @@ function deriveBlockCustomComponents(blockEntry, partitions = [], partition = nu
     shortName.endsWith('_taburet') ||
     shortName.endsWith('_ladder') ||
     shortName.endsWith('_sign') ||
-    shortName.endsWith('_flower_pot')
+    shortName.endsWith('_flower_pot') ||
+    shortName.endsWith('_chiseled_bookshelf')
   ) {
     components.add('betterend:interactive_furniture');
   }
@@ -1044,6 +1044,20 @@ function resolveStateBedrockBoxes(blockEntry, stateProps, resolved, isCenterXZ) 
     return {
       collisionBox: boundsToBedrockBox(unrotFull, 'box', { isCollision: true, centerXZ: true }),
       selectionBox: boundsToBedrockBox(unrotFull, 'box', { isCollision: false, centerXZ: true }),
+    };
+  }
+
+  // Carrier-backed container blocks (*_barrel, end_stone_smelter, *_furnace) keep a full 16x16x16 collision_box
+  // for physical walking, and a 14x14x14 selection_box (matching *_chest) so the 0.94x0.94 invisible container
+  // carrier entity inside the block receives right-clicks and opens the native 27-slot / 5-slot inventory GUI.
+  if (
+    shortName.endsWith('_barrel') ||
+    shortName === 'end_stone_smelter' ||
+    shortName.endsWith('_furnace')
+  ) {
+    return {
+      collisionBox: { origin: [-8, 0, -8], size: [16, 16, 16] },
+      selectionBox: { origin: [-7, 0, -7], size: [14, 14, 14] },
     };
   }
 
@@ -1642,6 +1656,57 @@ function inferEnchantSlot(itemEntry) {
   return 'all';
 }
 
+export const BETTEREND_MUSIC_DISCS = Object.freeze({
+  music_disc_strange_and_alien: Object.freeze({
+    itemId: 'betterend:music_disc_strange_and_alien',
+    track: 'strange_and_alien',
+    soundEvent: 'betterend.record.strange_and_alien',
+    comparatorSignal: 1,
+    duration: 266.0,
+    description: 'Firel - Strange And Alien',
+  }),
+  music_disc_grasping_at_stars: Object.freeze({
+    itemId: 'betterend:music_disc_grasping_at_stars',
+    track: 'grasping_at_stars',
+    soundEvent: 'betterend.record.grasping_at_stars',
+    comparatorSignal: 2,
+    duration: 528.0,
+    description: 'Firel - Grasping At Stars',
+  }),
+  music_disc_endseeker: Object.freeze({
+    itemId: 'betterend:music_disc_endseeker',
+    track: 'endseeker',
+    soundEvent: 'betterend.record.endseeker',
+    comparatorSignal: 3,
+    duration: 461.0,
+    description: 'Firel - Endseeker',
+  }),
+  music_disc_eo_dracona: Object.freeze({
+    itemId: 'betterend:music_disc_eo_dracona',
+    track: 'eo_dracona',
+    soundEvent: 'betterend.record.eo_dracona',
+    comparatorSignal: 4,
+    duration: 353.0,
+    description: 'Firel - Eo Dracona',
+  }),
+  music_disc_ender_hollow: Object.freeze({
+    itemId: 'betterend:music_disc_ender_hollow',
+    track: 'ender_hollow',
+    soundEvent: 'betterend.record.ender_hollow',
+    comparatorSignal: 5,
+    duration: 219.0,
+    description: 'noqwww - Ender Hollow',
+  }),
+  music_disc_moonlit_undercurrents: Object.freeze({
+    itemId: 'betterend:music_disc_moonlit_undercurrents',
+    track: 'moonlit_undercurrents',
+    soundEvent: 'betterend.record.moonlit_undercurrents',
+    comparatorSignal: 6,
+    duration: 231.0,
+    description: 'noqwww - Moonlit Undercurrents',
+  }),
+});
+
 export function compileItems(registrations) {
   const itemJsonMap = new Map();
   const standaloneItemJsonMap = new Map();
@@ -1761,6 +1826,16 @@ export function compileItems(registrations) {
     }
     if (shortName.includes('upgrade_smithing_template') || shortName.endsWith('_handle')) {
       itemTags.add('minecraft:transform_templates');
+    }
+    const discInfo = BETTEREND_MUSIC_DISCS[shortName];
+    if (discInfo) {
+      components['minecraft:rarity'] = 'rare';
+      components['minecraft:record'] = {
+        comparator_signal: discInfo.comparatorSignal,
+        duration: discInfo.duration,
+        sound_event: 'undefined',
+      };
+      itemTags.add('minecraft:music_disc');
     }
     if (itemTags.size > 0) {
       components['minecraft:tags'] = {
@@ -2135,11 +2210,36 @@ const WILDLIFE_VARIANT_TEXTURES = Object.freeze({
 });
 
 const STATION_CARRIERS = Object.freeze([
-  { id: 'betterend:end_stone_smelter_carrier', slots: 4 },
-  { id: 'betterend:infusion_pedestal_carrier', slots: 1 },
-  { id: 'betterend:eternal_pedestal_carrier', slots: 1 },
-  { id: 'betterend:pedestal_carrier', slots: 1 },
-  { id: 'betterend:chest_carrier', slots: 27 },
+  {
+    id: 'betterend:end_stone_smelter_carrier',
+    slots: 5,
+    containerType: 'minecart_hopper',
+    collisionBox: { width: 0.94, height: 0.94 },
+  },
+  {
+    id: 'betterend:infusion_pedestal_carrier',
+    slots: 1,
+    containerType: 'minecart_hopper',
+    collisionBox: { width: 0.1, height: 0.1 },
+  },
+  {
+    id: 'betterend:eternal_pedestal_carrier',
+    slots: 1,
+    containerType: 'minecart_hopper',
+    collisionBox: { width: 0.1, height: 0.1 },
+  },
+  {
+    id: 'betterend:pedestal_carrier',
+    slots: 1,
+    containerType: 'minecart_hopper',
+    collisionBox: { width: 0.1, height: 0.1 },
+  },
+  {
+    id: 'betterend:chest_carrier',
+    slots: 27,
+    containerType: 'minecart_chest',
+    collisionBox: { width: 0.94, height: 0.94 },
+  },
 ]);
 
 /**
@@ -3708,7 +3808,7 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
     }
   }
 
-  // Add Station Inventory Carrier Entities
+  // Add Station Inventory Carrier Entities + invisible Client Entities
   for (const carrier of STATION_CARRIERS) {
     const shortName = carrier.id.split(':')[1];
     serverEntities.set(`entities/${shortName}.entity.json`, {
@@ -3721,13 +3821,31 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
           is_experimental: false,
         },
         components: {
-          'minecraft:collision_box': { width: 0.1, height: 0.1 },
+          'minecraft:collision_box': carrier.collisionBox ?? { width: 0.1, height: 0.1 },
           'minecraft:physics': { has_gravity: false, has_collision: false },
+          'minecraft:fire_immune': {},
+          'minecraft:knockback_resistance': { value: 1.0 },
+          'minecraft:health': { value: 100, max: 100 },
           'minecraft:inventory': {
-            container_type: 'Horse',
+            container_type: carrier.containerType ?? 'minecart_chest',
             inventory_size: carrier.slots,
+            can_be_siphoned_from: true,
           },
           'minecraft:persistent': {},
+        },
+      },
+    });
+    clientEntities.set(`entity/${shortName}.entity.json`, {
+      format_version: BEDROCK_CLIENT_ENTITY_FORMAT_VERSION,
+      'minecraft:client_entity': {
+        description: {
+          identifier: carrier.id,
+          materials: { default: 'entity_alphatest' },
+          textures: { default: 'textures/entity/betterend/dragonfly' },
+          geometry: { default: 'geometry.betterend.chair' },
+          animations: { idle: 'animation.betterend.chair.idle' },
+          scripts: { animate: ['idle'] },
+          render_controllers: ['controller.render.betterend.chair'],
         },
       },
     });
