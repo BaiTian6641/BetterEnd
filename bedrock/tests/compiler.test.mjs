@@ -540,4 +540,24 @@ test('Content compiler lowers all 728 blocks (22,385 states), 850 items, 879 rec
   const glideAnim = compiled.entitiesAndFeatures.animations.get('animations/elytra_wings.animation.json').animations['animation.betterend.player.glide'];
   assert.equal(glideAnim.override_previous_animation, true, 'player glide animation overrides standing pose');
   assert.ok(glideAnim.bones.waist && glideAnim.bones.body, 'player glide animation locks waist and body');
+
+  // 6. All 10 BetterEnd crafting tables bind native 3x3 minecraft:crafting_table UI without custom station_interaction override
+  let craftingTableCount = 0;
+  for (const [filePath, blockJson] of compiled.blocks.blockJsonMap) {
+    if (!filePath.endsWith('_crafting_table.block.json')) continue;
+    craftingTableCount += 1;
+    const comps = blockJson['minecraft:block'].components;
+    assert.ok(comps['minecraft:crafting_table'], `${filePath} must have minecraft:crafting_table component`);
+    assert.deepEqual(
+      comps['minecraft:crafting_table'].crafting_tags,
+      ['crafting_table'],
+      `${filePath} must expose crafting_table tag`,
+    );
+    const customComps = comps['minecraft:custom_components'] ?? [];
+    assert.ok(
+      !customComps.includes('betterend:station_interaction'),
+      `${filePath} must not shadow native crafting table UI with betterend:station_interaction`,
+    );
+  }
+  assert.equal(craftingTableCount, 10, 'All 10 BetterEnd wood crafting tables compiled with native crafting_table UI');
 });

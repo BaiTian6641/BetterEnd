@@ -792,7 +792,6 @@ function deriveBlockCustomComponents(blockEntry, partitions = [], partition = nu
     shortName.endsWith('_pedestal') ||
     shortName.endsWith('_anvil') ||
     shortName.endsWith('_furnace') ||
-    shortName.endsWith('_crafting_table') ||
     shortName.endsWith('_composter') ||
     shortName.endsWith('_barrel') ||
     shortName.endsWith('_chest') ||
@@ -1437,6 +1436,14 @@ export function compileBlocks(registrations, modelAssets) {
       const friction = Number(blockEntry.runtime?.friction ?? blockEntry.properties?.friction ?? 0.6);
       if (Math.abs(friction - 0.6) > 0.001) {
         baseComponents['minecraft:friction'] = clamp(1.0 - friction + 0.4, 0.0, 0.9);
+      }
+
+      const shortName = blockEntry.id.split(':')[1] ?? '';
+      if (shortName.endsWith('_crafting_table')) {
+        baseComponents['minecraft:crafting_table'] = {
+          crafting_tags: ['crafting_table'],
+          table_name: `block.betterend.${shortName}`,
+        };
       }
 
       const customComponents = deriveBlockCustomComponents(blockEntry, partitions, partition);

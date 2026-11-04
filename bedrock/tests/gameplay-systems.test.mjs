@@ -51,6 +51,21 @@ import {
   QUERY_CHANNEL_ID,
   RESPONSE_CHANNEL_ID,
 } from '../runtime/integration/compatibility-service.js';
+import { BetterEndRuntime } from '../runtime/bootstrap/bootstrap.js';
+import {
+  resolveUiIconPath,
+  openSmelterStationUi,
+  openAnvilStationUi,
+  handlePedestalInteraction,
+  openInfusionPedestalStationUi,
+  handleEternalPedestalInteraction,
+  openEternalPedestalStationUi,
+  handleRespawnObeliskInteraction,
+  handleSilkMothHousingInteraction,
+  openStorageContainerUi,
+  openSignEditorUi,
+  openGuidebookUi,
+} from '../runtime/stations/station-ui.js';
 
 const workspace = fileURLToPath(new URL('../', import.meta.url));
 
@@ -58,6 +73,7 @@ test('Runtime ES modules contain zero Node-specific or static beta graphics impo
   const runtimeFiles = [
     'runtime/persistence/store.js',
     'runtime/stations/stations-service.js',
+    'runtime/stations/station-ui.js',
     'runtime/equipment/equipment-service.js',
     'runtime/ecology/ecology-service.js',
     'runtime/transport/transport-service.js',
@@ -1136,4 +1152,359 @@ test('INT-001: CompatibilityService read-only query protocol, rate/size bounds, 
   );
   assert.equal(oversized.status, 'error');
   assert.equal(oversized.errorCode, 'PAYLOAD_TOO_LARGE');
+});
+
+test('UI-001: Station-Backed Custom UIs, Real Player Inventory Consumption, and Multi-Chapter Guidebook', async () => {
+  // Mock ItemStack and Inventory Container
+  class MockItemStack {
+    constructor(typeId, amount = 1) {
+      this.typeId = typeId;
+      this.amount = amount;
+      this.nameTag = '';
+      this._lore = [];
+      this._durability = { damage: 0, maxDurability: 500 };
+    }
+    setLore(lines) {
+      this._lore = [...lines];
+    }
+    getLore() {
+      return [...this._lore];
+    }
+    getComponent(id) {
+      if (id === 'minecraft:durability') return this._durability;
+      return null;
+    }
+  }
+
+  const createMockPlayer = (initialSlots = []) => {
+    const slots = Array.from({ length: 36 }, (_, idx) => initialSlots[idx] ?? null);
+    let xpEarned = 0;
+    let actionBarText = '';
+    let spawnPoint = null;
+    const container = {
+      size: 36,
+      getItem: i => slots[i] ?? null,
+      setItem: (i, stack) => {
+        slots[i] = stack ?? null;
+      },
+      addItem: stack => {
+        for (let i = 0; i < slots.length; i++) {
+          if (slots[i] && slots[i].typeId === stack.typeId && !stack.nameTag && (!stack._lore || stack._lore.length === 0)) {
+            slots[i].amount += stack.amount;
+            return;
+          }
+        }
+        for (let i = 0; i < slots.length; i++) {
+          if (!slots[i]) {
+            slots[i] = stack;
+            return;
+          }
+        }
+      },
+    };
+    return {
+      id: 'player_ui_test',
+      name: 'Tester',
+      location: { x: 2048, y: 68, z: 2048 },
+      dimension: {
+        id: 'minecraft:the_end',
+        getBlock: pos => ({
+          typeId: 'betterend:end_stone_smelter',
+          location: pos,
+          permutation: {
+            getState: () => false,
+            withState: () => ({}),
+          },
+          setPermutation: () => {},
+        }),
+        spawnParticle: () => {},
+        runCommand: () => {},
+      },
+      getGameMode: () => 'survival',
+      getComponent: id => (id === 'minecraft:inventory' ? { container } : null),
+      addExperience: xp => {
+        xpEarned += xp;
+      },
+      setSpawnPoint: sp => {
+        spawnPoint = sp;
+      },
+      playSound: () => {},
+      onScreenDisplay: {
+        setActionBar: msg => {
+          actionBarText = msg;
+        },
+      },
+      getXp: () => xpEarned,
+      getActionBar: () => actionBarText,
+      getSpawnPoint: () => spawnPoint,
+      countItem: typeId =>
+        slots.reduce((acc, s) => (s && s.typeId === typeId ? acc + s.amount : acc), 0),
+      getSlot: i => slots[i],
+    };
+  };
+
+  // Queue of simulated UI responses (ActionFormData selection or ModalFormData formValues)
+  const uiResponseQueue = [];
+  const capturedForms = [];
+  const mockServerUi = {
+    ActionFormData: class {
+      constructor() {
+        this._title = '';
+        this._body = '';
+        this._buttons = [];
+      }
+      title(t) {
+        this._title = t;
+        return this;
+      }
+      body(b) {
+        this._body = b;
+        return this;
+      }
+      button(label, iconPath) {
+        this._buttons.push({ label, iconPath });
+        return this;
+      }
+      show() {
+        capturedForms.push({ kind: 'action', title: this._title, body: this._body, buttons: this._buttons });
+        const next = uiResponseQueue.shift() ?? { canceled: true };
+        return Promise.resolve(next);
+      }
+    },
+    ModalFormData: class {
+      constructor() {
+        this._title = '';
+        this._controls = [];
+      }
+      title(t) {
+        this._title = t;
+        return this;
+      }
+      dropdown(label, options) {
+        this._controls.push({ type: 'dropdown', label, options });
+        return this;
+      }
+      slider(label, min, max, step, def) {
+        this._controls.push({ type: 'slider', label, min, max, step, def });
+        return this;
+      }
+      textField(label, placeholder, def) {
+        this._controls.push({ type: 'textField', label, placeholder, def });
+        return this;
+      }
+      toggle(label, def) {
+        this._controls.push({ type: 'toggle', label, def });
+        return this;
+      }
+      show() {
+        capturedForms.push({ kind: 'modal', title: this._title, controls: this._controls });
+        const next = uiResponseQueue.shift() ?? { canceled: true };
+        return Promise.resolve(next);
+      }
+    },
+  };
+
+  const mockServerModule = {
+    ItemStack: MockItemStack,
+    world: new InMemoryWorldPropertyAdapter(),
+  };
+
+  const runtime = new BetterEndRuntime({
+    profile: 'stable',
+    world: mockServerModule.world,
+    serverModule: mockServerModule,
+    uiModule: mockServerUi,
+  });
+
+  // 1. Icon path resolver checks
+  assert.equal(resolveUiIconPath('betterend:aeternium_ingot'), 'textures/items/betterend/aeternium_ingot');
+  assert.equal(resolveUiIconPath('betterend:end_stone_smelter'), 'textures/blocks/betterend/end_stone_smelter_top');
+  assert.equal(resolveUiIconPath('minecraft:enchanted_book'), 'textures/items/book_enchanted');
+
+  // 2. End Stone Smelter UI: real inventory consumption (thallasium_ingot + ender_dust + coal -> terminite_ingot)
+  const smelterPlayer = createMockPlayer([
+    new MockItemStack('betterend:thallasium_ingot', 2),
+    new MockItemStack('betterend:ender_dust', 2),
+    new MockItemStack('minecraft:coal', 2),
+  ]);
+  const smelterBlock = {
+    typeId: 'betterend:end_stone_smelter',
+    location: { x: 100, y: 64, z: 100 },
+    dimension: smelterPlayer.dimension,
+    permutation: { getState: () => false, withState: () => ({}) },
+    setPermutation: () => {},
+  };
+  // Button 0 = Load Slots (Withdraw All only appears when slots are non-empty), Button 1+ = Recipes.
+  const terminiteThallasiumIdx = DEFAULT_ALLOYING_RECIPES.findIndex(
+    r => r.id === 'betterend:terminite_ingot_thallasium',
+  );
+  uiResponseQueue.push({ canceled: false, selection: 1 + terminiteThallasiumIdx });
+  openSmelterStationUi(runtime, smelterPlayer, smelterBlock);
+  await new Promise(r => setTimeout(r, 10));
+
+  assert.equal(smelterPlayer.countItem('betterend:thallasium_ingot'), 1, 'Smelter UI consumed 1 thallasium_ingot');
+  assert.equal(smelterPlayer.countItem('betterend:ender_dust'), 1, 'Smelter UI consumed 1 ender_dust');
+  assert.equal(smelterPlayer.countItem('minecraft:coal'), 1, 'Smelter UI consumed 1 coal fuel');
+  assert.equal(smelterPlayer.countItem('betterend:terminite_ingot'), 1, 'Smelter UI produced 1 terminite_ingot');
+  assert.ok(smelterPlayer.getXp() > 0, 'Smelter UI awarded alloying XP');
+
+  // 3. Leveled Anvil UI: Smithing (consumes material + applies hammer durability wear) & Repair/Rename Modal
+  const hammerStack = new MockItemStack('betterend:iron_hammer', 1);
+  const damagedSword = new MockItemStack('betterend:terminite_sword', 1);
+  damagedSword._durability.damage = 200;
+  const anvilPlayer = createMockPlayer([
+    hammerStack,
+    new MockItemStack('betterend:thallasium_ingot', 3),
+    damagedSword,
+    new MockItemStack('betterend:terminite_ingot', 2),
+  ]);
+  const anvilBlock = {
+    typeId: 'betterend:terminite_anvil',
+    location: { x: 102, y: 64, z: 100 },
+    dimension: anvilPlayer.dimension,
+  };
+  // Button 0 = Repair, Combine & Rename; Button 1+ = DEFAULT_SMITHING_RECIPES
+  const thallasiumPlateIdx = DEFAULT_SMITHING_RECIPES.findIndex(
+    r => r.id === 'betterend:thallasium_forged_plate',
+  );
+  uiResponseQueue.push({ canceled: false, selection: 1 + thallasiumPlateIdx });
+  openAnvilStationUi(runtime, anvilPlayer, anvilBlock);
+  await new Promise(r => setTimeout(r, 10));
+
+  assert.equal(anvilPlayer.countItem('betterend:thallasium_ingot'), 2, 'Anvil smithing consumed 1 thallasium_ingot');
+  assert.equal(anvilPlayer.countItem('betterend:thallasium_forged_plate'), 1, 'Anvil smithing produced 1 thallasium_forged_plate');
+  assert.ok(hammerStack._durability.damage >= 1, 'Anvil smithing applied durability damage to player hammer');
+
+  // Now test Button 0 -> Repair, Combine & Rename ModalFormData
+  // In anvilPlayer inventory: slot 0 = iron_hammer, slot 1 = thallasium_ingot, slot 2 = terminite_sword (damaged), slot 3 = terminite_ingot, slot 4 = thallasium_forged_plate
+  // Base item dropdown has all 5 non-empty slots (index 2 is terminite_sword).
+  // Addition dropdown has 0="<None (Rename Only)>" + 5 slots (index 4 is terminite_ingot).
+  uiResponseQueue.push(
+    { canceled: false, selection: 0 },
+    { canceled: false, formValues: [2, 4, 'Starlight Blade'] },
+  );
+  openAnvilStationUi(runtime, anvilPlayer, anvilBlock);
+  await new Promise(r => setTimeout(r, 10));
+
+  assert.equal(damagedSword.nameTag, 'Starlight Blade', 'Anvil modal renamed the sword');
+  assert.equal(damagedSword._durability.damage, 0, 'Anvil modal repaired the sword');
+
+  // 4. Physical Pedestal Interaction & 49-Recipe Infusion Ritual UI
+  const pedPlayer = createMockPlayer([
+    new MockItemStack('betterend:amber_gem', 3),
+    new MockItemStack('betterend:terminite_chestplate', 1),
+    new MockItemStack('betterend:crystal_shards', 4),
+  ]);
+  const pedBlock = {
+    typeId: 'betterend:andesite_pedestal',
+    location: { x: 110, y: 64, z: 100 },
+    dimension: pedPlayer.dimension,
+    permutation: { getState: () => false, withState: () => ({}) },
+    setPermutation: () => {},
+  };
+  // Insert 1 amber_gem onto peripheral pedestal
+  handlePedestalInteraction(runtime, pedPlayer, pedBlock, 'betterend:amber_gem');
+  assert.equal(pedPlayer.countItem('betterend:amber_gem'), 2, 'Pedestal insertion consumed 1 amber_gem');
+  // Extract it back
+  handlePedestalInteraction(runtime, pedPlayer, pedBlock, '');
+  assert.equal(pedPlayer.countItem('betterend:amber_gem'), 3, 'Pedestal extraction returned 1 amber_gem');
+
+  // Infusion Pedestal UI: when ring has no items and no center item,
+  // Button 0 = Highlight Missing Pedestal Sockets, Button 1 = Enchanted Book Infusions (38), Button 2+ = gearRecipes
+  const infBlock = {
+    typeId: 'betterend:infusion_pedestal',
+    location: { x: 110, y: 64, z: 110 },
+    dimension: pedPlayer.dimension,
+    permutation: { getState: () => false, withState: () => ({}) },
+    setPermutation: () => {},
+  };
+  const gearInfusions = DEFAULT_INFUSION_RECIPES.filter(r => r.result.item !== 'minecraft:enchanted_book');
+  const crystaliteChestIdx = gearInfusions.findIndex(r => r.id === 'betterend:crystalite_chestplate');
+  uiResponseQueue.push(
+    { canceled: false, selection: 2 + crystaliteChestIdx }, // Crystalite Chestplate recipe detail
+    { canceled: false, selection: 0 }, // Load Catalysts from Inventory & Start Ritual
+  );
+  openInfusionPedestalStationUi(runtime, pedPlayer, infBlock);
+  await new Promise(r => setTimeout(r, 20));
+
+  assert.equal(pedPlayer.countItem('betterend:terminite_chestplate'), 0, 'Infusion consumed terminite_chestplate');
+  assert.equal(pedPlayer.countItem('betterend:amber_gem'), 2, 'Infusion consumed 1 amber_gem catalyst');
+  assert.equal(pedPlayer.countItem('betterend:crystal_shards'), 0, 'Infusion consumed 4 crystal_shards catalysts');
+  assert.equal(pedPlayer.countItem('betterend:crystalite_chestplate'), 1, 'Infusion produced betterend:crystalite_chestplate');
+
+  // 5. Respawn Obelisk: requires 6x Amber Gem in Survival; opens Status UI if insufficient
+  const obeliskBlock = {
+    typeId: 'betterend:respawn_obelisk',
+    location: { x: 120, y: 64, z: 120 },
+    dimension: pedPlayer.dimension,
+    permutation: { getState: () => 0, withState: () => ({}) },
+    setPermutation: () => {},
+  };
+  // Player currently has only 2 amber_gem -> should open Obelisk UI instead of activating for free
+  uiResponseQueue.push({ canceled: true });
+  handleRespawnObeliskInteraction(runtime, pedPlayer, obeliskBlock, 'betterend:amber_gem');
+  await new Promise(r => setTimeout(r, 10));
+  assert.equal(pedPlayer.getSpawnPoint(), null, 'Respawn Obelisk must not bind spawn with < 6 amber_gem');
+
+  // Give player 6 amber_gem and interact again -> consumes 6 amber_gem and sets spawn point
+  const richObeliskPlayer = createMockPlayer([new MockItemStack('betterend:amber_gem', 6)]);
+  handleRespawnObeliskInteraction(runtime, richObeliskPlayer, obeliskBlock, 'betterend:amber_gem');
+  assert.equal(richObeliskPlayer.countItem('betterend:amber_gem'), 0, 'Respawn Obelisk consumed 6 amber_gem');
+  assert.ok(richObeliskPlayer.getSpawnPoint(), 'Respawn Obelisk bound player spawn point');
+
+  // 6. Storage Container UI (Barrel deposit & withdraw) & Sign Editor UI
+  const storagePlayer = createMockPlayer([new MockItemStack('betterend:amber_gem', 5)]);
+  const barrelBlock = {
+    typeId: 'betterend:mossy_glowshroom_barrel',
+    location: { x: 130, y: 64, z: 130 },
+    dimension: storagePlayer.dimension,
+    permutation: { getState: () => false, withState: () => ({}) },
+    setPermutation: () => {},
+  };
+  // Button 0 = Deposit Item from Inventory -> Modal [0 (slot 0), 3 (count)]
+  uiResponseQueue.push(
+    { canceled: false, selection: 0 },
+    { canceled: false, formValues: [0, 3] },
+  );
+  openStorageContainerUi(runtime, storagePlayer, barrelBlock);
+  await new Promise(r => setTimeout(r, 15));
+  assert.equal(storagePlayer.countItem('betterend:amber_gem'), 2, 'Barrel deposit consumed 3 amber_gem from player');
+
+  // Withdraw the stored stack back (Button 1 = stored amber_gem x3)
+  uiResponseQueue.push({ canceled: false, selection: 1 });
+  openStorageContainerUi(runtime, storagePlayer, barrelBlock);
+  await new Promise(r => setTimeout(r, 15));
+  assert.equal(storagePlayer.countItem('betterend:amber_gem'), 5, 'Barrel withdraw returned 3 amber_gem to player');
+
+  // Sign Editor UI
+  const signBlock = {
+    typeId: 'betterend:lacugrove_sign',
+    location: { x: 135, y: 64, z: 135 },
+    dimension: storagePlayer.dimension,
+  };
+  uiResponseQueue.push({
+    canceled: false,
+    formValues: ['Welcome to', 'BetterEnd', 'Lacugrove', 'Sanctuary', true],
+  });
+  openSignEditorUi(runtime, storagePlayer, signBlock);
+  await new Promise(r => setTimeout(r, 10));
+  const signRec = runtime.store.getStation({
+    dimension: 'minecraft:the_end',
+    anchor: { x: 135, y: 64, z: 135 },
+  });
+  assert.deepEqual(signRec?.state?.lines, ['Welcome to', 'BetterEnd', 'Lacugrove', 'Sanctuary']);
+  assert.equal(signRec?.state?.glowing, true);
+
+  // 7. Multi-Chapter Guidebook UI: 27 biome teleports (0..26) + 5 Encyclopedia chapters (27..31)
+  capturedForms.length = 0;
+  uiResponseQueue.push({ canceled: true });
+  openGuidebookUi(runtime, storagePlayer);
+  await new Promise(r => setTimeout(r, 10));
+  const guidebookForm = capturedForms.find(f => f.title.includes('Guidebook'));
+  assert.ok(guidebookForm, 'Guidebook ActionFormData opened');
+  assert.equal(
+    guidebookForm.buttons.length,
+    32,
+    'Guidebook has 27 outer-End biome buttons (indices 0..26) + 5 Encyclopedia chapters (indices 27..31)',
+  );
 });

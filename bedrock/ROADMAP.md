@@ -12,7 +12,7 @@ Bedrock can only "paint" the vanilla End terrain, so the Java biome picker and t
 |---|---|---|
 | Biome map | `runtime/regions/native-cell-map.js` (JS) and `tools/placement-molang.mjs` (Molang) | One shared warped-lattice map. The runtime and the compiled Molang must agree, and a test enforces it. |
 | Native feature rules | `tools/content-compiler.mjs`, `tools/mcstructure-compiler.mjs` | Compile Java features into `feature_rules`, `features` and `.mcstructure` templates, gated by the map and by pre-checks. |
-| Script runtime | `runtime/bootstrap/bootstrap.js`, `runtime/equipment/*` | Gameplay: elytra, wildlife, decoration queue, stations. |
+| Script runtime & Custom UIs | `runtime/bootstrap/bootstrap.js`, `runtime/stations/station-ui.js`, `runtime/stations/stations-service.js`, `runtime/equipment/*` | Gameplay: elytra, wildlife, decoration queue, station-backed custom UIs (`@minecraft/server-ui` 2.1.0/2.3.0), real player inventory transactions. |
 
 Java reference source is in `bedrock/.work/java-reference/source/`. Write only under `bedrock/`.
 
@@ -60,6 +60,7 @@ Probe rules:
 | Elytra physics & scheduled block tick pruning (`onTick/s: 11,739 -> 0`) | Done | `elytra-physics.test.mjs` (`9/9`) + BDS (`task-4584`: `onTick/s=0, onRandomTick/s=3..4, growCalls/s=1`) |
 | Entity spawn guard, removal of legacy pre-generation queue, and `_stepWildlifeBehavior` throttling | Done | `bootstrap.js` (wildlife tick throttled 3×, silk_moth block scan reduced 125→7 blocks) |
 | Per-growth-stage `minecraft:selection_box` outlines (`age 0..3` seeds, berries, vines, crystals) & directional flora default states | Done | `compiler.test.mjs` & `placement.test.mjs` |
+| Native `minecraft:crafting_table` UI + Station-Backed Custom UIs (`@minecraft/server-ui` `ActionFormData` & `ModalFormData` with real inventory consumption, hammer durability, 49 Infusion recipes, Respawn Obelisk, Silk Moth Nest, Storage Containers, Signs, and 5-Chapter Guidebook) | Done | `compiler.test.mjs` + `gameplay-systems.test.mjs` (`UI-001`) |
 
 ## 5. Roadmap & Completed Milestones
 
@@ -90,6 +91,14 @@ All 7 feature groups are implemented, tested in `placement.test.mjs`, and packag
 ### Milestone D & E: Entities, Per-Stage Selection Boxes & Polish (P1/P2) — COMPLETED
 1. Implemented per-growth-stage `minecraft:selection_box` dimensions in `resolveStateBedrockBoxes` (`content-compiler.mjs`) for all `age 0..3` seeds/berries (`amber_root_seed`, `blossom_berry_seed`, `chorus_mushroom_seed`, `shadow_berry`, `blue_vine_seed`, `glowing_pillar_seed`, `lanceleaf_seed`, `lumecorn_seed`, `end_lily_seed`, `end_lotus_seed`, `hydralux_sapling`, `bulb_vine_seed`, `cave_pumpkin_seed`, `sulphur_crystal`) and multi-part plants (`hydralux`, `bulb_vine`, `umbrella_moss_tall`, `twisted_umbrella_moss_tall`).
 2. Verified `chair.entity.json` render controllers and `chair.animation.json` bones in `compiler.test.mjs`.
+
+### Milestone F: Native Crafting Tables & Station-Backed Custom UIs (`@minecraft/server-ui` Parity) — COMPLETED
+1. Added native `"minecraft:crafting_table"` block component (`crafting_tags: ["crafting_table"]`) to all 10 BetterEnd wood crafting tables in `content-compiler.mjs` and removed `"betterend:station_interaction"` from crafting tables so right-clicking opens Bedrock's native 3x3 Crafting Table screen.
+2. Replaced all stub/cheat UIs in `bootstrap.js` with `runtime/stations/station-ui.js` backed by `StationsService`, `TransportService`, `EcologyService`, `PersistenceStore`, and real player inventory (`minecraft:inventory` + `minecraft:durability` + `minecraft:enchantable`):
+   - **End Stone Smelter & 8 End Furnaces UI (`openSmelterStationUi`):** Live 4-slot status (`input0`, `input1`, `fuel`, `output`), heat & smelt progress bars, XP claiming (`player.addExperience`), `ModalFormData` slot loader from real player inventory, and recipe execution consuming real ingredients + fuel (returning `minecraft:bucket` on `minecraft:lava_bucket`) and updating `betterend:lit`.
+   - **Leveled & Aeternium Anvils UI (`openAnvilStationUi`):** Smithing checks & consumes `inputCount` of `r.input` from player inventory, verifies hammer/tool tier (`resolveDiggerToolLevel >= r.toolLevel`), applies durability damage (`durabilityConsumed`), and provides a `ModalFormData` **Repair, Combine & Rename** screen with BetterEnd's 1-unit material cost reduction.
+   - **Infusion Pedestal, 13 Peripheral Pedestals & 8-Compass Ritual (`handlePedestalInteraction`, `openInfusionPedestalStationUi`):** Physical right-click item insertion/extraction on all 13 `*_pedestal` blocks and `infusion_pedestal` (`betterend:has_item`), live 8-compass ring status (`N..NW`), socket mist hints, and full browser for all 49 `DEFAULT_INFUSION_RECIPES` (11 Gear/Crystal + 38 Enchanted Book infusions).
+   - **Eternal Pedestal, Respawn Obelisk (6x `betterend:amber_gem` in Survival + `playerSpawn` death respawn redirect), Silk Moth Nest/Hive, Storage Containers (`*_barrel`, `*_chest`, `*_chiseled_bookshelf`), 4-Line Sign Editor (`ModalFormData`), and Multi-Chapter Guidebook UI (`openGuidebookUi` — 27 biome teleports + 5 Encyclopedia chapters).**
 
 ## 6. Known risks
 

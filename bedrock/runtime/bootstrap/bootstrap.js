@@ -24,6 +24,23 @@ import {
   DEFAULT_SMITHING_RECIPES,
   StationsService
 } from "../stations/stations-service.js";
+import {
+  consumePlayerItem,
+  depositPlayerItem,
+  handleEternalPedestalInteraction,
+  handlePedestalInteraction,
+  handleRespawnObeliskInteraction,
+  handleSilkMothHousingInteraction,
+  openAnvilStationUi,
+  openEternalPedestalStationUi,
+  openGuidebookUi,
+  openInfusionPedestalStationUi,
+  openSignEditorUi,
+  openSmelterStationUi,
+  openStorageContainerUi,
+  stepLiveInfusionRituals,
+  stepLiveSmelters
+} from "../stations/station-ui.js";
 import { EquipmentService } from "../equipment/equipment-service.js";
 import {
   ELYTRA_MOVEMENT_FACTORS,
@@ -613,6 +630,32 @@ export class BetterEndRuntime {
       } else {
         const halfVal = face === "down" || (face !== "up" && faceY > 0.5) ? "top" : "bottom";
         trySetState("betterend:half", halfVal);
+      }
+    }
+
+    if ("betterend:shape" in states && shortName === "respawn_obelisk") {
+      trySetState("betterend:shape", "bottom");
+      const loc = event.block?.location;
+      const dim = event.dimension ?? event.block?.dimension;
+      if (loc && dim) {
+        this.transportService.placeRespawnObelisk({
+          dimension: dim.id ?? "minecraft:the_end",
+          bottomAnchor: loc
+        });
+        if (this.serverModule?.system?.run) {
+          this.serverModule.system.run(() => {
+            try {
+              const midBlk = dim.getBlock({ x: loc.x, y: loc.y + 1, z: loc.z });
+              const topBlk = dim.getBlock({ x: loc.x, y: loc.y + 2, z: loc.z });
+              if (midBlk && midBlk.typeId === "minecraft:air") {
+                midBlk.setPermutation(newPerm.withState("betterend:shape", "middle"));
+              }
+              if (topBlk && topBlk.typeId === "minecraft:air") {
+                topBlk.setPermutation(newPerm.withState("betterend:shape", "top"));
+              }
+            } catch {}
+          });
+        }
       }
     }
 
@@ -1445,191 +1488,27 @@ export class BetterEndRuntime {
   }
 
   // ============================================================================
-  // INTERACTIVE UIs (`@minecraft/server-ui` 2.1.0)
+  // INTERACTIVE UIs (`@minecraft/server-ui` 2.1.0+)
   // ============================================================================
 
   _openLiveGuidebookUi(player) {
-    const ActionFormData = this.uiModule?.ActionFormData;
-    if (!ActionFormData || !player) return;
-
-    const loc = player.location ?? { x: 0, y: 68, z: 0 };
-    const dimId = player.dimension?.id ?? "minecraft:the_end";
-    const lookup = this.regionService.lookup(dimId, loc.x, loc.y, loc.z);
-    const prog = this.presentationService.getPlayerProgression(player.id ?? "player");
-
-    const currentRegionLabel = lookup.protectedCenter
-      ? "Central End Dragon Island (Protected Radius <= 1024)"
-      : `${formatTitle(lookup.effectiveRegion?.id ?? "the_end")} (${lookup.effectiveRegion?.layer ?? "surface"})`;
-
-    const form = new ActionFormData()
-      .title("BetterEnd 26.40 — Guidebook")
-      .body(
-        `§dCurrent Position: §f(${Math.round(loc.x)}, ${Math.round(loc.y)}, ${Math.round(loc.z)})\n` +
-        `§dCurrent Region: §b${currentRegionLabel}\n` +
-        `§dSurface / Cave / Aerial: §f${formatTitle(lookup.surfaceRegion?.id)} / ${formatTitle(lookup.caveRegion?.id ?? "none")} / ${formatTitle(lookup.aerialRegion?.id ?? "none")}\n` +
-        `§dDiscovered Biomes: §a${prog.discoveredRegionsCount}/27 §7| §dAdvancements: §a${prog.unlockedCount}/${prog.totalAdvancements}\n\n` +
-        `§7Select any of the 27 BetterEnd regions below to teleport directly to that outer-End biome and generate its terrain:`
-      );
-
-    for (const region of REGION_CATALOGUE) {
-      form.button(`${formatTitle(region.id)} [${region.layer}]`);
-    }
-
-    form.show(player).then((response) => {
-      if (!response || response.canceled || response.selection === undefined) return;
-      const chosen = REGION_CATALOGUE[response.selection];
-      if (!chosen) return;
-
-      const target = this._findRegionCoordinate(chosen.id);
-      const endDim =
-        this.serverModule?.world?.getDimension?.("minecraft:the_end") ?? player.dimension;
-
-      try {
-        player.teleport(
-          { x: target.x + 0.5, y: target.y + 2, z: target.z + 0.5 },
-          { dimension: endDim }
-        );
-      } catch {
-        try {
-          player.runCommand?.(`tp @s ${target.x} ${target.y + 2} ${target.z}`);
-        } catch {}
-      }
-
-      // Ensure safe landing after a short tick delay once the destination chunk is loaded
-      const runGenerate = () => {
-        this._generateBiomeIslandAt(endDim, target.x, target.y, target.z, chosen.id, player);
-        this.generationService.enqueuePlayerApproach(
-          player.id ?? "player",
-          "minecraft:the_end",
-          target,
-          { radiusCells: 1 }
-        );
-        this.generationService.stepPreparationQueue({ maxCells: 2 });
-        const pres = this.presentationService.updatePlayerPresentation({
-          playerId: player.id ?? "player",
-          dimension: "minecraft:the_end",
-          regionId: chosen.id,
-          immediate: true,
-          playerHandle: player
-        });
-        this._applyLivePlayerPresentation(player, pres);
-        try {
-          player.onScreenDisplay?.setActionBar?.(
-            `§dBetterEnd §8| §b${formatTitle(chosen.id)} §7(${chosen.layer}) — §aTop: ${formatTitle(chosen.surface?.topBlock)}`
-          );
-        } catch {}
-      };
-
-      if (this.serverModule?.system?.runTimeout) {
-        this.serverModule.system.runTimeout(runGenerate, 8);
-      } else {
-        runGenerate();
-      }
-    }).catch(() => {});
+    openGuidebookUi(this, player);
   }
 
-  _openSmelterUi(player, block) {
-    const ActionFormData = this.uiModule?.ActionFormData;
-    if (!ActionFormData || !player) return;
-
-    const allRecipes = [
-      ...DEFAULT_ALLOYING_RECIPES.map((r) => ({
-        label: `Alloy: ${formatTitle(r.result.item)} x${r.result.count} (${r.ingredients.map(formatTitle).join(" + ")})`,
-        resultItem: r.result.item,
-        resultCount: r.result.count
-      })),
-      ...DEFAULT_SINGLE_INPUT_SMELTER_RECIPES.map((r) => ({
-        label: `Smelt: ${formatTitle(r.result.item)} x${r.result.count} (${formatTitle(r.ingredient)})`,
-        resultItem: r.result.item,
-        resultCount: r.result.count
-      }))
-    ];
-
-    const form = new ActionFormData()
-      .title("End Stone Smelter")
-      .body("§7Select an alloying or smelting recipe to execute at this End Stone Smelter:");
-
-    for (const r of allRecipes) {
-      form.button(r.label);
-    }
-
-    form.show(player).then((res) => {
-      if (!res || res.canceled || res.selection === undefined) return;
-      const chosen = allRecipes[res.selection];
-      if (!chosen) return;
-      try {
-        player.runCommand?.(`give @s ${chosen.resultItem} ${chosen.resultCount}`);
-        player.playSound?.("random.fizz");
-        player.onScreenDisplay?.setActionBar?.(
-          `§a[End Stone Smelter] Smelted ${chosen.resultCount}x ${formatTitle(chosen.resultItem)}!`
-        );
-      } catch {}
-    }).catch(() => {});
+  _openSmelterUi(player, block, options = {}) {
+    openSmelterStationUi(this, player, block, options);
   }
 
   _openAnvilUi(player, block) {
-    const ActionFormData = this.uiModule?.ActionFormData;
-    if (!ActionFormData || !player) return;
-
-    const blockId = block?.typeId ?? "betterend:thallasium_anvil";
-    const anvilTier = blockId.includes("aeternium")
-      ? 5
-      : blockId.includes("terminite")
-        ? 2
-        : 1;
-
-    const available = DEFAULT_SMITHING_RECIPES.filter((r) => r.anvilLevel <= anvilTier);
-    const form = new ActionFormData()
-      .title(`${formatTitle(blockId)} (Tier ${anvilTier})`)
-      .body(`§7Available BetterEnd Anvil Smithing Recipes (Anvil Level <= ${anvilTier}):`);
-
-    for (const r of available) {
-      form.button(
-        `${formatTitle(r.result.item)} x${r.result.count} (${r.inputCount}x ${formatTitle(r.input)})`
-      );
-    }
-
-    form.show(player).then((res) => {
-      if (!res || res.canceled || res.selection === undefined) return;
-      const chosen = available[res.selection];
-      if (!chosen) return;
-      try {
-        player.runCommand?.(`give @s ${chosen.result.item} ${chosen.result.count}`);
-        player.playSound?.("random.anvil_use");
-        player.onScreenDisplay?.setActionBar?.(
-          `§a[Anvil Smithing] Forged ${chosen.result.count}x ${formatTitle(chosen.result.item)}!`
-        );
-      } catch {}
-    }).catch(() => {});
+    openAnvilStationUi(this, player, block);
   }
 
   _openInfusionPedestalUi(player, block) {
-    const ActionFormData = this.uiModule?.ActionFormData;
-    if (!ActionFormData || !player) return;
+    openInfusionPedestalStationUi(this, player, block);
+  }
 
-    const coreInfusions = DEFAULT_INFUSION_RECIPES.slice(0, 12);
-    const form = new ActionFormData()
-      .title("Infusion Pedestal Ritual")
-      .body("§d8-Pedestal Infusion Ritual\n§7Select an Infusion Ritual recipe to channel:");
-
-    for (const r of coreInfusions) {
-      form.button(
-        `${formatTitle(r.id)} -> ${formatTitle(r.result.item)} (Input: ${formatTitle(r.input)})`
-      );
-    }
-
-    form.show(player).then((res) => {
-      if (!res || res.canceled || res.selection === undefined) return;
-      const chosen = coreInfusions[res.selection];
-      if (!chosen) return;
-      try {
-        player.runCommand?.(`give @s ${chosen.result.item} ${chosen.result.count}`);
-        player.playSound?.("block.end_portal.spawn");
-        player.onScreenDisplay?.setActionBar?.(
-          `§d[Infusion Ritual] Infused ${chosen.result.count}x ${formatTitle(chosen.result.item)}!`
-        );
-      } catch {}
-    }).catch(() => {});
+  _openEternalPedestalUi(player, block) {
+    openEternalPedestalStationUi(this, player, block);
   }
 
   _applyLivePlayerPresentation(player, presResult) {
@@ -1843,7 +1722,8 @@ export class BetterEndRuntime {
       ["neon_cactus"],
       ["glowing_pillar_roots", "glowing_pillar_luminophor", "glowing_pillar_leaves"],
       ["silk_moth_nest"],
-      ["cave_pumpkin_seed", "cave_pumpkin"]
+      ["cave_pumpkin_seed", "cave_pumpkin"],
+      ["respawn_obelisk"]
     ];
 
     let activeFamily = null;
@@ -1912,67 +1792,111 @@ export class BetterEndRuntime {
     }
 
     if (shortName === "end_stone_smelter") {
-      this.stationsService.ensureStation?.({
-        dimension: dimId,
-        anchor: loc,
-        stationType: "end_stone_smelter"
-      });
-      this._openSmelterUi(player, block);
+      this._openSmelterUi(player, block, { singleInputOnly: false });
+    } else if (shortName.endsWith("_furnace")) {
+      this._openSmelterUi(player, block, { singleInputOnly: true });
     } else if (shortName.endsWith("_anvil")) {
-      this.stationsService.ensureStation?.({
-        dimension: dimId,
-        anchor: loc,
-        stationType: "anvil"
-      });
       this._openAnvilUi(player, block);
     } else if (shortName === "infusion_pedestal") {
-      this.stationsService.ensureStation?.({
-        dimension: dimId,
-        anchor: loc,
-        stationType: "infusion_pedestal"
-      });
-      this._openInfusionPedestalUi(player, block);
-    } else if (shortName === "eternal_pedestal" || shortName.endsWith("_pedestal")) {
-      this.stationsService.ensureStation?.({
-        dimension: dimId,
-        anchor: loc,
-        stationType: "pedestal"
-      });
-      try {
-        player.onScreenDisplay?.setActionBar?.(
-          `§d[${formatTitle(shortName)}] §fPedestal active at (${loc.x}, ${loc.y}, ${loc.z})`
-        );
-      } catch {}
+      handlePedestalInteraction(this, player, block, event?.itemStack);
+    } else if (shortName === "eternal_pedestal") {
+      handleEternalPedestalInteraction(this, player, block, event?.itemStack);
+    } else if (shortName.endsWith("_pedestal")) {
+      handlePedestalInteraction(this, player, block, event?.itemStack);
     } else if (shortName === "respawn_obelisk") {
-      this.transportService.placeRespawnObelisk({ dimension: dimId, bottomAnchor: loc });
-      this.transportService.activateRespawnObelisk?.({
-        playerId: player.id ?? "player",
-        dimension: dimId,
-        pos: loc,
-        amberGemCount: 6
-      });
-      try {
-        player.setSpawnPoint?.({
-          dimension: block.dimension ?? player.dimension,
-          x: loc.x + 1,
-          y: loc.y,
-          z: loc.z
-        });
-        player.playSound?.("respawn_anchor.set_spawn");
-        player.onScreenDisplay?.setActionBar?.(
-          `§d[Respawn Obelisk] §aEnd Respawn Anchor bound to (${loc.x}, ${loc.y}, ${loc.z})!`
-        );
-      } catch {}
+      handleRespawnObeliskInteraction(this, player, block, event?.itemStack);
     } else if (shortName === "silk_moth_nest" || shortName === "silk_moth_hive") {
-      this.ecologyService.harvestSilkMothNest?.({
-        playerId: player.id ?? "player",
+      handleSilkMothHousingInteraction(this, player, block, event?.itemStack);
+    } else if (
+      shortName.endsWith("_barrel") ||
+      shortName.endsWith("_chest") ||
+      shortName.endsWith("_bookshelf")
+    ) {
+      openStorageContainerUi(this, player, block);
+    } else if (
+      shortName.endsWith("_sign") ||
+      shortName.endsWith("_wall_sign") ||
+      shortName.endsWith("_hanging_sign") ||
+      shortName.endsWith("_hanging_wall_sign")
+    ) {
+      openSignEditorUi(this, player, block);
+    } else if (shortName.endsWith("_flower_pot")) {
+      const potRes = this.ecologyService.interactWithFlowerPot({
         dimension: dimId,
-        position: loc
+        anchor: loc,
+        heldItem: heldItemId || null,
+        action: "use"
       });
+      if (potRes.success) {
+        if (potRes.stage === "soil_inserted" || potRes.stage === "plant_inserted") {
+          consumePlayerItem(player, heldItemId, 1);
+        }
+        if (potRes.removedItem) {
+          depositPlayerItem(player, { itemId: potRes.removedItem, count: 1 }, this.serverModule);
+        }
+        try {
+          player.playSound?.("dig.grass");
+          player.onScreenDisplay?.setActionBar?.(
+            `§a[${formatTitle(shortName)}] Soil: ${formatTitle(potRes.pot?.soil ?? "None")} | Plant: ${formatTitle(potRes.pot?.plant ?? "Empty")}`
+          );
+        } catch {}
+      } else {
+        try {
+          player.onScreenDisplay?.setActionBar?.(
+            `§d[${formatTitle(shortName)}] §f${potRes.reason === "pot_empty" ? "Insert End Moss / Soil first, then a plant" : formatTitle(potRes.reason ?? "Interact with Soil or Plant")}`
+          );
+        } catch {}
+      }
+    } else if (shortName === "umbrella_tree_cluster" && heldItemId === "minecraft:glass_bottle") {
+      const cRes = consumePlayerItem(player, "minecraft:glass_bottle", 1);
+      if (cRes.ok) {
+        depositPlayerItem(
+          player,
+          { itemId: "betterend:umbrella_cluster_juice", count: 1 },
+          this.serverModule
+        );
+        try {
+          block.setType?.("betterend:umbrella_tree_cluster_empty");
+          player.playSound?.("bucket.fill");
+          player.onScreenDisplay?.setActionBar?.(
+            "§a[Umbrella Tree Cluster] Collected Umbrella Cluster Juice!"
+          );
+        } catch {}
+      }
+    } else if (
+      shortName === "umbrella_tree_cluster_empty" &&
+      heldItemId === "betterend:umbrella_cluster_juice"
+    ) {
+      const cRes = consumePlayerItem(player, "betterend:umbrella_cluster_juice", 1);
+      if (cRes.ok) {
+        depositPlayerItem(player, { itemId: "minecraft:glass_bottle", count: 1 }, this.serverModule);
+        try {
+          block.setType?.("betterend:umbrella_tree_cluster");
+          player.playSound?.("bucket.empty");
+        } catch {}
+      }
+    } else if (shortName.endsWith("_composter")) {
       try {
-        player.runCommand?.("give @s betterend:silk_fiber 2");
-        player.playSound?.("block.beehive.shear");
-        player.onScreenDisplay?.setActionBar?.("§aHarvested 2x Silk Fiber from Silk Moth Nest!");
+        const perm = block.permutation;
+        const curLevel = Number(perm?.getState?.("betterend:level") ?? 0);
+        if (curLevel >= 7) {
+          if (typeof perm?.withState === "function") {
+            block.setPermutation(perm.withState("betterend:level", 0));
+          }
+          depositPlayerItem(player, { itemId: "minecraft:bone_meal", count: 1 }, this.serverModule);
+          player.playSound?.("block.composter.empty");
+        } else if (heldItemId && heldItemId !== "betterend:guidebook") {
+          const cRes = consumePlayerItem(player, heldItemId, 1);
+          if (cRes.ok) {
+            const nextLevel = Math.min(7, curLevel + 1);
+            if (typeof perm?.withState === "function") {
+              block.setPermutation(perm.withState("betterend:level", nextLevel));
+            }
+            player.playSound?.(
+              nextLevel >= 7 ? "block.composter.ready" : "block.composter.fill_success"
+            );
+          }
+        }
       } catch {}
     } else if (
       shortName.endsWith("_chair") ||
@@ -2037,6 +1961,53 @@ export class BetterEndRuntime {
 
     if (loc && dim && brokenId.startsWith("betterend:")) {
       this._cascadeBreakMultiblockPlant(dim, loc, brokenId);
+      const dimId = dim.id ?? "minecraft:the_end";
+      const smelterState = this.stationsService.getSmelterState({ dimension: dimId, anchor: loc });
+      if (smelterState) {
+        for (const k of ["input0", "input1", "fuel", "output"]) {
+          if (smelterState[k] && smelterState[k].count > 0) {
+            depositPlayerItem(player, smelterState[k], this.serverModule);
+          }
+        }
+        this.stationsService.setSmelterSlots({
+          dimension: dimId,
+          anchor: loc,
+          input0: null,
+          input1: null,
+          fuel: null,
+          output: null
+        });
+      }
+      const pedestalState = this.stationsService.getPedestal({ dimension: dimId, anchor: loc });
+      if (pedestalState?.item) {
+        depositPlayerItem(player, pedestalState.item, this.serverModule);
+      }
+      const stationRec = this.store.getStation({ dimension: dimId, anchor: loc });
+      if (Array.isArray(stationRec?.state?.items)) {
+        for (const it of stationRec.state.items) {
+          if (it && it.count > 0) {
+            depositPlayerItem(player, it, this.serverModule);
+          }
+        }
+      }
+      if (brokenId.endsWith("_flower_pot")) {
+        const potBreak = this.ecologyService.interactWithFlowerPot({
+          dimension: dimId,
+          anchor: loc,
+          action: "break"
+        });
+        if (Array.isArray(potBreak?.drops)) {
+          for (const d of potBreak.drops) {
+            if (d && d.itemId && d.itemId !== "betterend:flower_pot") {
+              depositPlayerItem(player, d, this.serverModule);
+            }
+          }
+        }
+      }
+      if (brokenId === "betterend:respawn_obelisk") {
+        this.transportService.breakRespawnObeliskPart({ dimension: dimId, pos: loc });
+      }
+      this.store.breakStation({ dimension: dimId, anchor: loc, reason: "player_break" });
     }
 
     if (itemId.startsWith("betterend:") && itemId.endsWith("_hammer") && loc && dim) {
@@ -2906,6 +2877,8 @@ export class BetterEndRuntime {
 
   _stepLiveWorldTick() {
     this._tickCounter += 1;
+    stepLiveSmelters(this, 10);
+    stepLiveInfusionRituals(this, 10);
     // NOTE: the staged cell-preparation pipeline (generationService.enqueuePlayerApproach /
     // stepPreparationQueue) is deliberately NOT driven from here any more. Native feature rules do
     // all terrain decoration; the pipeline only produced journal records nothing consumed, yet cost
@@ -3040,6 +3013,30 @@ export class BetterEndRuntime {
     if (world?.afterEvents?.playerBreakBlock?.subscribe) {
       world.afterEvents.playerBreakBlock.subscribe((event) => {
         this._handleLiveBlockBreak(event);
+      });
+    }
+
+    if (world?.afterEvents?.playerSpawn?.subscribe) {
+      world.afterEvents.playerSpawn.subscribe((event) => {
+        if (event?.initialSpawn) return;
+        const player = event?.player;
+        if (!player) return;
+        const pid = player.id ?? player.name ?? "player";
+        try {
+          const respawnRes = this.transportService.handlePlayerRespawn({ playerId: pid });
+          if (respawnRes?.redirected && respawnRes.landingPos) {
+            const targetDim =
+              world.getDimension?.(respawnRes.dimension ?? "minecraft:the_end") ?? player.dimension;
+            player.teleport?.(
+              {
+                x: respawnRes.landingPos.x + 0.5,
+                y: respawnRes.landingPos.y,
+                z: respawnRes.landingPos.z + 0.5
+              },
+              { dimension: targetDim }
+            );
+          }
+        } catch {}
       });
     }
 
