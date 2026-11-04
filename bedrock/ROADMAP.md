@@ -63,6 +63,7 @@ Probe rules:
 | Native `minecraft:crafting_table` UI + Station-Backed Custom UIs (`@minecraft/server-ui` `ActionFormData` & `ModalFormData` with real inventory consumption, hammer durability, 49 Infusion recipes, Respawn Obelisk, Silk Moth Nest, Storage Containers, Signs, and 5-Chapter Guidebook) | Done | `compiler.test.mjs` + `gameplay-systems.test.mjs` (`UI-001`) |
 | 6 BetterEnd Music Discs (`minecraft:record`, `rarity: rare`, `record` category 64m spatial attenuation, artist/title localization, Jukebox playback/stop, outer-End chest loot) & Native Container Inventory Grids (`betterend:chest_carrier` 27-slot `minecart_chest` GUI for `*_chest`/`*_barrel`, `betterend:end_stone_smelter_carrier` 5-slot `minecart_hopper` GUI for `end_stone_smelter`/`*_furnace`/`*_anvil`, and physical 6-slot `*_chiseled_bookshelf`) | Done | `compiler.test.mjs` + `gameplay-systems.test.mjs` + BDS `1.26.40.8` |
 | Zero Stub List UIs on Blocks/Stations, 3D Breaking Particles on All Container Blocks (`setblock ... air destroy`), and Gravity-Affected BetterEnd Anvils (`*_anvil`) & `endstone_dust` | Done | `gameplay-systems.test.mjs` (`UI-001` sections 10–12) + BDS `1.26.40.8` |
+| Chair, Bar Stool & Taburet Seating System (`33` blocks + zero-hitbox, invulnerable, 1-tick auto-despawning `bclib:chair` seat anchor & solid `10×10×10` chair collision box) | Done | `compiler.test.mjs` + `gameplay-systems.test.mjs` (`UI-001` section 13) + BDS `1.26.40.8` |
 
 ## 5. Roadmap & Completed Milestones
 
@@ -121,6 +122,14 @@ All 7 feature groups are implemented, tested in `placement.test.mjs`, and packag
    - Fixed missing breaking particles and break sound when mining carrier-backed container blocks in Creative or Survival mode by always breaking the host block via `setblock <x> <y> <z> air destroy` (`LevelEvent::ParticlesDestroyBlock`), removing only the dropped block item entity in Creative mode before spilling stored container contents.
 4. **Gravity-Affected BetterEnd Anvils & Endstone Dust (`_checkAndDropFallingColumn`):**
    - Implemented column gravity checks on block place, block break (`y + 1`), block interact, and live world tick for all 11 `betterend:*_anvil` blocks and `betterend:endstone_dust`, dropping unsupported blocks to `landingY`, preserving permutation and stored container items, playing `random.anvil_land`, and dealing falling-anvil damage (`(fallDist - 1) * 2`, max 40).
+
+### Milestone I: Chair, Bar Stool & Taburet Seating System Overhaul (`bclib:chair` Zero-Hitbox Transient Seat Anchor) — COMPLETED
+1. **Eliminated the "Mob Mimic Chair" Behavior (`content-compiler.mjs`):**
+   - Configured `bclib:chair` (`entities/chair.entity.json`) with `"minecraft:collision_box": { "width": 0.0, "height": 0.0 }` (zero hitbox and zero shadow), `"minecraft:damage_sensor": { "triggers": [{ "cause": "all", "deals_damage": "no" }] }`, `"minecraft:pushable": { "is_pushable": false, "is_pushable_by_piston": false }`, `"minecraft:knockback_resistance": { "value": 1.0 }`, `"minecraft:fire_immune": {}`, `"minecraft:rideable"` (`dismount_mode: "on_top_center"`), and a native 0.25s `minecraft:timer` -> `betterend:instant_despawn` when `has_rider == false`.
+   - Fixed boolean string coercion (`String(s.properties.top) !== 'true'`) in `defaultState` selection and ensured `resolveStateBedrockBoxes` gives all `*_chair` blocks a solid `{ origin: [-5, 0, -5], size: [10, 10, 10] }` `collision_box` and `{ origin: [-5, 0, -5], size: [10, 16, 10] }` `selection_box`.
+2. **1-Tick Transient Seat Lifecycle, Exact Cushion Heights & Facing Rotation (`bootstrap.js`, `ecology-service.js`):**
+   - Implemented `_sitPlayerOnChairBlock(player, block)` to spawn `bclib:chair` at the exact furniture cushion height (`CHAIR_HEIGHT_OFFSETS`: `chair: 0.4375`, `bar_stool: 0.625`, `taburet: 0.375`), rotate the seat to match `betterend:facing`, ignore sneaking interactions, and prevent duplicate seats.
+   - Added `_stepActiveChairSeats` (running at 20Hz in `_stepFastPlayerPhysics` and scanning nearby in `_stepLiveWorldTick`) and `_removeChairSeatAt` (in `_handleLiveBlockBreak`) so `bclib:chair` is immediately removed (`seatEntity.remove()`) the instant a player dismounts or breaks the chair block.
 
 ## 6. Known risks
 

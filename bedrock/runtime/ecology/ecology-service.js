@@ -1198,15 +1198,20 @@ export class EcologyService {
   sitOnChair({
     dimension = 'minecraft:the_end',
     anchor,
+    blockLocation,
     blockType,
-    riderId = 'player_1',
-  }) {
-    const id = String(blockType);
+    blockId,
+    riderId,
+    playerId,
+  } = {}) {
+    const id = String(blockType ?? blockId ?? '').replace(/__p\d+$/, '');
+    const effAnchor = anchor ?? blockLocation ?? { x: 0, y: 64, z: 0 };
+    const effRider = String(riderId ?? playerId ?? 'player_1');
     if (!this.chairBlocks.includes(id)) {
       return { seated: false, reason: 'invalid_chair_block', blockType: id };
     }
 
-    const key = formatAnchorKey(dimension, anchor);
+    const key = formatAnchorKey(dimension, effAnchor);
     const existingSeat = this._activeSeats.get(key);
     if (existingSeat) {
       return {
@@ -1222,7 +1227,7 @@ export class EcologyService {
         ? 'taburet'
         : 'chair';
     const heightOffset = CHAIR_HEIGHT_OFFSETS[kind];
-    const normAnchor = normalizeBlockAnchor(anchor);
+    const normAnchor = normalizeBlockAnchor(effAnchor);
 
     const seatRecord = {
       seatEntityId: `seat_${key}`,
@@ -1232,7 +1237,7 @@ export class EcologyService {
       blockType: id,
       seatKind: kind,
       heightOffset,
-      riderId: String(riderId),
+      riderId: effRider,
       seatPosition: {
         x: normAnchor.x + 0.5,
         y: normAnchor.y + heightOffset,

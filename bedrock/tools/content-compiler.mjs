@@ -1066,6 +1066,12 @@ function resolveStateBedrockBoxes(blockEntry, stateProps, resolved, isCenterXZ) 
       selectionBox: { origin: [-6, 0, -6], size: [12, 14, 12] },
     };
   }
+  if (shortName.endsWith('_chair')) {
+    return {
+      collisionBox: { origin: [-5, 0, -5], size: [10, 10, 10] },
+      selectionBox: { origin: [-5, 0, -5], size: [10, 16, 10] },
+    };
+  }
 
   const collisionBox = boundsToBedrockBox(
     rawCollision,
@@ -1348,23 +1354,23 @@ export function compileBlocks(registrations, modelAssets) {
         partition.states.find(
           s =>
             s.properties.facing === 'up' &&
-            s.properties.top !== 'true' &&
-            s.properties.half !== 'upper' &&
-            s.properties.half !== 'top' &&
-            s.properties.type !== 'top' &&
-            s.properties.type !== 'double' &&
-            s.properties.open !== 'true' &&
-            s.properties.waterlogged !== 'true',
+            String(s.properties.top) !== 'true' &&
+            String(s.properties.half) !== 'upper' &&
+            String(s.properties.half) !== 'top' &&
+            String(s.properties.type) !== 'top' &&
+            String(s.properties.type) !== 'double' &&
+            String(s.properties.open) !== 'true' &&
+            String(s.properties.waterlogged) !== 'true',
         ) ??
         partition.states.find(
           s =>
-            s.properties.top !== 'true' &&
-            s.properties.half !== 'upper' &&
-            s.properties.half !== 'top' &&
-            s.properties.type !== 'top' &&
-            s.properties.type !== 'double' &&
-            s.properties.open !== 'true' &&
-            s.properties.waterlogged !== 'true',
+            String(s.properties.top) !== 'true' &&
+            String(s.properties.half) !== 'upper' &&
+            String(s.properties.half) !== 'top' &&
+            String(s.properties.type) !== 'top' &&
+            String(s.properties.type) !== 'double' &&
+            String(s.properties.open) !== 'true' &&
+            String(s.properties.waterlogged) !== 'true',
         ) ??
         partition.states[0];
       const defaultResolved = resolveStateModelAndRotation(
@@ -3005,10 +3011,12 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
     ];
 
     const components = {
-      'minecraft:collision_box': {
-        width,
-        height,
-      },
+      'minecraft:collision_box': isChair
+        ? { width: 0.0, height: 0.0 }
+        : {
+            width,
+            height,
+          },
       'minecraft:physics': {
         has_gravity: !isChair && !isFlying,
         has_collision: !isChair,
@@ -3350,7 +3358,39 @@ export function compileEntitiesAndFeatures(registrations, resources, mcStructure
       components['minecraft:rideable'] = {
         seat_count: 1,
         family_types: ['player'],
+        dismount_mode: 'on_top_center',
         seats: [{ position: [0.0, 0.0, 0.0] }],
+      };
+      components['minecraft:damage_sensor'] = {
+        triggers: [{ cause: 'all', deals_damage: 'no' }],
+      };
+      components['minecraft:knockback_resistance'] = { value: 1.0 };
+      components['minecraft:fire_immune'] = {};
+      components['minecraft:timer'] = {
+        looping: true,
+        time: [0.25, 0.25],
+        time_down_event: {
+          event: 'betterend:check_rider',
+          target: 'self',
+        },
+      };
+      componentGroups['betterend:instant_despawn'] = {
+        'minecraft:instant_despawn': {},
+      };
+      entityEvents['betterend:check_rider'] = {
+        sequence: [
+          {
+            filters: {
+              test: 'rider_count',
+              subject: 'self',
+              operator: '==',
+              value: 0,
+            },
+            add: {
+              component_groups: ['betterend:instant_despawn'],
+            },
+          },
+        ],
       };
     }
 

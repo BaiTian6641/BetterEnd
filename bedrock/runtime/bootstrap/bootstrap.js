@@ -267,6 +267,7 @@ export class BetterEndRuntime {
     this._playerGlideCtl = new Map();
     this._playerGlideTicks = new Map();
     this._playerFireworkTicks = new Map();
+    this._activeChairEntities = new Map();
     this._fastTick = 0;
     this._tickCounter = 0;
   }
@@ -592,7 +593,10 @@ export class BetterEndRuntime {
       const isStairOrDoorOrGate =
         shortName.endsWith("_stairs") ||
         shortName.endsWith("_door") ||
-        shortName.endsWith("_gate");
+        shortName.endsWith("_gate") ||
+        shortName.endsWith("_chair") ||
+        shortName.endsWith("_bar_stool") ||
+        shortName.endsWith("_taburet");
       const isSixWay =
         shortName === "neon_cactus" ||
         shortName === "smaragdant_crystal_shard" ||
@@ -616,6 +620,10 @@ export class BetterEndRuntime {
     if ("betterend:type" in states && shortName.endsWith("_slab")) {
       const slabType = face === "down" || (face !== "up" && faceY > 0.5) ? "top" : "bottom";
       trySetState("betterend:type", slabType);
+    }
+
+    if ("betterend:top" in states && shortName.endsWith("_chair")) {
+      trySetState("betterend:top", false);
     }
 
     if ("betterend:half" in states) {
@@ -1431,6 +1439,7 @@ export class BetterEndRuntime {
     this._pumpTick = (this._pumpTick ?? 0) + 1;
     const tick = this._pumpTick;
     const targets = [];
+
     for (const player of players) {
       const dim = player?.dimension;
       if (!player?.location || dim?.id !== "minecraft:the_end") continue;
@@ -2116,21 +2125,7 @@ export class BetterEndRuntime {
       shortName.endsWith("_bar_stool") ||
       shortName.endsWith("_taburet")
     ) {
-      this.ecologyService.sitOnChair({
-        playerId: player.id ?? "player",
-        blockId,
-        dimension: dimId,
-        blockLocation: loc
-      });
-      try {
-        const seatEntity = block.dimension?.spawnEntity?.("bclib:chair", {
-          x: loc.x + 0.5,
-          y: loc.y + 0.1,
-          z: loc.z + 0.5
-        });
-        const rideable = seatEntity?.getComponent?.("minecraft:rideable");
-        rideable?.addRider?.(player);
-      } catch {}
+      this._sitPlayerOnChairBlock(player, block);
     } else if (
       shortName.endsWith("_door") ||
       shortName.endsWith("_trapdoor") ||
@@ -2256,6 +2251,13 @@ export class BetterEndRuntime {
       }
       if (brokenId === "betterend:respawn_obelisk") {
         this.transportService.breakRespawnObeliskPart({ dimension: dimId, pos: loc });
+      }
+      if (
+        brokenId.endsWith("_chair") ||
+        brokenId.endsWith("_bar_stool") ||
+        brokenId.endsWith("_taburet")
+      ) {
+        this._removeChairSeatAt(dim, loc, "block_break");
       }
       this.store.breakStation({ dimension: dimId, anchor: loc, reason: "player_break" });
     }
@@ -3074,6 +3076,8 @@ export class BetterEndRuntime {
       return;
     }
 
+    this._stepActiveChairSeats(false);
+
     for (const player of players) {
       if (!player || !player.location) continue;
       const pid = player.id ?? player.name ?? "player";
@@ -3130,6 +3134,224 @@ export class BetterEndRuntime {
     }
   }
 
+  /**
+   * Mounts `player` onto a transient, zero-hitbox `bclib:chair` seat entity at the exact seat
+   * cushion height (`CHAIR_HEIGHT_OFFSETS`: `chair: 0.4375`, `bar_stool: 0.625`, `taburet: 0.375`)
+   * and facing yaw of `block`. Never spawns duplicate seats and ignores sneaking interactions.
+   */
+  _sitPlayerOnChairBlock(player, block) {
+    if (!player || !block || player.isSneaking) {
+      return { seated: false, reason: "sneaking_or_invalid" };
+    }
+    const dim = block.dimension ?? player.dimension;
+    const dimId = dim?.id ?? "minecraft:the_end";
+    const rawLoc = block.location ?? { x: 0, y: 64, z: 0 };
+    const loc = {
+      x: Math.trunc(rawLoc.x),
+      y: Math.trunc(rawLoc.y),
+      z: Math.trunc(rawLoc.z)
+    };
+    const blockId = String(block.typeId ?? "betterend:mossy_glowshroom_chair").replace(/__p\d+$/, "");
+    const shortName = blockId.replace(/^betterend:/, "");
+    const key = `${dimId}:${loc.x},${loc.y},${loc.z}`;
+
+    // Check if a seat entity already exists at this block
+    try {
+      const existingList =
+        dim?.getEntities?.({
+          type: "bclib:chair",
+          location: { x: loc.x + 0.5, y: loc.y + 0.5, z: loc.z + 0.5 },
+          maxDistance: 0.85
+        }) ?? [];
+      for (const existing of existingList) {
+        const rComp =
+          existing?.getComponent?.("minecraft:rideable") ?? existing?.getComponent?.("rideable");
+        const riders = rComp?.getRiders?.() ?? [];
+        if (riders.length > 0) {
+          return { seated: false, reason: "seat_occupied" };
+        }
+        existing?.remove?.();
+      }
+    } catch {}
+
+    // Clear any stale seat record before registering the new rider
+    this.ecologyService.dismountOrBreakChair({
+      dimension: dimId,
+      anchor: loc,
+      reason: "cleanup"
+    });
+
+    const sitRes = this.ecologyService.sitOnChair({
+      dimension: dimId,
+      anchor: loc,
+      blockType: blockId,
+      riderId: player.id ?? player.name ?? "player"
+    });
+    if (!sitRes.seated) return sitRes;
+
+    const heightOffset =
+      sitRes.heightOffset ??
+      (shortName.endsWith("_bar_stool")
+        ? 0.625
+        : shortName.endsWith("_taburet")
+          ? 0.375
+          : 0.4375);
+
+    let facing = "north";
+    try {
+      facing = String(block.permutation?.getState?.("betterend:facing") ?? "north");
+    } catch {}
+    const yawByFacing = {
+      north: 0,
+      south: 180,
+      west: 270,
+      east: 90
+    };
+    const yaw = yawByFacing[facing] ?? 0;
+
+    try {
+      const seatPos = {
+        x: loc.x + 0.5,
+        y: loc.y + heightOffset,
+        z: loc.z + 0.5
+      };
+      const seatEntity = dim?.spawnEntity?.("bclib:chair", seatPos);
+      if (seatEntity) {
+        seatEntity.setRotation?.({ x: 0, y: yaw });
+        const rideable =
+          seatEntity.getComponent?.("minecraft:rideable") ?? seatEntity.getComponent?.("rideable");
+        rideable?.addRider?.(player);
+        this._activeChairEntities.set(key, {
+          entity: seatEntity,
+          dim,
+          dimensionId: dimId,
+          anchor: loc
+        });
+      }
+    } catch {}
+
+    return sitRes;
+  }
+
+  _removeChairSeatAt(dim, loc, reason = "dismount") {
+    if (!loc) return { removed: 0 };
+    const bx = Math.trunc(loc.x);
+    const by = Math.trunc(loc.y);
+    const bz = Math.trunc(loc.z);
+    const dimId = dim?.id ?? "minecraft:the_end";
+    const key = `${dimId}:${bx},${by},${bz}`;
+    let removed = 0;
+
+    const tracked = this._activeChairEntities.get(key);
+    if (tracked) {
+      try {
+        tracked.entity?.remove?.();
+        removed += 1;
+      } catch {}
+      this._activeChairEntities.delete(key);
+    }
+
+    try {
+      const nearSeats =
+        dim?.getEntities?.({
+          type: "bclib:chair",
+          location: { x: bx + 0.5, y: by + 0.5, z: bz + 0.5 },
+          maxDistance: 0.9
+        }) ?? [];
+      for (const s of nearSeats) {
+        try {
+          s?.remove?.();
+          removed += 1;
+        } catch {}
+      }
+    } catch {}
+
+    this.ecologyService.dismountOrBreakChair({
+      dimension: dimId,
+      anchor: { x: bx, y: by, z: bz },
+      reason
+    });
+    return { removed };
+  }
+
+  /**
+   * Immediately despawns any `bclib:chair` seat entity whose rider has dismounted (`Sneak`/`Jump`)
+   * or whose host chair/stool/taburet block was broken, so zero ghost entities ever remain.
+   */
+  _stepActiveChairSeats(scanNearbyPlayers = false) {
+    const isChairBlockId = (tid) => {
+      const s = String(tid ?? "").replace(/^betterend:/, "").replace(/__p\d+$/, "");
+      return s.endsWith("_chair") || s.endsWith("_bar_stool") || s.endsWith("_taburet");
+    };
+
+    for (const [key, entry] of this._activeChairEntities) {
+      const ent = entry.entity;
+      let shouldRemove = false;
+      try {
+        if (!ent || ent.isValid === false) {
+          shouldRemove = true;
+        } else {
+          const rComp =
+            ent.getComponent?.("minecraft:rideable") ?? ent.getComponent?.("rideable");
+          const riders = rComp?.getRiders?.() ?? [];
+          if (riders.length === 0) {
+            shouldRemove = true;
+          } else if (entry.dim && typeof entry.dim.getBlock === "function") {
+            const blk = entry.dim.getBlock(entry.anchor);
+            if (!blk || !isChairBlockId(blk.typeId)) {
+              shouldRemove = true;
+            }
+          }
+        }
+      } catch {
+        shouldRemove = true;
+      }
+
+      if (shouldRemove) {
+        try {
+          ent?.remove?.();
+        } catch {}
+        this._activeChairEntities.delete(key);
+        this.ecologyService.dismountOrBreakChair({
+          dimension: entry.dimensionId,
+          anchor: entry.anchor,
+          reason: "dismount"
+        });
+      }
+    }
+
+    if (!scanNearbyPlayers) return;
+    try {
+      const players = this.serverModule?.world?.getAllPlayers?.() ?? [];
+      for (const p of players) {
+        const dim = p?.dimension;
+        if (!dim || typeof dim.getEntities !== "function" || !p.location) continue;
+        const seats =
+          dim.getEntities({
+            type: "bclib:chair",
+            location: p.location,
+            maxDistance: 16
+          }) ?? [];
+        for (const s of seats) {
+          if (!s || s.isValid === false) continue;
+          const rComp = s.getComponent?.("minecraft:rideable") ?? s.getComponent?.("rideable");
+          const riders = rComp?.getRiders?.() ?? [];
+          const sloc = s.location ?? { x: 0, y: 64, z: 0 };
+          const blk = dim.getBlock?.({
+            x: Math.floor(sloc.x),
+            y: Math.floor(sloc.y),
+            z: Math.floor(sloc.z)
+          });
+          if (riders.length === 0 || !blk || !isChairBlockId(blk.typeId)) {
+            try {
+              s.remove?.();
+            } catch {}
+          }
+        }
+      }
+    } catch {}
+  }
+
   _stepLiveWorldTick() {
     this._tickCounter += 1;
     stepLiveSmelters(this, 10);
@@ -3151,6 +3373,8 @@ export class BetterEndRuntime {
     } catch {
       return;
     }
+
+    this._stepActiveChairSeats(true);
 
     for (const player of players) {
       if (!player || !player.location) continue;

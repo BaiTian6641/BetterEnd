@@ -543,6 +543,27 @@ test('Content compiler lowers all 728 blocks (22,385 states), 850 items, 879 rec
     );
     assert.ok(heights.size >= 4, `${seedBlock} should have 4 distinct stage selection_box heights, got ${[...heights]}`);
   }
+  const chairServer = compiled.entitiesAndFeatures.serverEntities.get('entities/chair.entity.json')['minecraft:entity'];
+  assert.deepEqual(
+    chairServer.components['minecraft:collision_box'],
+    { width: 0, height: 0 },
+    'bclib:chair must have a zero-size hitbox so players never punch the seat entity instead of the chair block',
+  );
+  assert.equal(
+    chairServer.components['minecraft:damage_sensor']?.triggers?.[0]?.deals_damage,
+    'no',
+    'bclib:chair must be invulnerable to prevent mob hurt sounds and death smoke',
+  );
+  assert.ok(
+    chairServer.component_groups?.['betterend:instant_despawn']?.['minecraft:instant_despawn'],
+    'bclib:chair must define instant_despawn component group when unoccupied',
+  );
+  const chairBlockDef = compiled.blocks.blockJsonMap.get('blocks/mossy_glowshroom_chair.block.json')['minecraft:block'];
+  assert.deepEqual(
+    chairBlockDef.components['minecraft:collision_box'],
+    { origin: [-5, 0, -5], size: [10, 10, 10] },
+    'mossy_glowshroom_chair base components must have solid 10x10x10 seat collision box',
+  );
   const chairClient = compiled.entitiesAndFeatures.clientEntities.get('entity/chair.entity.json')['minecraft:client_entity'];
   assert.ok(chairClient.description.render_controllers.length >= 1, 'chair client entity has render_controllers');
   const chairAnim = compiled.entitiesAndFeatures.animations.get('animations/chair.animation.json').animations['animation.betterend.chair.idle'];

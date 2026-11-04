@@ -1714,4 +1714,65 @@ test('UI-001: Station-Backed Custom UIs, Real Player Inventory Consumption, and 
   assert.equal(fallGrid.get('160,67,160')?.typeId, 'minecraft:air', 'Original y=67 cleared to air');
   assert.equal(fallGrid.get('160,65,160')?.typeId, 'betterend:terminite_anvil', 'Anvil landed at y=65 above end_stone');
   assert.equal(landedSound, 'random.anvil_land', 'Anvil landing played random.anvil_land');
+
+  // 13. Stage 9: Chair & Bar Stool transient seating, exact height offset, facing yaw, and 1-tick dismount cleanup
+  let activeSeatRiders = [];
+  let seatRemoved = false;
+  let spawnedSeatPos = null;
+  let spawnedSeatRot = null;
+  const mockSeatEntity = {
+    typeId: 'bclib:chair',
+    isValid: true,
+    setRotation: rot => {
+      spawnedSeatRot = rot;
+    },
+    remove: () => {
+      seatRemoved = true;
+      mockSeatEntity.isValid = false;
+    },
+    getComponent: id =>
+      id === 'minecraft:rideable' || id === 'rideable'
+        ? {
+            addRider: p => {
+              activeSeatRiders = [p];
+            },
+            getRiders: () => activeSeatRiders,
+          }
+        : null,
+  };
+  const chairDim = {
+    id: 'minecraft:the_end',
+    getEntities: () => (seatRemoved || !spawnedSeatPos ? [] : [mockSeatEntity]),
+    spawnEntity: (typeId, pos) => {
+      spawnedSeatPos = pos;
+      seatRemoved = false;
+      mockSeatEntity.isValid = true;
+      mockSeatEntity.location = pos;
+      return mockSeatEntity;
+    },
+    getBlock: () => ({
+      typeId: 'betterend:mossy_glowshroom_chair',
+      location: { x: 170, y: 64, z: 170 },
+      dimension: chairDim,
+      permutation: { getState: k => (k === 'betterend:facing' ? 'south' : false) },
+    }),
+  };
+  const chairBlock = chairDim.getBlock();
+  const sitLiveRes = runtime._sitPlayerOnChairBlock(
+    { id: 'chair_rider_1', isSneaking: false, dimension: chairDim },
+    chairBlock,
+  );
+  assert.equal(sitLiveRes.seated, true, 'Player seated on mossy_glowshroom_chair');
+  assert.equal(spawnedSeatPos?.y, 64.4375, 'Chair seat spawned at exact 0.4375 heightOffset');
+  assert.equal(spawnedSeatRot?.y, 180, 'Chair seat rotated to match south facing (yaw 180)');
+  assert.equal(activeSeatRiders.length, 1, 'Rider mounted on bclib:chair');
+
+  // While rider is still seated, _stepActiveChairSeats keeps the seat alive
+  runtime._stepActiveChairSeats(false);
+  assert.equal(seatRemoved, false, 'Active seat remains while player is riding');
+
+  // Player dismounts (Sneak -> getRiders() becomes empty) -> _stepActiveChairSeats immediately removes bclib:chair
+  activeSeatRiders = [];
+  runtime._stepActiveChairSeats(false);
+  assert.equal(seatRemoved, true, 'bclib:chair entity immediately despawned on dismount (zero ghost mob)');
 });
